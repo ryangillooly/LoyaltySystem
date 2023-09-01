@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "R/nUqVgxVQcPqtyWDz8qPq6Jzzlx4wVlqSOK5DjhkNPiYZ8k0uw8kIYGBdgvj8IvQTQHA8tVvxC76tkj/a2PsA==",
+  "success": true,
+  "projectFilePath": "/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem/LoyaltySystem.csproj",
+  "expectedPackageFiles": [
+    "/Users/ryan.gillooly/.nuget/packages/microsoft.aspnetcore.openapi/7.0.1/microsoft.aspnetcore.openapi.7.0.1.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/microsoft.openapi/1.4.3/microsoft.openapi.1.4.3.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/swashbuckle.aspnetcore/6.4.0/swashbuckle.aspnetcore.6.4.0.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/swashbuckle.aspnetcore.swagger/6.4.0/swashbuckle.aspnetcore.swagger.6.4.0.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/swashbuckle.aspnetcore.swaggergen/6.4.0/swashbuckle.aspnetcore.swaggergen.6.4.0.nupkg.sha512",
+    "/Users/ryan.gillooly/.nuget/packages/swashbuckle.aspnetcore.swaggerui/6.4.0/swashbuckle.aspnetcore.swaggerui.6.4.0.nupkg.sha512"
+  ],
+  "logs": []
+}

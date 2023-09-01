@@ -1,0 +1,15 @@
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.csproj.AssemblyReference.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.GeneratedMSBuildEditorConfig.editorconfig
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.AssemblyInfoInputs.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.AssemblyInfo.cs
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.csproj.CoreCompileInputs.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/bin/Debug/net7.0/LoyaltySystem.Data.deps.json
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/bin/Debug/net7.0/LoyaltySystem.Data.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/bin/Debug/net7.0/LoyaltySystem.Data.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/bin/Debug/net7.0/LoyaltySystem.Core.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/bin/Debug/net7.0/LoyaltySystem.Core.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.csproj.CopyComplete
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/refint/LoyaltySystem.Data.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/LoyaltySystem.Data.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Data/obj/Debug/net7.0/ref/LoyaltySystem.Data.dll

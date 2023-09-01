@@ -1,0 +1,17 @@
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Services.deps.json
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Services.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Services.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Core.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Data.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Data.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/bin/Debug/net7.0/LoyaltySystem.Core.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.csproj.AssemblyReference.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.GeneratedMSBuildEditorConfig.editorconfig
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.AssemblyInfoInputs.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.AssemblyInfo.cs
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.csproj.CoreCompileInputs.cache
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.csproj.CopyComplete
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/refint/LoyaltySystem.Services.dll
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/LoyaltySystem.Services.pdb
+/Users/ryan.gillooly/Documents/LoyaltySystem/LoyaltySystem.Services/obj/Debug/net7.0/ref/LoyaltySystem.Services.dll
