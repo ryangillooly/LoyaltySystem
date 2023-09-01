@@ -20,7 +20,7 @@ public class UserRepository : IRepository<User>
           TableName = TableName,
           Item = new Dictionary<string, AttributeValue>
           {
-              { "UserId", new AttributeValue { S = newUser.Id.ToString() } },
+              { "UserId", new AttributeValue { S = Guid.NewGuid().ToString() } },
               { "Username", new AttributeValue { S = newUser.Username } },
               { "Email", new AttributeValue { S = newUser.ContactInfo.Email } },
               { "PhoneNumber", new AttributeValue { S = newUser.ContactInfo.PhoneNumber } },
