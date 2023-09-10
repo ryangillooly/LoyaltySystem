@@ -13,7 +13,6 @@ public class UserRepository : IUserRepository
 {
    private readonly IAmazonDynamoDB _dynamoDb;
    private readonly DynamoDbSettings _dynamoDbSettings;
-   private readonly string _dynamoDbTable = "Loyalty";
 
    public UserRepository(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings)
    {
@@ -29,7 +28,7 @@ public class UserRepository : IUserRepository
       var item = new Dictionary<string, AttributeValue>
       {
          // New PK and SK patterns
-         { "PK",          new AttributeValue { S = "USER#" + newUser.ContactInfo.Email } },
+         { "PK",          new AttributeValue { S = "USER#" + newUser.ContactInfo.Email.ToLower() } },
          { "SK",          new AttributeValue { S = "META#USERINFO" } },
          
          // New Type attribute
