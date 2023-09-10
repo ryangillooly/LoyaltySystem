@@ -1,0 +1,8 @@
+.idea/*
+*.exe
+*.dll
+*.pdb
+*rider*
+*/obj/*
+*/bin/Debug/*
+.DS_Store
