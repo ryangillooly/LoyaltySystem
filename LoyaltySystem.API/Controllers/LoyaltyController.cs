@@ -1,80 +1,24 @@
+using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace LoyaltySystem.Controllers;
 
-
 [ApiController]
-[Route("[controller]")]
+[Route("api/users/{userEmail}/loyalty-cards")]
 public class LoyaltyController : ControllerBase
 {
-    CoffeeShopLoyaltySystem system = new CoffeeShopLoyaltySystem();
-
-    [HttpGet("AddCustomer")]
-    public void AddCustomer(string customerEmail) => system.AddCustomer(new Customer(customerEmail));
+    private readonly ILoyaltyCardService _loyaltyCardService;
+    public LoyaltyController(ILoyaltyCardService loyaltyCardService) => _loyaltyCardService = loyaltyCardService;
     
-    [HttpGet("ScanQR")]
-    public void ScanQR(string customerEmail) => system.ScanQR(customerEmail);
-}
-
-public class Customer
-{
-    public string Email { get; set; }
-    public int Points { get; set; }
-
-    public Customer(string email)
+    [HttpPost]
+    public async Task<IActionResult> CreateLoyaltyCard([FromBody] LoyaltyCard newLoyaltyCard, string userEmail)
     {
-        Email = email;
-        Points = 0;
+        newLoyaltyCard.UserEmail = userEmail;
+        var createdLoyaltyCard = await _loyaltyCardService.CreateAsync(newLoyaltyCard);
+        return CreatedAtAction(nameof(GetLoyaltyCard), new { userEmail, businessId = createdLoyaltyCard.BusinessId }, createdLoyaltyCard);
     }
-}
-
-public class CoffeeShopLoyaltySystem
-{
-    private Dictionary<string, Customer> customers;
-
-    public CoffeeShopLoyaltySystem()
-    {
-        customers = new Dictionary<string, Customer>();
-    }
-
-    public void AddCustomer(Customer customer)
-    {
-        if (!customers.ContainsKey(customer.Email))
-        {
-            customers[customer.Email] = customer;
-        }
-        else
-        {
-            Console.WriteLine("Customer already exists.");
-        }
-    }
-
-    public void ScanQR(string email)
-    {
-        if (customers.ContainsKey(email))
-        {
-            customers[email].Points += 1;
-            Console.WriteLine($"{email} now has {customers[email].Points} points.");
-
-            if (customers[email].Points >= 10)
-            {
-                Console.WriteLine($"{email} earned a free coffee!");
-                customers[email].Points = 0;
-            }
-        }
-        else
-        {
-            Console.WriteLine("Customer not found.");
-        }
-    }
-
-    public void PrintCustomerPoints()
-    {
-        Console.WriteLine("\nCustomer Points:");
-        foreach (var customer in customers)
-        {
-            Console.WriteLine($"{customer.Value.Email}: {customer.Value.Points} points");
-        }
-    }
+    
+    [HttpGet("{businessId:guid}")]
+    public async Task<IActionResult> GetLoyaltyCard(Guid businessId, string userEmail) => Ok(await _loyaltyCardService.GetByIdAsync(businessId, userEmail));
 }

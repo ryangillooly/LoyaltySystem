@@ -7,6 +7,6 @@ namespace LoyaltySystem.Core.Interfaces;
 public interface ILoyaltyCardService
 {
     Task<IEnumerable<LoyaltyCard>> GetAllAsync();
-    Task<LoyaltyCard> GetByIdAsync(Guid id);
-    // ... (Other methods like CreateAsync, Update, DeleteAsync)
+    Task<LoyaltyCard> GetByIdAsync(Guid id, string userEmail);
+    Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard);
 }

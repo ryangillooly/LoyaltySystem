@@ -34,6 +34,8 @@ public class BusinessRepository : IRepository<Business>
             { "SK",          new AttributeValue { S = "META#BUSINESSINFO" }},
          
             // New Type attribute
+            { "Id",           new AttributeValue { S = newBusiness.Id.ToString()} },
+            { "OwnerId",      new AttributeValue { S = newBusiness.OwnerId.ToString()} },
             { "Type",         new AttributeValue { S = newBusiness.GetType().Name} },
             { "Name",         new AttributeValue { S = newBusiness.Name }},
             { "OpeningHours", new AttributeValue { S = openingHoursJson }},

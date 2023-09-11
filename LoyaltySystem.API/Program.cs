@@ -15,7 +15,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAWSService<IAmazonDynamoDB>();
 
 // Add Repositories
-builder.Services.AddScoped<IRepository<LoyaltyCard>, LoyaltyCardRepository>();
+builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRepository<Business>, BusinessRepository>();
 

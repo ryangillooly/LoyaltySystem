@@ -4,11 +4,12 @@ namespace LoyaltySystem.Core.Models;
 
 public class LoyaltyCard
 {
-    public Guid Id { get; set; }
-    public Guid BusinessId { get; set; }
-    public Guid UserId { get; set; }
-    public int StampCount { get; set; }
-    public DateTime DateIssued { get; set; }
-    public DateTime DateLastStamped { get; set; }
-    public LoyaltyStatus Status { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid BusinessId { get; set; } = Guid.Empty;
+    public Guid UserId { get; set; } = Guid.Empty;
+    public string UserEmail { get; set; } = string.Empty;
+    public int StampCount { get; set; } = 0;
+    public DateTime DateIssued { get; set; } = DateTime.UtcNow;
+    public DateTime DateLastStamped { get; set; } = DateTime.UtcNow;
+    public LoyaltyStatus Status { get; set; } = LoyaltyStatus.Active;
 }

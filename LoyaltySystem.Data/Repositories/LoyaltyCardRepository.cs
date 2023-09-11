@@ -1,73 +1,128 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
-using LoyaltySystem.Core;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Data.Repositories;
 
-public class LoyaltyCardRepository : IRepository<LoyaltyCard>
+public class LoyaltyCardRepository : ILoyaltyCardRepository
 {
-    /*private readonly YourDbContext _context;
+    private readonly IAmazonDynamoDB _dynamoDb;
+    private readonly DynamoDbSettings _dynamoDbSettings;
 
-    public LoyaltyCardRepository(YourDbContext context)
+    public LoyaltyCardRepository(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings)
     {
-        _context = context;
+        _dynamoDb         = dynamoDb;
+        _dynamoDbSettings = dynamoDbSettings;
     }
+    
+    public async Task<LoyaltyCard> AddAsync(LoyaltyCard newLoyaltyCard)
+    {
+        
+        var businessItem = new Dictionary<string, AttributeValue>
+        {
+            // New PK and SK patterns
+            { "PK",          new AttributeValue { S = "BUSINESS#" + newLoyaltyCard.BusinessId }},
+            { "SK",          new AttributeValue { S = "CARD#"     + newLoyaltyCard.Id }},
+            
+            // New Type attribute
+            { "Id",           new AttributeValue { S = newLoyaltyCard.Id.ToString() }},
+            { "BusinessId",   new AttributeValue { S = newLoyaltyCard.BusinessId.ToString() }},
+            { "Type",         new AttributeValue { S = newLoyaltyCard.GetType().Name }},
+        };
+      
+        var businessRequest = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = businessItem,
+            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+        };
+      
+        try
+        {
+            var response = await _dynamoDb.PutItemAsync(businessRequest);
+        }
+        catch (ConditionalCheckFailedException)
+        {
+            throw new Exception($"Cannot create Business Loyalty Card");
+        }
+        
+        //************************************************
+        
+        var userItem = new Dictionary<string, AttributeValue>
+        {
+            // New PK and SK patterns
+            { "PK",          new AttributeValue { S = "USER#"     + newLoyaltyCard.UserEmail }},
+            { "SK",          new AttributeValue { S = "BUSINESS#" + newLoyaltyCard.BusinessId }},
+            
+            // New Type attribute
+            { "CardId",        new AttributeValue { S = newLoyaltyCard.Id.ToString() }},
+            { "BusinessId",    new AttributeValue { S = newLoyaltyCard.BusinessId.ToString() }},
+            { "Type",          new AttributeValue { S = newLoyaltyCard.GetType().Name }},
+            { "StampCount",    new AttributeValue { N = newLoyaltyCard.StampCount.ToString() }},
+            { "DateIssued",    new AttributeValue { S = newLoyaltyCard.DateIssued.ToString() }},
+            { "LastStampDate", new AttributeValue { S = newLoyaltyCard.DateLastStamped.ToString() }},
+            { "Status",        new AttributeValue { S = newLoyaltyCard.Status.ToString() }},
+        };
+      
+        var userRequest = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = userItem
+        };
+      
+        try
+        {
+            var response = await _dynamoDb.PutItemAsync(userRequest);
+        }
+        catch (ConditionalCheckFailedException)
+        {
+            throw new Exception($"Cannot create user loyalty card");
+        }
 
-    public async Task<IEnumerable<LoyaltyCard>> GetAllAsync()
-    {
-        return await _context.LoyaltyCards.ToListAsync();
+        // TODO: Add error handling based on response
+        return newLoyaltyCard;
     }
+    
+   public Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
+   // public Task<LoyaltyCard> GetByIdAsync(Guid id) => throw new NotImplementedException();
+   public async Task<LoyaltyCard> GetByIdAsync(Guid id, string userEmail)
+   {
+       var request = new GetItemRequest
+       {
+           TableName = _dynamoDbSettings.TableName,
+           Key = new Dictionary<string, AttributeValue>
+           {
+               { "PK", new AttributeValue { S = $"USER#{userEmail}" } },
+               { "SK", new AttributeValue { S = $"BUSINESS#{id}" } }  // this may need adjustment based on your data model
+           }
+       };
 
-    public async Task<LoyaltyCard> GetByIdAsync(int id)
-    {
-        return await _context.LoyaltyCards.FindAsync(id);
-    }
+       var response = await _dynamoDb.GetItemAsync(request);
 
-    public async Task AddAsync(LoyaltyCard entity)
-    {
-        await _context.LoyaltyCards.AddAsync(entity);
-        await _context.SaveChangesAsync();
-    }
+       if (response.Item == null || !response.IsItemSet)
+       {
+           return null;  // Not found
+       }
 
-    public async Task UpdateAsync(LoyaltyCard entity)
-    {
-        _context.LoyaltyCards.Update(entity);
-        await _context.SaveChangesAsync();
-    }
+       return MapToLoyaltyCard(response.Item);
+   }
 
-    public async Task DeleteAsync(int id)
-    {
-        var entity = await GetByIdAsync(id);
-        _context.LoyaltyCards.Remove(entity);
-        await _context.SaveChangesAsync();
-    }
-    */
-
-    public Task<IEnumerable<LoyaltyCard>> GetAllAsync()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<LoyaltyCard> GetByIdAsync(Guid id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<LoyaltyCard> AddAsync(LoyaltyCard entity)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task UpdateAsync(LoyaltyCard entity)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteAsync(Guid id)
-    {
-        throw new NotImplementedException();
-    }
+   private LoyaltyCard MapToLoyaltyCard(Dictionary<string, AttributeValue> item)
+   {
+       return new LoyaltyCard
+       {
+           Id = Guid.Parse(item["CardId"].S),
+           BusinessId = Guid.Parse(item["BusinessId"].S),
+           StampCount = int.Parse(item["StampCount"].N),
+           DateIssued = DateTime.Parse(item["DateIssued"].S),
+           DateLastStamped = DateTime.Parse(item["LastStampDate"].S),
+           Status = (LoyaltyStatus)Enum.Parse(typeof(LoyaltyStatus), item["Status"].S)
+       };
+   }
+   
+   public Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
+   public Task DeleteAsync(Guid id) => throw new NotImplementedException();
 }

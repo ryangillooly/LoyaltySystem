@@ -15,7 +15,7 @@ public class BusinessesController : ControllerBase
     public async Task<IActionResult> CreateBusiness([FromBody] Business newBusiness)
     {
         var createdBusiness = await _businessService.CreateAsync(newBusiness);
-        return CreatedAtAction(nameof(GetBusiness), new { id = createdBusiness.ContactInfo.Email }, createdBusiness);
+        return CreatedAtAction(nameof(GetBusiness), new { id = createdBusiness.Id }, createdBusiness);
     }
     
     [HttpGet("{id}")]

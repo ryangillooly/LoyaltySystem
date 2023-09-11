@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
-using System.Threading.Tasks;
-using LoyaltySystem.Core.Interfaces;
-using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.API.Controllers
 {

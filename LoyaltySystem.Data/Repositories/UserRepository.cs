@@ -32,6 +32,7 @@ public class UserRepository : IUserRepository
          { "SK",          new AttributeValue { S = "META#USERINFO" } },
          
          // New Type attribute
+         { "Id",          new AttributeValue { S = newUser.Id.ToString()} },
          { "Type",        new AttributeValue { S = newUser.GetType().Name} },
          { "Email",       new AttributeValue { S = newUser.ContactInfo.Email } },
          { "PhoneNumber", new AttributeValue { S = newUser.ContactInfo.PhoneNumber } },
