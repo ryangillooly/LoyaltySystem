@@ -38,10 +38,12 @@ namespace LoyaltySystem.Services
         public async Task UpdatePermissionsAsync(List<UserPermission> permissions)
         {
             await _userRepository.UpdatePermissionsAsync(permissions);
-            
-            
-            var auditRecord = new AuditRecord(EntityType.User, permissions.UserId, ActionType.PermissionsAltered)
-            await _auditService.CreateAuditRecordAsync<UserPermission>(permissions);
+
+            foreach(var permission in permissions)
+            {
+                var auditRecord = new AuditRecord(EntityType.User, Guid.Parse(permission.UserId), ActionType.PermissionsAltered);
+                await _auditService.CreateAuditRecordAsync<UserPermission>(auditRecord);
+            }
         }
         
 

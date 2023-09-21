@@ -50,6 +50,7 @@ public class AuditRepository : IAuditRepository
         try
         {
             await _dynamoDb.PutItemAsync(request);
+            Console.WriteLine($"Audit Record Written - {auditRecord.AuditId}");
         }
         catch (ConditionalCheckFailedException)
         {

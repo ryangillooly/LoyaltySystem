@@ -21,19 +21,24 @@ namespace LoyaltySystem.API.Controllers
         
         [HttpPut]
         [Route("{userId}/permissions")]
-        public async Task<bool> UpdatePermissions(string userId, [FromBody] UserPermission permission)
+        public async Task<bool> UpdatePermissions(string userId, [FromBody] List<UserPermission> permissions)
         {
-            var permissions = new List<UserPermission>
-            {
-                new ()
-                {
-                    UserId = userId,
-                    BusinessId = permission.BusinessId,
-                    Role = Enum.Parse<UserRole>(permission.Role.ToString())
-                }
-            };
+            var permissionList = new List<UserPermission>();
             
-            await _userService.UpdatePermissionsAsync(permissions);
+            foreach (var permission in permissions)
+            {
+                permissionList.Add
+                (
+                    new UserPermission
+                    {
+                        UserId = userId,
+                        BusinessId = permission.BusinessId,
+                        Role = Enum.Parse<UserRole>(permission.Role.ToString())
+                    }
+                );
+            }
+
+            await _userService.UpdatePermissionsAsync(permissionList);
             return true;
         }
         
