@@ -3,7 +3,7 @@ using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
 
-public interface IAuditService 
+public interface IAuditRepository
 {
-    Task CreateAuditRecordAsync<T>(AuditRecord auditRecord);
+    Task CreateAuditRecordAsync<T> (AuditRecord auditRecord);
 }

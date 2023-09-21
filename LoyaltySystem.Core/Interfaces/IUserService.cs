@@ -11,4 +11,5 @@ public interface IUserService
     Task<User> CreateAsync(User newUser);
     Task DeleteAsync(Guid id);
     Task UpdateAsync(User user);
+    Task UpdatePermissionsAsync(List<UserPermission> permissions);
 }

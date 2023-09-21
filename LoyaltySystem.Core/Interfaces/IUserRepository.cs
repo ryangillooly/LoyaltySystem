@@ -11,4 +11,5 @@ public interface IUserRepository
     Task UpdateAsync(User entity);
     Task DeleteAsync(Guid id);
     Task<bool> DoesEmailExistAsync(string email);
+    Task UpdatePermissionsAsync(List<UserPermission> permissions);
 }

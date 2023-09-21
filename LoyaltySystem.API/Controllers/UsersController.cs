@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.Enums;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -16,6 +17,24 @@ namespace LoyaltySystem.API.Controllers
         {
             var createdUser = await _userService.CreateAsync(newUser);
             return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
+        }
+        
+        [HttpPut]
+        [Route("{userId}/permissions")]
+        public async Task<bool> UpdatePermissions(string userId, [FromBody] UserPermission permission)
+        {
+            var permissions = new List<UserPermission>
+            {
+                new ()
+                {
+                    UserId = userId,
+                    BusinessId = permission.BusinessId,
+                    Role = Enum.Parse<UserRole>(permission.Role.ToString())
+                }
+            };
+            
+            await _userService.UpdatePermissionsAsync(permissions);
+            return true;
         }
         
         [HttpGet]

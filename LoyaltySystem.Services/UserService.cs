@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -23,10 +24,24 @@ namespace LoyaltySystem.Services
 
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
-      
+
+            var auditRecord = new AuditRecord(EntityType.User, newUser.Id, ActionType.CreateAccount)
+            {
+                Source = "Mobile Webpage"
+            };
+            
             await _userRepository.CreateUserAsync(newUser);
-            await _auditService.CreateAuditRecordAsync<User>(newUser.Id, InteractionType.SignUp);
+            await _auditService.CreateAuditRecordAsync<User>(auditRecord);
             return newUser;
+        }
+        
+        public async Task UpdatePermissionsAsync(List<UserPermission> permissions)
+        {
+            await _userRepository.UpdatePermissionsAsync(permissions);
+            
+            
+            var auditRecord = new AuditRecord(EntityType.User, permissions.UserId, ActionType.PermissionsAltered)
+            await _auditService.CreateAuditRecordAsync<UserPermission>(permissions);
         }
         
 

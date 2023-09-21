@@ -18,6 +18,7 @@ builder.Services.AddAWSService<IAmazonDynamoDB>();
 builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRepository<Business>, BusinessRepository>();
+builder.Services.AddScoped<IAuditRepository, AuditRepository>();
 
 // Add Services
 builder.Services.AddScoped<IBusinessService, BusinessService>();
