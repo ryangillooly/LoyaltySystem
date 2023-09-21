@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Extensions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -13,37 +14,33 @@ public class UserRepository : IUserRepository
 {
    private readonly IAmazonDynamoDB _dynamoDb;
    private readonly DynamoDbSettings _dynamoDbSettings;
-
-   public UserRepository(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings)
+   private readonly IAuditService _auditService;
+   
+   public UserRepository(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings, IAuditService auditService)
    {
       _dynamoDb         = dynamoDb;
       _dynamoDbSettings = dynamoDbSettings;
+      _auditService     = auditService;
    }
 
-   public async Task<User> AddAsync(User newUser)
+   public async Task CreateUserAsync(User newUser)
    {
-      // Serializing the Permissions dictionary
-      var serializedPermissions = JsonConvert.SerializeObject(newUser.Permissions);
-      
       var item = new Dictionary<string, AttributeValue>
       {
          // New PK and SK patterns
-         { "PK",          new AttributeValue { S = "USER#" + newUser.ContactInfo.Email.ToLower() } },
-         { "SK",          new AttributeValue { S = "META#USERINFO" } },
-         
+         { "PK", new AttributeValue { S = "User#" + newUser.Id } },
+         { "SK", new AttributeValue { S = "Meta#UserInfo" } },
+
          // New Type attribute
-         { "Id",          new AttributeValue { S = newUser.Id.ToString()} },
-         { "Type",        new AttributeValue { S = newUser.GetType().Name} },
-         { "Email",       new AttributeValue { S = newUser.ContactInfo.Email } },
+         { "UserId", new AttributeValue { S = newUser.Id.ToString() } },
+         { "EntityType", new AttributeValue { S = newUser.GetType().Name.ToPascalCase() } },
+         { "Email", new AttributeValue { S = newUser.ContactInfo.Email } },
          { "PhoneNumber", new AttributeValue { S = newUser.ContactInfo.PhoneNumber } },
-         { "FirstName",   new AttributeValue { S = newUser.FirstName } },
-         { "LastName",    new AttributeValue { S = newUser.LastName } },
-         { "Status",      new AttributeValue { S = newUser.Status.ToString() } },
-         
-         // Serialized Permissions attribute
-         { "UserPermissions", new AttributeValue { S = serializedPermissions } }
+         { "FirstName", new AttributeValue { S = newUser.FirstName.ToPascalCase() } },
+         { "LastName", new AttributeValue { S = newUser.LastName.ToPascalCase() } },
+         { "Status", new AttributeValue { S = newUser.Status.ToString().ToPascalCase() } },
       };
-      
+
       // Conditionally add DateOfBirth if it's not null
       if (newUser.DateOfBirth.HasValue)
          item["DateOfBirth"] = new AttributeValue { S = newUser.DateOfBirth.Value.ToString("yyyy-MM-dd") };
@@ -54,19 +51,37 @@ public class UserRepository : IUserRepository
          Item = item,
          ConditionExpression = "attribute_not_exists(PK)"
       };
-      
+
       try
       {
          var response = await _dynamoDb.PutItemAsync(request);
       }
       catch (ConditionalCheckFailedException)
       {
-         throw new Exception($"Email {newUser.ContactInfo.Email} is already in use.");
+         throw new Exception($"Id {newUser.Id} is already in use.");
       }
-
-      // TODO: Add error handling based on response
-      return newUser;
+      
+      
    }
+
+   public async Task<bool> DoesEmailExistAsync(string email)
+   {
+      var request = new QueryRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         IndexName = "Emails", // Use GSI for querying
+         KeyConditionExpression = "Email = :emailValue", // Assuming your GSI PK is named "Email"
+         ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+         {
+            {":emailValue", new AttributeValue { S = email } }
+         },
+         Limit = 1 // We only need to know if at least one item exists
+      };
+
+      var response = await _dynamoDb.QueryAsync(request);
+      return response.Count > 0; // If count > 0, email exists
+   }
+   
    public async Task<User> GetByIdAsync(Guid id)
    {
       var request = new GetItemRequest
@@ -100,19 +115,6 @@ public class UserRepository : IUserRepository
       return user;
    }
 
-   public async Task<bool> ValidateAsync(UserLoginDTO userLoginDto)
-   {
-      // Make call to DynamoDb to validate Email + Pass
-      var request = new GetItemRequest
-      {
-         TableName = _dynamoDbSettings.TableName,
-         Key = new Dictionary<string, AttributeValue> { { "Email", new AttributeValue { S = userLoginDto.Email } } }
-      };
-
-      var response = await _dynamoDb.GetItemAsync(request);
-
-      return response.Item != null && response.IsItemSet;
-   }
    
    
    // Not Implemented

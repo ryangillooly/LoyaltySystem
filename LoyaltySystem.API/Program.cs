@@ -23,6 +23,7 @@ builder.Services.AddScoped<IRepository<Business>, BusinessRepository>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILoyaltyCardService, LoyaltyCardService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 // Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
 var dynamoDbSettings = new DynamoDbSettings();
