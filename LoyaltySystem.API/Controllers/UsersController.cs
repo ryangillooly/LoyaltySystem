@@ -19,29 +19,6 @@ namespace LoyaltySystem.API.Controllers
             return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
         }
         
-        [HttpPut]
-        [Route("{userId}/permissions")]
-        public async Task<bool> UpdatePermissions(string userId, [FromBody] List<UserPermission> permissions)
-        {
-            var permissionList = new List<UserPermission>();
-            
-            foreach (var permission in permissions)
-            {
-                permissionList.Add
-                (
-                    new UserPermission
-                    {
-                        UserId = userId,
-                        BusinessId = permission.BusinessId,
-                        Role = Enum.Parse<UserRole>(permission.Role.ToString())
-                    }
-                );
-            }
-
-            await _userService.UpdatePermissionsAsync(permissionList);
-            return true;
-        }
-        
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 

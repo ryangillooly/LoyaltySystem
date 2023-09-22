@@ -112,44 +112,7 @@ public class UserRepository : IUserRepository
 
       return user;
    }
-
-   public async Task UpdatePermissionsAsync(List<UserPermission> permissions)
-   {
-      foreach (var permission in permissions)
-      {
-         var item = new Dictionary<string, AttributeValue>
-         {
-            // Assuming 'USER#' as a prefix for the user PK and 'BUSINESS#' as a prefix for businesses
-            { "PK",         new AttributeValue { S = $"User#{permission.UserId}" }},
-            { "SK",         new AttributeValue { S = $"Permission#Business#{permission.BusinessId}" }},
-            { "UserId",     new AttributeValue { S = $"{permission.UserId}" }},
-            { "BusinessId", new AttributeValue { S = $"{permission.BusinessId}" }},
-            { "EntityType", new AttributeValue { S = $"{EntityType.Permission}" }},
-            { "Role",       new AttributeValue { S = $"{permission.Role}" }},
-            { "Timestamp",  new AttributeValue { S = $"{DateTime.UtcNow}" }},
-            
-            { "BusinessUserList-PK",  new AttributeValue { S = $"{permission.BusinessId}" }},
-            { "BusinessUserList-SK",  new AttributeValue { S = $"Permission#User#{permission.UserId}" }},
-         };
-
-         var request = new PutItemRequest
-         {
-            TableName = _dynamoDbSettings.TableName,
-            Item = item
-         };
-
-         try
-         {
-            await _dynamoDb.PutItemAsync(request);
-         }
-         catch (Exception ex)
-         {
-            // Handle exception (log it, throw it, etc.)
-            throw new Exception($"Failed to update permission for user {permission.UserId} for business {permission.BusinessId}.", ex);
-         }
-      }
-   }
-
+   
    // Not Implemented
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
    public Task DeleteAsync(Guid id) => throw new NotImplementedException();

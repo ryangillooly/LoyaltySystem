@@ -3,9 +3,9 @@ using LoyaltySystem.Core.Enums;
 
 namespace LoyaltySystem.Core.Models;
 
-public class UserPermission
+public class Permission
 {
-    public string? UserId { get; set; }
-    public string BusinessId { get; set; }
+    public Guid UserId { get; set; }
+    public Guid BusinessId { get; set; }
     public UserRole Role { get; set; }
 }

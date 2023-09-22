@@ -5,13 +5,14 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core;
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
-public class BusinessRepository : IRepository<Business>
+public class BusinessRepository : IBusinessRepository
 {
     private readonly IAmazonDynamoDB _dynamoDb;
     private readonly DynamoDbSettings _dynamoDbSettings;
@@ -30,8 +31,8 @@ public class BusinessRepository : IRepository<Business>
         var item = new Dictionary<string, AttributeValue>
         {
             // New PK and SK patterns
-            { "PK",          new AttributeValue { S = "BUSINESS#" + newBusiness.Id }},
-            { "SK",          new AttributeValue { S = "META#BUSINESSINFO" }},
+            { "PK",          new AttributeValue { S = "Business#" + newBusiness.Id }},
+            { "SK",          new AttributeValue { S = "Meta#BusinessInfo" }},
          
             // New Type attribute
             { "Id",           new AttributeValue { S = newBusiness.Id.ToString()} },
@@ -66,23 +67,45 @@ public class BusinessRepository : IRepository<Business>
         return newBusiness;
     }
     
-   public Task<IEnumerable<Business>> GetAllAsync()
-   {
-       throw new NotImplementedException();
-   }
+    public async Task UpdatePermissionsAsync(List<Permission> permissions)
+    {
+        foreach (var permission in permissions)
+        {
+            var item = new Dictionary<string, AttributeValue>
+            {
+                // Assuming 'USER#' as a prefix for the user PK and 'BUSINESS#' as a prefix for businesses
+                { "PK",         new AttributeValue { S = $"User#{permission.UserId}" }},
+                { "SK",         new AttributeValue { S = $"Permission#Business#{permission.BusinessId}" }},
+                { "UserId",     new AttributeValue { S = $"{permission.UserId}" }},
+                { "BusinessId", new AttributeValue { S = $"{permission.BusinessId}" }},
+                { "EntityType", new AttributeValue { S = $"{EntityType.Permission}" }},
+                { "Role",       new AttributeValue { S = $"{permission.Role}" }},
+                { "Timestamp",  new AttributeValue { S = $"{DateTime.UtcNow}" }},
+            
+                { "BusinessUserList-PK",  new AttributeValue { S = $"{permission.BusinessId}" }},
+                { "BusinessUserList-SK",  new AttributeValue { S = $"Permission#User#{permission.UserId}" }},
+            };
 
-   public Task<Business> GetByIdAsync(Guid id)
-   {
-       throw new NotImplementedException();
-   }
-   
-   public Task UpdateAsync(Business entity)
-   {
-       throw new NotImplementedException();
-   }
+            var request = new PutItemRequest
+            {
+                TableName = _dynamoDbSettings.TableName,
+                Item = item
+            };
 
-   public Task DeleteAsync(Guid id)
-   {
-       throw new NotImplementedException();
-   }
+            try
+            {
+                await _dynamoDb.PutItemAsync(request);
+            }
+            catch (Exception ex)
+            {
+                // Handle exception (log it, throw it, etc.)
+                throw new Exception($"Failed to update permission for user {permission.UserId} for business {permission.BusinessId}.", ex);
+            }
+        }
+    }
+    
+   public Task<IEnumerable<Business>> GetAllAsync() => throw new NotImplementedException();
+   public Task<Business> GetByIdAsync(Guid id) => throw new NotImplementedException();
+   public Task UpdateAsync(Business entity) => throw new NotImplementedException();
+   public Task DeleteAsync(Guid id) => throw new NotImplementedException();
 }

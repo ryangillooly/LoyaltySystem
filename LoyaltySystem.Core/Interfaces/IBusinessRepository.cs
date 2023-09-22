@@ -4,12 +4,10 @@ namespace LoyaltySystem.Core.Interfaces;
 
 public interface IBusinessRepository
 {
-    Task<Business> GetByIdAsync(Guid id);
     Task<IEnumerable<Business>> GetAllAsync();
-    Task AddAsync(Business business);
-    Task UpdateAsync(Business business);
+    Task<Business> GetByIdAsync(Guid id);
+    Task<Business> AddAsync(Business entity);
+    Task UpdateAsync(Business entity);
     Task DeleteAsync(Guid id);
-    Task<IEnumerable<User>> GetBusinessUsersAsync(Guid businessId);
-    Task AddUserToBusinessAsync(Guid businessId, Guid userId);
-    Task RemoveUserFromBusinessAsync(Guid businessId, Guid userId);
+    Task UpdatePermissionsAsync(List<Permission> permissions);
 }

@@ -35,18 +35,6 @@ namespace LoyaltySystem.Services
             return newUser;
         }
         
-        public async Task UpdatePermissionsAsync(List<UserPermission> permissions)
-        {
-            await _userRepository.UpdatePermissionsAsync(permissions);
-
-            foreach(var permission in permissions)
-            {
-                var auditRecord = new AuditRecord(EntityType.User, Guid.Parse(permission.UserId), ActionType.PermissionsAltered);
-                await _auditService.CreateAuditRecordAsync<UserPermission>(auditRecord);
-            }
-        }
-        
-
         public async Task<IEnumerable<User>> GetAllAsync() => await _userRepository.GetAllAsync();
         public async Task<User> GetByIdAsync(Guid id) => await _userRepository.GetByIdAsync(id);
         public async Task DeleteAsync(Guid id) => await _userRepository.DeleteAsync(id);
