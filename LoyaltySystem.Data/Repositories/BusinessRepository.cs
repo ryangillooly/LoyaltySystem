@@ -23,7 +23,7 @@ public class BusinessRepository : IBusinessRepository
         _dynamoDbSettings = dynamoDbSettings;
     }
     
-    public async Task<Business> AddAsync(Business newBusiness)
+    public async Task<Business> CreateAsync(Business newBusiness)
     {
         var openingHoursJson = JsonConvert.SerializeObject(newBusiness.OpeningHours);
         var locationJson     = JsonConvert.SerializeObject(newBusiness.Location);
@@ -35,7 +35,7 @@ public class BusinessRepository : IBusinessRepository
             { "SK",          new AttributeValue { S = "Meta#BusinessInfo" }},
          
             // New Type attribute
-            { "Id",           new AttributeValue { S = newBusiness.Id.ToString()} },
+            { "BusinessId",   new AttributeValue { S = newBusiness.Id.ToString()} },
             { "OwnerId",      new AttributeValue { S = newBusiness.OwnerId.ToString()} },
             { "Type",         new AttributeValue { S = newBusiness.GetType().Name} },
             { "Name",         new AttributeValue { S = newBusiness.Name }},

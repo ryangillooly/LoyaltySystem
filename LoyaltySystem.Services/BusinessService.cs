@@ -10,12 +10,37 @@ namespace LoyaltySystem.Services
     {
         private readonly IBusinessRepository _businessRepository;
         private readonly IAuditService       _auditService;
+        private readonly IEmailService       _emailService;
         
-        public BusinessService(IBusinessRepository businessRepository, IAuditService auditService) 
-            => (_businessRepository, _auditService) = (businessRepository, auditService);
-        
-        public async Task<Business> CreateAsync(Business newBusiness) => await _businessRepository.AddAsync(newBusiness);
-        
+        public BusinessService(IBusinessRepository businessRepository, IAuditService auditService, IEmailService emailService) 
+            => (_businessRepository, _auditService, _emailService) = (businessRepository, auditService, emailService);
+
+        public async Task<Business> CreateAsync(Business newBusiness)
+        {
+            var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
+
+            if (emailExists)
+                throw new InvalidOperationException("Email already exists");
+
+            var auditRecord = new AuditRecord(EntityType.Business, newBusiness.Id, ActionType.CreateAccount)
+            {
+                Source = "Mobile Webpage"
+            };
+            
+            var permission = new Permission
+            {
+                UserId     = newBusiness.OwnerId,
+                BusinessId = newBusiness.Id,
+                Role       = UserRole.Owner
+            };
+            
+            await _businessRepository.CreateAsync(newBusiness);
+            await _businessRepository.UpdatePermissionsAsync(new List<Permission>{permission});
+            await _auditService.CreateAuditRecordAsync<Business>(auditRecord);
+            
+            return newBusiness;
+        }
+
         public async Task UpdatePermissionsAsync(List<Permission> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);

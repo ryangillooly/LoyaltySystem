@@ -1,7 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Extensions;
+using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -23,7 +23,7 @@ public class UserRepository : IUserRepository
       _auditService     = auditService;
    }
 
-   public async Task CreateUserAsync(User newUser)
+   public async Task CreateAsync(User newUser)
    {
       var item = new Dictionary<string, AttributeValue>
       {
@@ -63,23 +63,7 @@ public class UserRepository : IUserRepository
       
       
    }
-   public async Task<bool> DoesEmailExistAsync(string email)
-   {
-      var request = new QueryRequest
-      {
-         TableName = _dynamoDbSettings.TableName,
-         IndexName = "Emails", // Use GSI for querying
-         KeyConditionExpression = "Email = :emailValue", // Assuming your GSI PK is named "Email"
-         ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-         {
-            {":emailValue", new AttributeValue { S = email } }
-         },
-         Limit = 1 // We only need to know if at least one item exists
-      };
-
-      var response = await _dynamoDb.QueryAsync(request);
-      return response.Count > 0; // If count > 0, email exists
-   }
+   
    public async Task<User> GetByIdAsync(Guid id)
    {
       var request = new GetItemRequest

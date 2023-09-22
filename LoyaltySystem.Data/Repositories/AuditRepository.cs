@@ -1,7 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Extensions;
+using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;

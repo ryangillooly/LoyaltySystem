@@ -19,12 +19,14 @@ builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IAuditRepository, AuditRepository>();
+builder.Services.AddScoped<IEmailRepository, EmailRepository>();
 
 // Add Services
 builder.Services.AddScoped<IBusinessService, BusinessService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILoyaltyCardService, LoyaltyCardService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
 var dynamoDbSettings = new DynamoDbSettings();

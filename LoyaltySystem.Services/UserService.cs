@@ -11,16 +11,18 @@ namespace LoyaltySystem.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IAuditService _auditService;
+        private readonly IEmailService _emailService;
 
-        public UserService(IUserRepository userRepository, IAuditService auditService)
+        public UserService(IUserRepository userRepository, IAuditService auditService, IEmailService emailService)
         {
             _userRepository = userRepository;
             _auditService = auditService;
+            _emailService = emailService;
         }
 
         public async Task<User> CreateAsync(User newUser)
         {
-            var emailExists = await _userRepository.DoesEmailExistAsync(newUser.ContactInfo.Email);
+            var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
 
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
@@ -30,8 +32,9 @@ namespace LoyaltySystem.Services
                 Source = "Mobile Webpage"
             };
             
-            await _userRepository.CreateUserAsync(newUser);
+            await _userRepository.CreateAsync(newUser);
             await _auditService.CreateAuditRecordAsync<User>(auditRecord);
+            
             return newUser;
         }
         

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace LoyaltySystem.Core.Extensions;
+namespace LoyaltySystem.Core.Utilities;
 
 public static class StringExtensions
 {
