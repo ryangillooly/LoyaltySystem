@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
 
@@ -6,9 +7,21 @@ namespace LoyaltySystem.Services;
 public class LoyaltyCardService : ILoyaltyCardService
 {
     private readonly ILoyaltyCardRepository _loyaltyCardRepository;
-    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository) => _loyaltyCardRepository = loyaltyCardRepository;
+    private readonly IAuditService          _auditService;
+    
+    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository, IAuditService auditService) => 
+        (_loyaltyCardRepository, _auditService) = (loyaltyCardRepository, auditService);
 
-    public async Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard) => await _loyaltyCardRepository.AddAsync(newLoyaltyCard);
+    public async Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard)
+    {
+        var auditRecord = new AuditRecord(EntityType.LoyaltyCard, newLoyaltyCard.Id, ActionType.CreateLoyaltyCard);
+        
+        await _loyaltyCardRepository.CreateAsync(newLoyaltyCard);
+        await _auditService.CreateAuditRecordAsync<LoyaltyCard>(auditRecord);
+
+        return newLoyaltyCard;
+    }
+
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => await _loyaltyCardRepository.GetAllAsync();
-    public async Task<LoyaltyCard> GetByIdAsync(Guid id, string userEmail) => await _loyaltyCardRepository.GetByIdAsync(id, userEmail);
+    public async Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId) => await _loyaltyCardRepository.GetByIdAsync(id, userId);
 }

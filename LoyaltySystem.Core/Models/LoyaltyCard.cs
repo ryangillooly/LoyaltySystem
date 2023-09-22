@@ -8,7 +8,7 @@ public class LoyaltyCard
     public Guid BusinessId { get; set; } = Guid.Empty;
     public Guid UserId { get; set; } = Guid.Empty;
     public string UserEmail { get; set; } = string.Empty;
-    public int StampCount { get; set; } = 0;
+    public int Points { get; set; } = 1;
     public DateTime DateIssued { get; set; } = DateTime.UtcNow;
     public DateTime DateLastStamped { get; set; } = DateTime.UtcNow;
     public LoyaltyStatus Status { get; set; } = LoyaltyStatus.Active;

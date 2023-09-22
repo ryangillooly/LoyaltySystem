@@ -5,6 +5,7 @@ public enum ActionType
     Login,
     Logout,
     CreateAccount,
+    CreateLoyaltyCard,
     DeactivateAccount,
     StampCard,
     RedeemReward,

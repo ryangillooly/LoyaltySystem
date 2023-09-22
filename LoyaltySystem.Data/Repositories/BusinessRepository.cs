@@ -37,7 +37,7 @@ public class BusinessRepository : IBusinessRepository
             // New Type attribute
             { "BusinessId",   new AttributeValue { S = newBusiness.Id.ToString()} },
             { "OwnerId",      new AttributeValue { S = newBusiness.OwnerId.ToString()} },
-            { "Type",         new AttributeValue { S = newBusiness.GetType().Name} },
+            { "EntityType",   new AttributeValue { S = newBusiness.GetType().Name} },
             { "Name",         new AttributeValue { S = newBusiness.Name }},
             { "OpeningHours", new AttributeValue { S = openingHoursJson }},
             { "Location",     new AttributeValue { S = locationJson }},
@@ -89,12 +89,17 @@ public class BusinessRepository : IBusinessRepository
             var request = new PutItemRequest
             {
                 TableName = _dynamoDbSettings.TableName,
-                Item = item
+                Item = item,
+                ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
             };
 
             try
             {
                 await _dynamoDb.PutItemAsync(request);
+            }
+            catch (ConditionalCheckFailedException)
+            {
+                throw new Exception($"Permissions for Business {permission.BusinessId}, for User {permission.UserId} already exists");
             }
             catch (Exception ex)
             {
