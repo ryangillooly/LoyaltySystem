@@ -17,14 +17,13 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         _dynamoDb         = dynamoDb;
         _dynamoDbSettings = dynamoDbSettings;
     }
-    
     public async Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard)
     {
         var userItem = new Dictionary<string, AttributeValue>
         {
             // New PK and SK patterns
             { "PK",          new AttributeValue { S = $"User#{newLoyaltyCard.UserId}" }},
-            { "SK",          new AttributeValue { S = $"Business#{newLoyaltyCard.BusinessId}" }},
+            { "SK",          new AttributeValue { S = $"Card#Business#{newLoyaltyCard.BusinessId}" }},
             
             // New Type attribute
             { "CardId",        new AttributeValue { S = $"{newLoyaltyCard.Id}" }},
@@ -59,44 +58,10 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         // TODO: Add error handling based on response
         return newLoyaltyCard;
     }
-    
-   public Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
-   // public Task<LoyaltyCard> GetByIdAsync(Guid id) => throw new NotImplementedException();
-   public async Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId)
-   {
-       var request = new GetItemRequest
-       {
-           TableName = _dynamoDbSettings.TableName,
-           Key = new Dictionary<string, AttributeValue>
-           {
-               { "PK", new AttributeValue { S = $"User#{userId}" } },
-               { "SK", new AttributeValue { S = $"Business#{id}" } }  // this may need adjustment based on your data model
-           }
-       };
 
-       var response = await _dynamoDb.GetItemAsync(request);
-
-       if (response.Item == null || !response.IsItemSet)
-       {
-           return null;  // Not found
-       }
-
-       return MapToLoyaltyCard(response.Item);
-   }
-
-   private LoyaltyCard MapToLoyaltyCard(Dictionary<string, AttributeValue> item)
-   {
-       return new LoyaltyCard
-       {
-           Id = Guid.Parse(item["CardId"].S),
-           BusinessId = Guid.Parse(item["BusinessId"].S),
-           Points = int.Parse(item["StampCount"].N),
-           DateIssued = DateTime.Parse(item["DateIssued"].S),
-           DateLastStamped = DateTime.Parse(item["LastStampDate"].S),
-           Status = (LoyaltyStatus)Enum.Parse(typeof(LoyaltyStatus), item["Status"].S)
-       };
-   }
-   
-   public Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
-   public Task DeleteAsync(Guid id) => throw new NotImplementedException();
+    public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
+    public Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
+    public Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId) => throw new NotImplementedException();
+    public Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
+    public Task DeleteAsync(Guid id) => throw new NotImplementedException();
 }

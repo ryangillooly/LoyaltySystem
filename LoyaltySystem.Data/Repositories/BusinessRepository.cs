@@ -23,7 +23,7 @@ public class BusinessRepository : IBusinessRepository
         _dynamoDbSettings = dynamoDbSettings;
     }
     
-    public async Task<Business> CreateAsync(Business newBusiness)
+    public async Task<Business> CreateBusinessAsync(Business newBusiness)
     {
         var openingHoursJson = JsonConvert.SerializeObject(newBusiness.OpeningHours);
         var locationJson     = JsonConvert.SerializeObject(newBusiness.Location);
@@ -66,7 +66,13 @@ public class BusinessRepository : IBusinessRepository
         // TODO: Add error handling based on response
         return newBusiness;
     }
-    
+
+    /*
+     public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign)
+    {
+        
+    }
+    */
     public async Task UpdatePermissionsAsync(List<Permission> permissions)
     {
         foreach (var permission in permissions)

@@ -34,7 +34,7 @@ namespace LoyaltySystem.Services
                 Role       = UserRole.Owner
             };
             
-            await _businessRepository.CreateAsync(newBusiness);
+            await _businessRepository.CreateBusinessAsync(newBusiness);
             await _businessRepository.UpdatePermissionsAsync(new List<Permission>{permission});
             await _auditService.CreateAuditRecordAsync<Business>(auditRecord);
             
