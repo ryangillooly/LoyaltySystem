@@ -5,6 +5,7 @@ using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Data.Clients;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -12,16 +13,11 @@ namespace LoyaltySystem.Data.Repositories;
 
 public class UserRepository : IUserRepository
 {
-   private readonly IAmazonDynamoDB _dynamoDb;
-   private readonly DynamoDbSettings _dynamoDbSettings;
+   private readonly IDynamoDbClient _dynamoDbClient;
    private readonly IAuditService _auditService;
-   
-   public UserRepository(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings, IAuditService auditService)
-   {
-      _dynamoDb         = dynamoDb;
-      _dynamoDbSettings = dynamoDbSettings;
-      _auditService     = auditService;
-   }
+
+   public UserRepository(IDynamoDbClient dynamoDbClient, IAuditService auditService) =>
+      (_dynamoDbClient, _auditService) = (dynamoDbClient, auditService);
 
    public async Task CreateAsync(User newUser)
    {
@@ -45,40 +41,12 @@ public class UserRepository : IUserRepository
       if (newUser.DateOfBirth.HasValue)
          item["DateOfBirth"] = new AttributeValue { S = newUser.DateOfBirth.Value.ToString("yyyy-MM-dd") };
 
-      var request = new PutItemRequest
-      {
-         TableName = _dynamoDbSettings.TableName,
-         Item = item,
-         ConditionExpression = "attribute_not_exists(PK)"
-      };
-
-      try
-      {
-         var response = await _dynamoDb.PutItemAsync(request);
-      }
-      catch (ConditionalCheckFailedException)
-      {
-         throw new Exception($"Id {newUser.Id} is already in use.");
-      }
-      
-      
+      await _dynamoDbClient.WriteRecord(item, "attribute_not_exists(PK)");
    }
    
    public async Task<User> GetByIdAsync(Guid id)
    {
-      var request = new GetItemRequest
-      {
-         TableName = _dynamoDbSettings.TableName,
-         Key = new Dictionary<string, AttributeValue> { { "UserId", new AttributeValue { S = id.ToString() } } }
-      };
-
-      var response = await _dynamoDb.GetItemAsync(request);
-
-      if (response.Item == null || !response.IsItemSet)
-      {
-         return null;  // or handle accordingly
-      }
-
+      var response = await _dynamoDbClient.GetUserById(id);
       var user = new User
       {
          //Id = Guid.Parse(response.Item["UserId"].S),
