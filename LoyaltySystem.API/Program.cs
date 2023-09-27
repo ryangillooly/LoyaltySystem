@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Data.Clients;
 using LoyaltySystem.Data.Repositories;
 using LoyaltySystem.Services;
@@ -31,6 +32,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add Clients
 builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();
+
+// Add Mappers
+builder.Services.AddSingleton<IDynamoDbMapper, DynamoDbMapper>();
 
 // Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
 var dynamoDbSettings = new DynamoDbSettings();
