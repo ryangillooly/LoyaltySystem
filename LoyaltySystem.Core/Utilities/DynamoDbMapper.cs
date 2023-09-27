@@ -103,7 +103,7 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "EntityType", new AttributeValue { S = campaign.GetType().Name }},
             { "Name",       new AttributeValue { S = $"{campaign.Name}" }},
             { "CampaignId", new AttributeValue { S = $"{campaign.Id}" }},
-            { "Rewards",    new AttributeValue { N = $"{campaign.Rewards}" }},
+            { "Rewards",    new AttributeValue { S = $"{campaign.Rewards}" }},
             { "StartTime",  new AttributeValue { S = $"{campaign.StartTime}" }},
             { "EndTime",    new AttributeValue { S = $"{campaign.EndTime}" }},
             { "IsActive",   new AttributeValue { BOOL = campaign.IsActive }},

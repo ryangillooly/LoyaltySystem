@@ -14,6 +14,7 @@ public class BusinessCampaignController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateCampaign(Guid businessId, [FromBody] Campaign newCampaign)
     {
+        newCampaign.BusinessId = businessId;
         var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
         return CreatedAtAction(nameof(GetCampaignById), new { id = createdCampaign.Id }, newCampaign);
     }
