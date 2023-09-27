@@ -6,4 +6,7 @@ namespace LoyaltySystem.Core.Interfaces;
 public interface IDynamoDbMapper
 { 
     Dictionary<string, AttributeValue> MapUserToItem(User user);
+    Dictionary<string, AttributeValue> MapBusinessToItem(Business business);
+    Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard);
+    Dictionary<string, AttributeValue> MapPermissionToItem(Permission permission);
 }
