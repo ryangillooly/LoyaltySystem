@@ -12,15 +12,15 @@ public class DynamoDbMapper : IDynamoDbMapper
     {
         var item = new Dictionary<string, AttributeValue>
         {
-            { "PK", new AttributeValue { S = "User#" + user.Id } },
-            { "SK", new AttributeValue { S = "Meta#UserInfo" } },
-            { "UserId", new AttributeValue { S = user.Id.ToString() } },
-            { "EntityType", new AttributeValue { S = user.GetType().Name } },
-            { "Email", new AttributeValue { S = user.ContactInfo.Email } },
+            { "PK",          new AttributeValue { S = "User#" + user.Id } },
+            { "SK",          new AttributeValue { S = "Meta#UserInfo" } },
+            { "UserId",      new AttributeValue { S = user.Id.ToString() } },
+            { "EntityType",  new AttributeValue { S = user.GetType().Name } },
+            { "Email",       new AttributeValue { S = user.ContactInfo.Email } },
             { "PhoneNumber", new AttributeValue { S = user.ContactInfo.PhoneNumber } },
-            { "FirstName", new AttributeValue { S = user.FirstName } },
-            { "LastName", new AttributeValue { S = user.LastName } },
-            { "Status", new AttributeValue { S = user.Status.ToString() } },
+            { "FirstName",   new AttributeValue { S = user.FirstName } },
+            { "LastName",    new AttributeValue { S = user.LastName } },
+            { "Status",      new AttributeValue { S = user.Status.ToString() } },
         };
 
         if (user.DateOfBirth.HasValue)
@@ -49,18 +49,18 @@ public class DynamoDbMapper : IDynamoDbMapper
         new ()
         {
             // New PK and SK patterns
-            { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" } },
-            { "SK", new AttributeValue { S = $"Card#Business#{loyaltyCard.BusinessId}" } },
+            { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
+            { "SK", new AttributeValue { S = $"Card#Business#{loyaltyCard.BusinessId}" }},
 
             // New Type attribute
-            { "CardId", new AttributeValue { S = $"{loyaltyCard.Id}" } },
-            { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "UserId", new AttributeValue { S = $"{loyaltyCard.UserId}" } },
-            { "EntityType", new AttributeValue { S = loyaltyCard.GetType().Name } },
-            { "Points", new AttributeValue { N = $"{loyaltyCard.Points}" } },
-            { "DateIssued", new AttributeValue { S = $"{loyaltyCard.DateIssued}" } },
-            { "LastStampDate", new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" } },
-            { "Status", new AttributeValue { S = $"{loyaltyCard.Status}" } },
+            { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" }},
+            { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+            { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" }},
+            { "EntityType",    new AttributeValue { S = loyaltyCard.GetType().Name }},
+            { "Points",        new AttributeValue { N = $"{loyaltyCard.Points}" }},
+            { "DateIssued",    new AttributeValue { S = $"{loyaltyCard.DateIssued}" }},
+            { "LastStampDate", new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" }},
+            { "Status",        new AttributeValue { S = $"{loyaltyCard.Status}" }},
 
             { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
             { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#{loyaltyCard.Id}" } }
@@ -90,4 +90,22 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "Status",       new AttributeValue { S = business.Status.ToString() }},
         };
     }
+    
+    public Dictionary<string, AttributeValue> MapCampaignToItem(Campaign campaign) =>
+        new ()
+        {
+            // New PK and SK patterns
+            { "PK", new AttributeValue { S = $"Business#{campaign.BusinessId}" }},
+            { "SK", new AttributeValue { S = $"Campaign#{campaign.Id}" }},
+
+            // New Type attribute
+            { "BusinessId", new AttributeValue { S = $"{campaign.BusinessId}" }},
+            { "EntityType", new AttributeValue { S = campaign.GetType().Name }},
+            { "Name",       new AttributeValue { S = $"{campaign.Name}" }},
+            { "CampaignId", new AttributeValue { S = $"{campaign.Id}" }},
+            { "Rewards",    new AttributeValue { N = $"{campaign.Rewards}" }},
+            { "StartTime",  new AttributeValue { S = $"{campaign.StartTime}" }},
+            { "EndTime",    new AttributeValue { S = $"{campaign.EndTime}" }},
+            { "IsActive",   new AttributeValue { BOOL = campaign.IsActive }},
+        };
 }

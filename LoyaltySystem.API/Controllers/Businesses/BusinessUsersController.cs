@@ -6,22 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Controllers;
 
 [ApiController]
-[Route("api/businesses")]
-public class BusinessesController : ControllerBase
+[Route("api/businesses/{businessId:guid}/users")]
+public class BusinessUsersController : ControllerBase
 {
     private readonly IBusinessService _businessService;
-    public BusinessesController(IBusinessService businessService) => _businessService = businessService;
-    
-    [HttpPost]
-    public async Task<IActionResult> CreateBusiness([FromBody] Business newBusiness)
-    {
-        var createdBusiness = await _businessService.CreateAsync(newBusiness);
-        return CreatedAtAction(nameof(GetBusiness), new { id = createdBusiness.Id }, createdBusiness);
-    }
+    public BusinessUsersController(IBusinessService businessService) => _businessService = businessService;
     
     [HttpPost]
     [HttpPut]
-    [Route("{businessId:guid}/users")]
     public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<Permission> permissions)
     {
         var permissionList = new List<Permission>();
@@ -41,7 +33,4 @@ public class BusinessesController : ControllerBase
         await _businessService.UpdatePermissionsAsync(permissionList);
         return true;
     }
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetBusiness(Guid id) => Ok(await _businessService.GetByIdAsync(id));
 }

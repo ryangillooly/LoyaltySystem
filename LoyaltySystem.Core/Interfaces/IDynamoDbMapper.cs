@@ -9,4 +9,5 @@ public interface IDynamoDbMapper
     Dictionary<string, AttributeValue> MapBusinessToItem(Business business);
     Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard);
     Dictionary<string, AttributeValue> MapPermissionToItem(Permission permission);
+    Dictionary<string, AttributeValue> MapCampaignToItem(Campaign campaign);
 }
