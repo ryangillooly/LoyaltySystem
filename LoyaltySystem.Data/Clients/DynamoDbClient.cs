@@ -52,7 +52,7 @@ public class DynamoDbClient : IDynamoDbClient
         }
         catch (ConditionalCheckFailedException)
         {
-            throw new Exception($"PK - {item["PK"]}; SK - {item["SK"]} is already in use");
+            throw new Exception($"PK - {item["PK"].S}; SK - {item["SK"].S} is already in use");
         }
     }
 }
