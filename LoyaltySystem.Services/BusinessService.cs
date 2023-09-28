@@ -21,13 +21,6 @@ namespace LoyaltySystem.Services
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
 
-            /*
-            var auditRecord = new AuditRecord(EntityType.Business, newBusiness.Id, ActionType.CreateAccount)
-            {
-                Source = "Mobile Webpage"
-            };
-            */
-            
             var permission = new Permission
             {
                 UserId     = newBusiness.OwnerId,
@@ -37,21 +30,12 @@ namespace LoyaltySystem.Services
             
             await _businessRepository.CreateBusinessAsync(newBusiness);
             await _businessRepository.UpdatePermissionsAsync(new List<Permission>{permission});
-            // await _auditService.CreateAuditRecordAsync<Business>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
             
             return newBusiness;
         }
         public async Task UpdatePermissionsAsync(List<Permission> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);
-
-            /*
-            foreach(var permission in permissions)
-            {
-                var auditRecord = new AuditRecord(EntityType.User, permission.UserId, ActionType.PermissionsAltered);
-                await _auditService.CreateAuditRecordAsync<Permission>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
-            }
-            */
         }
         public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
         {
@@ -60,6 +44,7 @@ namespace LoyaltySystem.Services
         }
 
         public async Task<IEnumerable<Business>> GetAllAsync() => await _businessRepository.GetAllAsync();
-        public async Task<Business> GetByIdAsync(Guid id) => await _businessRepository.GetByIdAsync(id);
+        public async Task<Business> GetByIdAsync(Guid businessId) => await _businessRepository.GetByIdAsync(businessId);
+        public async Task DeleteAsync(Guid businessId) => await _businessRepository.DeleteAsync(businessId);
     }
 }

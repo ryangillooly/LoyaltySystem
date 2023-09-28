@@ -18,7 +18,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     public async Task CreateAsync(LoyaltyCard newLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
-        await _dynamoDbClient.WriteRecord(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
+        await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
     }
 
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();

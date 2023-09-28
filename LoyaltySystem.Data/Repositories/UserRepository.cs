@@ -16,15 +16,15 @@ public class UserRepository : IUserRepository
    public async Task CreateAsync(User newUser)
    {
       var dynamoRecord = _dynamoDbMapper.MapUserToItem(newUser);
-      await _dynamoDbClient.WriteRecord(dynamoRecord, "attribute_not_exists(PK)");
+      await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
    }
    
    public async Task<User> GetByIdAsync(Guid id)
    {
-      var response = await _dynamoDbClient.GetUserById(id);
+      var response = await _dynamoDbClient.GetUserByIdAsync(id);
       var user = new User
       {
-         //Id = Guid.Parse(response.Item["UserId"].S),
+         Id = Guid.Parse(response.Item["UserId"].S),
          ContactInfo = new ContactInfo
                         {
                            Email       = response.Item["Email"].S, 

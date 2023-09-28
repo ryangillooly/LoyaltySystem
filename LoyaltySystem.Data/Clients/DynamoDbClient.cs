@@ -7,8 +7,10 @@ namespace LoyaltySystem.Data.Clients;
 
 public interface IDynamoDbClient
 {
-    Task WriteRecord(Dictionary<string, AttributeValue> item, string? conditionExpression);
-    Task<GetItemResponse> GetUserById(Guid userId);
+    Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
+    Task<GetItemResponse> GetUserByIdAsync(Guid userId);
+    Task<GetItemResponse> GetBusinessByIdAsync(Guid businessId);
+    Task DeleteBusinessAsync(Guid businessId);
 }
 
 public class DynamoDbClient : IDynamoDbClient
@@ -19,12 +21,16 @@ public class DynamoDbClient : IDynamoDbClient
     public DynamoDbClient(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDb, _dynamoDbSettings) = (dynamoDb, dynamoDbSettings);
 
-    public async Task<GetItemResponse?> GetUserById(Guid userId)
+    public async Task<GetItemResponse?> GetUserByIdAsync(Guid userId)
     {
         var request = new GetItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue> { { "UserId", new AttributeValue { S = userId.ToString() } } }
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"User#{userId}" }},
+                { "SK", new AttributeValue { S = "Meta#UserInfo"   }}
+            }
         };
 
         var response = await _dynamoDb.GetItemAsync(request);
@@ -35,7 +41,27 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
     
-    public async Task WriteRecord(Dictionary<string, AttributeValue> item, string? conditionExpression)
+    public async Task<GetItemResponse?> GetBusinessByIdAsync(Guid businessId)
+    {
+        var request = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+                { "SK", new AttributeValue { S = "Meta#BusinessInfo"  }}
+            }
+        };
+
+        var response = await _dynamoDb.GetItemAsync(request);
+
+        if (response.Item == null || !response.IsItemSet)
+            return null;
+
+        return response;
+    }
+    
+    public async Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
     {
         var request = new PutItemRequest
         {
@@ -53,6 +79,28 @@ public class DynamoDbClient : IDynamoDbClient
         catch (ConditionalCheckFailedException)
         {
             throw new Exception($"PK - {item["PK"].S}; SK - {item["SK"].S} is already in use");
+        }
+    }
+    
+    public async Task DeleteBusinessAsync(Guid businessId)
+    {
+        var request = new DeleteItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+                { "SK", new AttributeValue { S = "Meta#BusinessInfo"   }}
+            }
+        };
+
+        try
+        {
+            var response = await _dynamoDb.DeleteItemAsync(request);
+        }
+        catch (ConditionalCheckFailedException)
+        {
+            throw new Exception($"Failed to delete item with PK - Business#{businessId}; SK - Meta#BusinessInfo due to condition check");
         }
     }
 }

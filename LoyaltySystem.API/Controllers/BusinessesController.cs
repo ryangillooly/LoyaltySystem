@@ -19,11 +19,18 @@ public class BusinessesController : ControllerBase
         return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }
     
-    [HttpGet("{businessId}")]
+    [HttpGet("{businessId:guid}")]
     public async Task<IActionResult> GetBusiness(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
-    
-    [HttpPost]
-    [Route("{businessId:guid}/campaigns")]
+
+    [HttpDelete("{businessId:guid}")]
+    public async Task<IActionResult> DeleteBusiness(Guid businessId)
+    {
+        await _businessService.DeleteAsync(businessId);
+        // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
+        return NoContent();
+    }
+
+    [HttpPost("{businessId:guid}/campaigns")]
     public async Task<IActionResult> CreateCampaign(Guid businessId, [FromBody] Campaign newCampaign)
     {
         newCampaign.BusinessId = businessId;
