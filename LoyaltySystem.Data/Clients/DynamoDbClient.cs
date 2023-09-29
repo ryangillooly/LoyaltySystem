@@ -12,7 +12,7 @@ public interface IDynamoDbClient
     Task<GetItemResponse> GetUserByIdAsync(Guid userId);
     Task<GetItemResponse> GetBusinessByIdAsync(Guid businessId);
     Task DeleteBusinessAsync(Guid businessId);
-    Task UpdateBusinessAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
+    Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
 }
 
 public class DynamoDbClient : IDynamoDbClient
@@ -106,7 +106,7 @@ public class DynamoDbClient : IDynamoDbClient
         }
     }
 
-    public async Task UpdateBusinessAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
+    public async Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
     {
         var request = new PutItemRequest
         {
@@ -114,14 +114,6 @@ public class DynamoDbClient : IDynamoDbClient
             Item = item
         };
 
-        try
-        {
-            await _dynamoDb.PutItemAsync(request);
-        }
-        catch (AmazonDynamoDBException ex)
-        {
-            // Handle exceptions related to DynamoDB here.
-            throw;
-        }
+        await _dynamoDb.PutItemAsync(request);
     }
 }

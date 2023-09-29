@@ -19,6 +19,16 @@ namespace LoyaltySystem.API.Controllers
             return CreatedAtAction(nameof(GetUser), new { id = createdUser.Id }, createdUser);
         }
         
+        [HttpPut("{userId:guid}")]
+        public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] User user)
+        {
+            user.Id = userId;
+            var updatedUser = await _userService.UpdateUserAsync(user);
+            if (updatedUser == null) return NotFound();
+
+            return Ok(updatedUser);
+        }
+        
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 

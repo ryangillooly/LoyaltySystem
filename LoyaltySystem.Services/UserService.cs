@@ -41,6 +41,17 @@ namespace LoyaltySystem.Services
         public async Task<IEnumerable<User>> GetAllAsync() => await _userRepository.GetAllAsync();
         public async Task<User> GetByIdAsync(Guid id) => await _userRepository.GetByIdAsync(id);
         public async Task DeleteAsync(Guid id) => await _userRepository.DeleteAsync(id);
-        public async Task UpdateAsync(User user) => await _userRepository.UpdateAsync(user);
+        
+        public async Task<User> UpdateUserAsync(User updatedUser)
+        {
+            var currentRecord = await _userRepository.GetByIdAsync(updatedUser.Id);
+            if(currentRecord == null) throw new Exception("Record not found.");
+            var mergedRecord = User.Merge(currentRecord, updatedUser);
+            
+            await _userRepository.UpdateUserAsync(mergedRecord);
+            
+            return mergedRecord;
+        }
+        
     }
 }

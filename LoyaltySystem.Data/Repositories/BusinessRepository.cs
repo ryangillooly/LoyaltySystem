@@ -23,7 +23,7 @@ public class BusinessRepository : IBusinessRepository
     public async Task UpdateBusinessAsync(Business updatedBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
-        await _dynamoDbClient.UpdateBusinessAsync(dynamoRecord, null);
+        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
     
      public async Task CreateCampaignAsync(Campaign newCampaign)

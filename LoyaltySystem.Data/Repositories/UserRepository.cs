@@ -19,6 +19,12 @@ public class UserRepository : IUserRepository
       await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
    }
    
+   public async Task UpdateUserAsync(User updatedUser)
+   {
+      var dynamoRecord = _dynamoDbMapper.MapUserToItem(updatedUser);
+      await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+   }
+   
    public async Task<User> GetByIdAsync(Guid id)
    {
       var response = await _dynamoDbClient.GetUserByIdAsync(id);
@@ -32,17 +38,18 @@ public class UserRepository : IUserRepository
                         },
          FirstName = response.Item["FirstName"].S,
          LastName = response.Item["LastName"].S,
-         DateOfBirth = DateTime.Parse(response.Item["DateOfBirth"].S),
          //Permissions = response.Item["Permissions"].S, // Deserialize Json to List<UserPermission>
          Status =  Enum.Parse<UserStatus>(response.Item["Status"].S)
       };
 
+      if (response.Item.ContainsKey("DateOfBirth") && response.Item["DateOfBirth"].S != null)
+         user.DateOfBirth = DateTime.Parse(response.Item["DateOfBirth"].S);
+
+      
       return user;
    }
    
    // Not Implemented
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
    public Task DeleteAsync(Guid id) => throw new NotImplementedException();
-
-   public Task UpdateAsync(User entity) => throw new NotImplementedException();
 }
