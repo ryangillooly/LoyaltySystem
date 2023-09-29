@@ -33,7 +33,7 @@ namespace LoyaltySystem.Services
             };
             
             await _userRepository.CreateAsync(newUser);
-            await _auditService.CreateAuditRecordAsync<User>(auditRecord);
+            // await _auditService.CreateAuditRecordAsync<User>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
             
             return newUser;
         }

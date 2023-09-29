@@ -17,7 +17,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         var auditRecord = new AuditRecord(EntityType.LoyaltyCard, newLoyaltyCard.Id, ActionType.CreateLoyaltyCard);
         
         await _loyaltyCardRepository.CreateAsync(newLoyaltyCard);
-        await _auditService.CreateAuditRecordAsync<LoyaltyCard>(auditRecord);
+        // await _auditService.CreateAuditRecordAsync<LoyaltyCard>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
 
         return newLoyaltyCard;
     }

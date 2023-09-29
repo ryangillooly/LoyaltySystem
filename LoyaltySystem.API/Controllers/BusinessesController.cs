@@ -16,13 +16,52 @@ public class BusinessesController : ControllerBase
     public async Task<IActionResult> CreateBusiness([FromBody] Business newBusiness)
     {
         var createdBusiness = await _businessService.CreateAsync(newBusiness);
-        return CreatedAtAction(nameof(GetBusiness), new { id = createdBusiness.Id }, createdBusiness);
+        return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }
+
+    [HttpPut("{businessId:guid}")]
+    public async Task<IActionResult> UpdateBusiness(Guid businessId, [FromBody] Business business)
+    {
+        business.Id = businessId;
+        var updatedBusiness = await _businessService.UpdateBusinessAsync(business);
+        if (updatedBusiness == null) return NotFound();
+
+        return Ok(updatedBusiness);
+    }
+    
+    [HttpGet("{businessId:guid}")]
+    public async Task<IActionResult> GetBusiness(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
+
+    [HttpDelete("{businessId:guid}")]
+    public async Task<IActionResult> DeleteBusiness(Guid businessId)
+    {
+        await _businessService.DeleteAsync(businessId);
+        // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
+        return NoContent();
+    }
+
+    [HttpPost("{businessId:guid}/campaigns")]
+    public async Task<IActionResult> CreateCampaign(Guid businessId, [FromBody] Campaign newCampaign)
+    {
+        newCampaign.BusinessId = businessId;
+        var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
+        return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
+    }
+    
+    
+    
+    [HttpGet]
+    [Route("{businessId:guid}/campaigns")]
+    public async Task<IActionResult> GetCampaigns(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
+    
+    [HttpGet]
+    [Route("{businessId:guid}/campaigns/{campaignId:guid}")]
+    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId) => Ok(await _businessService.GetByIdAsync(businessId));
     
     [HttpPost]
     [HttpPut]
-    [Route("{businessId:guid}/users")]
-    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<Permission> permissions)
+    [Route("{businessId:guid}/users/{userId:guid}")]
+    public async Task<bool> PutUserPermission(Guid businessId, Guid userId, [FromBody] List<Permission> permissions)
     {
         var permissionList = new List<Permission>();
             
@@ -32,7 +71,7 @@ public class BusinessesController : ControllerBase
             (
                 new Permission
                 {
-                    UserId = permission.UserId,
+                    UserId = userId,
                     BusinessId = businessId,
                     Role = Enum.Parse<UserRole>(permission.Role.ToString())
                 }
@@ -41,7 +80,4 @@ public class BusinessesController : ControllerBase
         await _businessService.UpdatePermissionsAsync(permissionList);
         return true;
     }
-
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetBusiness(Guid id) => Ok(await _businessService.GetByIdAsync(id));
 }

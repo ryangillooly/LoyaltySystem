@@ -18,13 +18,10 @@ public class EmailRepository : IEmailRepository
         var request = new QueryRequest
         {
             TableName = _dynamoDbSettings.TableName,
-            IndexName = "Emails", // Use GSI for querying
+            IndexName = "Emails",                           // Use GSI for querying
             KeyConditionExpression = "Email = :emailValue", // Assuming your GSI PK is named "Email"
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-            {
-                {":emailValue", new AttributeValue { S = email } }
-            },
-            Limit = 1 // We only need to know if at least one item exists
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue> {{":emailValue", new AttributeValue { S = email }}},
+            Limit = 1                                       // We only need to know if at least one item exists
         };
 
         var response = await _dynamoDb.QueryAsync(request);
