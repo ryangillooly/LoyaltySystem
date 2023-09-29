@@ -19,6 +19,12 @@ public class BusinessRepository : IBusinessRepository
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(newBusiness);
         await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
     }
+
+    public async Task UpdateBusinessAsync(Business updatedBusiness)
+    {
+        var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
+        await _dynamoDbClient.UpdateBusinessAsync(dynamoRecord, null);
+    }
     
      public async Task CreateCampaignAsync(Campaign newCampaign)
     {
@@ -63,7 +69,5 @@ public class BusinessRepository : IBusinessRepository
 
        return business;
    }
-   public async Task UpdateAsync(Business entity) => throw new NotImplementedException();
-
-   public async Task DeleteAsync(Guid businessId) => await _dynamoDbClient.DeleteBusinessAsync(businessId);
+   public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteBusinessAsync(businessId);
 }

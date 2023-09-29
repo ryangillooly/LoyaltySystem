@@ -33,6 +33,18 @@ namespace LoyaltySystem.Services
             
             return newBusiness;
         }
+
+        public async Task<Business> UpdateBusinessAsync(Business updatedBusiness)
+        {
+            var currentRecord = await _businessRepository.GetByIdAsync(updatedBusiness.Id);
+            if(currentRecord == null) throw new Exception("Record not found.");
+            var mergedRecord = Business.Merge(currentRecord, updatedBusiness);
+            
+            await _businessRepository.UpdateBusinessAsync(mergedRecord);
+            
+            return mergedRecord;
+        }
+        
         public async Task UpdatePermissionsAsync(List<Permission> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);
@@ -45,6 +57,6 @@ namespace LoyaltySystem.Services
 
         public async Task<IEnumerable<Business>> GetAllAsync() => await _businessRepository.GetAllAsync();
         public async Task<Business> GetByIdAsync(Guid businessId) => await _businessRepository.GetByIdAsync(businessId);
-        public async Task DeleteAsync(Guid businessId) => await _businessRepository.DeleteAsync(businessId);
+        public async Task DeleteAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
     }
 }

@@ -90,7 +90,7 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "Status",       new AttributeValue { S = business.Status.ToString() }},
         };
     }
-    
+
     public Dictionary<string, AttributeValue> MapCampaignToItem(Campaign campaign) =>
         new ()
         {

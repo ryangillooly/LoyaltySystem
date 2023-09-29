@@ -18,6 +18,16 @@ public class BusinessesController : ControllerBase
         var createdBusiness = await _businessService.CreateAsync(newBusiness);
         return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }
+
+    [HttpPut("{businessId:guid}")]
+    public async Task<IActionResult> UpdateBusiness(Guid businessId, [FromBody] Business business)
+    {
+        business.Id = businessId;
+        var updatedBusiness = await _businessService.UpdateBusinessAsync(business);
+        if (updatedBusiness == null) return NotFound();
+
+        return Ok(updatedBusiness);
+    }
     
     [HttpGet("{businessId:guid}")]
     public async Task<IActionResult> GetBusiness(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
@@ -37,6 +47,8 @@ public class BusinessesController : ControllerBase
         var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
         return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
     }
+    
+    
     
     [HttpGet]
     [Route("{businessId:guid}/campaigns")]

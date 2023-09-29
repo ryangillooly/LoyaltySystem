@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
+using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Data.Clients;
@@ -11,6 +12,7 @@ public interface IDynamoDbClient
     Task<GetItemResponse> GetUserByIdAsync(Guid userId);
     Task<GetItemResponse> GetBusinessByIdAsync(Guid businessId);
     Task DeleteBusinessAsync(Guid businessId);
+    Task UpdateBusinessAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
 }
 
 public class DynamoDbClient : IDynamoDbClient
@@ -101,6 +103,25 @@ public class DynamoDbClient : IDynamoDbClient
         catch (ConditionalCheckFailedException)
         {
             throw new Exception($"Failed to delete item with PK - Business#{businessId}; SK - Meta#BusinessInfo due to condition check");
+        }
+    }
+
+    public async Task UpdateBusinessAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
+    {
+        var request = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = item
+        };
+
+        try
+        {
+            await _dynamoDb.PutItemAsync(request);
+        }
+        catch (AmazonDynamoDBException ex)
+        {
+            // Handle exceptions related to DynamoDB here.
+            throw;
         }
     }
 }
