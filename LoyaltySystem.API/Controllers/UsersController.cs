@@ -29,6 +29,14 @@ namespace LoyaltySystem.API.Controllers
             return Ok(updatedUser);
         }
         
+        [HttpDelete("{userId:guid}")]
+        public async Task<IActionResult> DeleteUser(Guid userId)
+        {
+            await _userService.DeleteUserAsync(userId);
+            // Need to make sure that we delete all data related to a User which is being deleted (i.e. Permissions, Loyalty Cards etc)
+            return NoContent();
+        }
+        
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 

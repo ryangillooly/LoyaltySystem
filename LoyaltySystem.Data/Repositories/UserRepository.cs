@@ -51,5 +51,6 @@ public class UserRepository : IUserRepository
    
    // Not Implemented
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
-   public Task DeleteAsync(Guid id) => throw new NotImplementedException();
+
+   public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteUserAsync(userId);
 }

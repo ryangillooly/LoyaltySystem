@@ -40,7 +40,7 @@ namespace LoyaltySystem.Services
         
         public async Task<IEnumerable<User>> GetAllAsync() => await _userRepository.GetAllAsync();
         public async Task<User> GetByIdAsync(Guid id) => await _userRepository.GetByIdAsync(id);
-        public async Task DeleteAsync(Guid id) => await _userRepository.DeleteAsync(id);
+        public async Task DeleteUserAsync(Guid userId) => await _userRepository.DeleteUserAsync(userId);
         
         public async Task<User> UpdateUserAsync(User updatedUser)
         {
