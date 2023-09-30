@@ -8,5 +8,5 @@ public interface ILoyaltyCardService
 {
     Task<IEnumerable<LoyaltyCard>> GetAllAsync();
     Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId);
-    Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard);
+    Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId);
 }

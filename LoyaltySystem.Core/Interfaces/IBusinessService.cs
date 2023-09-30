@@ -8,7 +8,7 @@ public interface IBusinessService
 {
     Task<IEnumerable<Business>> GetAllAsync();
     Task<Business> GetByIdAsync(Guid businessId);
-    Task<Business> CreateAsync(Business newBusiness);
+    Task<Business> CreateBusinessAsync(Business newBusiness);
     Task<Business> UpdateBusinessAsync(Business updatedBusiness);
     Task DeleteAsync(Guid businessId);
     Task<Campaign> CreateCampaignAsync(Campaign newCampaign);

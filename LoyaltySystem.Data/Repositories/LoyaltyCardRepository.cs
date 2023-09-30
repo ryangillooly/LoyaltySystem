@@ -15,7 +15,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
     public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper) =>
         (_dynamoDbClient, _dynamoDbMapper) = (dynamoDbClient, dynamoDbMapper);
-    public async Task CreateAsync(LoyaltyCard newLoyaltyCard)
+    public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
         await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");

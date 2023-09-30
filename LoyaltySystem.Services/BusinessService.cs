@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -14,7 +12,7 @@ namespace LoyaltySystem.Services
         public BusinessService(IBusinessRepository businessRepository, IEmailService emailService) 
             => (_businessRepository, _emailService) = (businessRepository, emailService);
 
-        public async Task<Business> CreateAsync(Business newBusiness)
+        public async Task<Business> CreateBusinessAsync(Business newBusiness)
         {
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
 

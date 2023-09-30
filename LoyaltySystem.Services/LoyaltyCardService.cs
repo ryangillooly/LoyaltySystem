@@ -7,18 +7,14 @@ namespace LoyaltySystem.Services;
 public class LoyaltyCardService : ILoyaltyCardService
 {
     private readonly ILoyaltyCardRepository _loyaltyCardRepository;
-    private readonly IAuditService          _auditService;
     
-    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository, IAuditService auditService) => 
-        (_loyaltyCardRepository, _auditService) = (loyaltyCardRepository, auditService);
+    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository) => 
+        (_loyaltyCardRepository) = (loyaltyCardRepository);
 
-    public async Task<LoyaltyCard> CreateAsync(LoyaltyCard newLoyaltyCard)
+    public async Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId)
     {
-        var auditRecord = new AuditRecord(EntityType.LoyaltyCard, newLoyaltyCard.Id, ActionType.CreateLoyaltyCard);
-        
-        await _loyaltyCardRepository.CreateAsync(newLoyaltyCard);
-        // await _auditService.CreateAuditRecordAsync<LoyaltyCard>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
-
+        var newLoyaltyCard = new LoyaltyCard(userId, businessId);
+        await _loyaltyCardRepository.CreateLoyaltyCardAsync(newLoyaltyCard);
         return newLoyaltyCard;
     }
 
