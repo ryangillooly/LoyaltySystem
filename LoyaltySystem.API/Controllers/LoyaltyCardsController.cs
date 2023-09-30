@@ -3,7 +3,7 @@ using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LoyaltySystem.Controllers;
+namespace LoyaltySystem.API.Controllers;
 
 [ApiController]
 [Route("api/users/{userId:guid}/loyalty-cards")]
@@ -13,7 +13,7 @@ public class LoyaltyCardsController : ControllerBase
     public LoyaltyCardsController(ILoyaltyCardService loyaltyCardService) => _loyaltyCardService = loyaltyCardService;
     
     [HttpPost]
-    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] LoyaltyCardDto dto)
+    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] CreateLoyaltyCardDto dto)
     {
         var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, dto.BusinessId);
         return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, userId}, createdLoyaltyCard);
@@ -27,6 +27,15 @@ public class LoyaltyCardsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{businessId:guid}")]
+    public async Task<IActionResult> UpdateLoyaltyCard(Guid userId, Guid businessId, [FromBody] UpdateLoyaltyCardDto dto)
+    {
+        var updatedLoyaltyCard = await _loyaltyCardService.UpdateLoyaltyCardAsync(userId, businessId, dto.Status);
+        if (updatedLoyaltyCard == null) return NotFound();
+
+        return Ok(updatedLoyaltyCard);
+    }
+    
     [HttpGet("{businessId:guid}")]
     public async Task<IActionResult> GetLoyaltyCard(Guid userId, Guid businessId)
     {
@@ -42,7 +51,7 @@ public class LoyaltyCardsController : ControllerBase
         catch(Exception ex)
         {
             // Handle other exceptions as needed
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, $"Internal server error - {ex}");
         }
     }
 }

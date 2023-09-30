@@ -29,4 +29,19 @@ public class LoyaltyCardService : ILoyaltyCardService
         if(loyaltyCard is null) throw new ResourceNotFoundException("Loyalty card not found");
         return loyaltyCard;
     }
+    
+    public async Task<LoyaltyCard> UpdateLoyaltyCardAsync(Guid userId, Guid businessId, LoyaltyStatus status)
+    {
+        var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+        if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
+        
+        var updatedLoyaltyCard = currentRecord;
+        updatedLoyaltyCard.Status = status;
+        
+        var mergedRecord = LoyaltyCard.Merge(currentRecord, updatedLoyaltyCard);
+            
+        await _loyaltyCardRepository.UpdateLoyaltyCardAsync(mergedRecord);
+            
+        return mergedRecord;
+    }
 }

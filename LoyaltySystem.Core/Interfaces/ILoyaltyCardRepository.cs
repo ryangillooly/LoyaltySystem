@@ -8,6 +8,6 @@ public interface ILoyaltyCardRepository
     Task<IEnumerable<LoyaltyCard>> GetAllAsync();
     Task CreateLoyaltyCardAsync(LoyaltyCard loyaltyCard);
     Task<Redemption> RedeemRewardAsync(Redemption redemption);
-    Task UpdateAsync(LoyaltyCard loyaltyCard);
+    Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
 }

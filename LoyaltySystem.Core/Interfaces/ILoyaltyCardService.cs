@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
@@ -10,4 +11,5 @@ public interface ILoyaltyCardService
     Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
+    Task<LoyaltyCard> UpdateLoyaltyCardAsync(Guid userId, Guid businessId, LoyaltyStatus status);
 }

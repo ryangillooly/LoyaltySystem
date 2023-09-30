@@ -4,7 +4,7 @@ using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LoyaltySystem.Controllers;
+namespace LoyaltySystem.API.Controllers;
 
 [ApiController]
 [Route("api/businesses")]
@@ -25,7 +25,7 @@ public class BusinessesController : ControllerBase
     {
         business.Id = businessId;
         var updatedBusiness = await _businessService.UpdateBusinessAsync(business);
-        if (updatedBusiness == null) return NotFound();
+        if (updatedBusiness is null) return NotFound();
 
         return Ok(updatedBusiness);
     }
@@ -45,7 +45,7 @@ public class BusinessesController : ControllerBase
         catch(Exception ex)
         {
             // Handle other exceptions as needed
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, $"Internal server error - {ex}");
         }
     }
 

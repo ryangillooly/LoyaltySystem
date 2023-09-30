@@ -1,5 +1,4 @@
 using Amazon.DynamoDBv2.Model;
-using LoyaltySystem.Core.Enums;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -56,7 +55,7 @@ namespace LoyaltySystem.API.Controllers
             catch(Exception ex)
             {
                 // Handle other exceptions as needed
-                return StatusCode(500, "Internal server error");
+                return StatusCode(500, $"Internal server error - {ex}");
             }
         }
     }

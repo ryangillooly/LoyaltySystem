@@ -1,6 +1,6 @@
 namespace LoyaltySystem.Core.Models;
 
-public class LoyaltyCardDto
+public class CreateLoyaltyCardDto
 {
     public Guid BusinessId { get; set; }
 }

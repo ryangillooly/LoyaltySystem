@@ -40,8 +40,12 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
             Status          = Enum.Parse<LoyaltyStatus>(response.Item["Status"].S)
         };
     }
-    
-    public async Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
+
+    public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
+    {
+        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
+        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+    }
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _dynamoDbClient.DeleteLoyaltyCardAsync(userId, businessId);
     
     
