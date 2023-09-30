@@ -46,7 +46,7 @@ public class BusinessRepository : IBusinessRepository
 
    public async Task<Business> GetByIdAsync(Guid id)
    {
-       var response = await _dynamoDbClient.GetBusinessByIdAsync(id);
+       var response = await _dynamoDbClient.GetBusinessAsync(id);
        
        var location = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S);
        var openingHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S);
@@ -69,5 +69,5 @@ public class BusinessRepository : IBusinessRepository
 
        return business;
    }
-   public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteBusinessAsync(businessId);
+   public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 }

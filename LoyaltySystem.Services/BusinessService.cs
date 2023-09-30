@@ -11,7 +11,6 @@ namespace LoyaltySystem.Services
         
         public BusinessService(IBusinessRepository businessRepository, IEmailService emailService) 
             => (_businessRepository, _emailService) = (businessRepository, emailService);
-
         public async Task<Business> CreateBusinessAsync(Business newBusiness)
         {
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
@@ -55,6 +54,6 @@ namespace LoyaltySystem.Services
 
         public async Task<IEnumerable<Business>> GetAllAsync() => await _businessRepository.GetAllAsync();
         public async Task<Business> GetByIdAsync(Guid businessId) => await _businessRepository.GetByIdAsync(businessId);
-        public async Task DeleteAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
+        public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
     }
 }

@@ -4,10 +4,10 @@ namespace LoyaltySystem.Core.Interfaces;
 
 public interface ILoyaltyCardRepository
 {
-    Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId);
+    Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task<IEnumerable<LoyaltyCard>> GetAllAsync();
     Task CreateLoyaltyCardAsync(LoyaltyCard loyaltyCard);
     Task<Redemption> RedeemRewardAsync(Redemption redemption);
     Task UpdateAsync(LoyaltyCard loyaltyCard);
-    Task DeleteAsync(Guid id);
+    Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
 }

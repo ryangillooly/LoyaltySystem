@@ -1,20 +1,9 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using Amazon.Runtime;
-using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Data.Clients;
-
-public interface IDynamoDbClient
-{
-    Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
-    Task<GetItemResponse> GetUserByIdAsync(Guid userId);
-    Task<GetItemResponse> GetBusinessByIdAsync(Guid businessId);
-    Task DeleteBusinessAsync(Guid businessId);
-    Task DeleteUserAsync(Guid userId);
-    Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
-}
 
 public class DynamoDbClient : IDynamoDbClient
 {
@@ -24,7 +13,7 @@ public class DynamoDbClient : IDynamoDbClient
     public DynamoDbClient(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDb, _dynamoDbSettings) = (dynamoDb, dynamoDbSettings);
 
-    public async Task<GetItemResponse?> GetUserByIdAsync(Guid userId)
+    public async Task<GetItemResponse> GetUserAsync(Guid userId)
     {
         var request = new GetItemRequest
         {
@@ -44,7 +33,7 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
     
-    public async Task<GetItemResponse?> GetBusinessByIdAsync(Guid businessId)
+    public async Task<GetItemResponse> GetBusinessAsync(Guid businessId)
     {
         var request = new GetItemRequest
         {
@@ -53,6 +42,26 @@ public class DynamoDbClient : IDynamoDbClient
             {
                 { "PK", new AttributeValue { S = $"Business#{businessId}" }},
                 { "SK", new AttributeValue { S = "Meta#BusinessInfo"  }}
+            }
+        };
+
+        var response = await _dynamoDb.GetItemAsync(request);
+
+        if (response.Item == null || !response.IsItemSet)
+            return null;
+
+        return response;
+    }
+
+    public async Task<GetItemResponse> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var request = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"User#{userId}" }},
+                { "SK", new AttributeValue { S = $"Card#Business#{businessId}"  }}
             }
         };
 
@@ -85,30 +94,33 @@ public class DynamoDbClient : IDynamoDbClient
         }
     }
     
-    public async Task DeleteBusinessAsync(Guid businessId)
+    public async Task DeleteItemsWithPkAsync(string pk)
     {
         try
         {
-            await DeleteItemsWithPK($"Business#{businessId}");
+            await DeleteItemsWithPK(pk);
         }
         catch (ConditionalCheckFailedException)
         {
-            throw new Exception($"Failed to delete item with PK - Business#{businessId} due to condition check");
-        }
-    }
-    
-    public async Task DeleteUserAsync(Guid userId)
-    {
-        try
-        {
-            await DeleteItemsWithPK($"User#{userId}");
-        }
-        catch (ConditionalCheckFailedException)
-        {
-            throw new Exception($"Failed to delete item with PK - User#{userId} due to condition check");
+            throw new Exception($"Failed to delete item with PK - {pk} due to condition check");
         }
     }
 
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var deleteRequest = new DeleteItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"User#{userId}" } },
+                { "SK", new AttributeValue { S = $"Card#Business#{businessId}" } }
+            }
+        };
+
+        await _dynamoDb.DeleteItemAsync(deleteRequest);
+    }
+    
     public async Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
     {
         var request = new PutItemRequest
@@ -177,7 +189,14 @@ public class DynamoDbClient : IDynamoDbClient
                 }
             };
 
-            await _dynamoDb.BatchWriteItemAsync(batchWriteItemRequest);
+            try
+            {
+                await _dynamoDb.BatchWriteItemAsync(batchWriteItemRequest);
+            }
+            catch (ConditionalCheckFailedException)
+            {
+                throw new Exception($"Failed to delete item with PK - {PK} due to condition check");
+            }
         }
     }
 

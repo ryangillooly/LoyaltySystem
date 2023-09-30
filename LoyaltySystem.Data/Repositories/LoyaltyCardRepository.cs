@@ -5,6 +5,7 @@ using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Data.Clients;
+using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -22,8 +23,24 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     }
 
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
-    public Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
-    public Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId) => throw new NotImplementedException();
-    public Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
-    public Task DeleteAsync(Guid id) => throw new NotImplementedException();
+    public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
+    
+    public async Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var response = await _dynamoDbClient.GetLoyaltyCardAsync(userId, businessId);
+        
+        return new LoyaltyCard(userId, businessId)
+        {
+            Id              = Guid.Parse(response.Item["CardId"].S),
+            Points          = Convert.ToInt32(response.Item["Points"].N),
+            DateIssued      = Convert.ToDateTime(response.Item["DateIssued"].S),
+            DateLastStamped = Convert.ToDateTime(response.Item["LastStampDate"].S),
+            Status          = Enum.Parse<LoyaltyStatus>(response.Item["Status"].S)
+        };
+    }
+    
+    public async Task UpdateAsync(LoyaltyCard entity) => throw new NotImplementedException();
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _dynamoDbClient.DeleteLoyaltyCardAsync(userId, businessId);
+    
+    
 }

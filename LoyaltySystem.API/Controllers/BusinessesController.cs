@@ -35,7 +35,7 @@ public class BusinessesController : ControllerBase
     [HttpDelete("{businessId:guid}")]
     public async Task<IActionResult> DeleteBusiness(Guid businessId)
     {
-        await _businessService.DeleteAsync(businessId);
+        await _businessService.DeleteBusinessAsync(businessId);
         // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
         return NoContent();
     }

@@ -27,7 +27,7 @@ public class UserRepository : IUserRepository
    
    public async Task<User> GetByIdAsync(Guid id)
    {
-      var response = await _dynamoDbClient.GetUserByIdAsync(id);
+      var response = await _dynamoDbClient.GetUserAsync(id);
       var user = new User
       {
          Id = Guid.Parse(response.Item["UserId"].S),
@@ -52,5 +52,5 @@ public class UserRepository : IUserRepository
    // Not Implemented
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
 
-   public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteUserAsync(userId);
+   public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"User#{userId}");
 }

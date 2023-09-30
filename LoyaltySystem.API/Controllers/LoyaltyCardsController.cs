@@ -18,6 +18,14 @@ public class LoyaltyCardsController : ControllerBase
         return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, userId}, createdLoyaltyCard);
     }
     
+    [HttpDelete("{businessId:guid}")]
+    public async Task<IActionResult> DeleteLoyaltyCard(Guid userId, Guid businessId)
+    {
+        await _loyaltyCardService.DeleteLoyaltyCardAsync(userId, businessId);
+        // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
+        return NoContent();
+    }
+    
     [HttpGet("{businessId:guid}")]
-    public async Task<IActionResult> GetLoyaltyCard(Guid businessId, Guid userId) => Ok(await _loyaltyCardService.GetByIdAsync(businessId, userId));
+    public async Task<IActionResult> GetLoyaltyCard(Guid userId, Guid businessId) => Ok(await _loyaltyCardService.GetLoyaltyCardAsync(userId, businessId));
 }

@@ -18,6 +18,8 @@ public class LoyaltyCardService : ILoyaltyCardService
         return newLoyaltyCard;
     }
 
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
+
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => await _loyaltyCardRepository.GetAllAsync();
-    public async Task<LoyaltyCard> GetByIdAsync(Guid id, Guid userId) => await _loyaltyCardRepository.GetByIdAsync(id, userId);
+    public async Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
 }
