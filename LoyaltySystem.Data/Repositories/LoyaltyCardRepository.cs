@@ -25,9 +25,11 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
     
-    public async Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var response = await _dynamoDbClient.GetLoyaltyCardAsync(userId, businessId);
+
+        if (response is null) return null;
         
         return new LoyaltyCard(userId, businessId)
         {

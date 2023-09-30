@@ -44,14 +44,16 @@ public class BusinessRepository : IBusinessRepository
     
    public Task<IEnumerable<Business>> GetAllAsync() => throw new NotImplementedException();
 
-   public async Task<Business> GetByIdAsync(Guid id)
+   public async Task<Business?> GetBusinessAsync(Guid businessId)
    {
-       var response = await _dynamoDbClient.GetBusinessAsync(id);
+       var response = await _dynamoDbClient.GetBusinessAsync(businessId);
        
-       var location = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S);
+       if (response is null) return null;
+       
+       var location     = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S);
        var openingHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S);
        
-       var business = new Business
+       return new Business
        {
            Id           = Guid.Parse(response.Item["BusinessId"].S),
            OwnerId      = Guid.Parse(response.Item["OwnerId"].S),
@@ -66,8 +68,6 @@ public class BusinessRepository : IBusinessRepository
            },
            Status =  Enum.Parse<BusinessStatus>(response.Item["Status"].S)
        };
-
-       return business;
    }
    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 }

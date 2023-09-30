@@ -4,7 +4,7 @@ namespace LoyaltySystem.Core.Interfaces;
 
 public interface ILoyaltyCardRepository
 {
-    Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId);
+    Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task<IEnumerable<LoyaltyCard>> GetAllAsync();
     Task CreateLoyaltyCardAsync(LoyaltyCard loyaltyCard);
     Task<Redemption> RedeemRewardAsync(Redemption redemption);

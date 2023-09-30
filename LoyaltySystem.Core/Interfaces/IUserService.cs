@@ -7,7 +7,7 @@ namespace LoyaltySystem.Core.Interfaces;
 public interface IUserService
 {
     Task<IEnumerable<User>> GetAllAsync();
-    Task<User> GetByIdAsync(Guid id);
+    Task<User> GetUserAsync(Guid userId);
     Task<User> CreateAsync(User newUser);
     Task DeleteUserAsync(Guid id);
     Task<User> UpdateUserAsync(User updatedUser);

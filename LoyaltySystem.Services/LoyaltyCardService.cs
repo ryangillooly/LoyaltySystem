@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -21,5 +22,11 @@ public class LoyaltyCardService : ILoyaltyCardService
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
 
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => await _loyaltyCardRepository.GetAllAsync();
-    public async Task<LoyaltyCard> GetLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+
+    public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var loyaltyCard = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+        if(loyaltyCard is null) throw new ResourceNotFoundException("Loyalty card not found");
+        return loyaltyCard;
+    }
 }

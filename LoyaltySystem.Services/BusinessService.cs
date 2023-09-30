@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -33,7 +34,7 @@ namespace LoyaltySystem.Services
 
         public async Task<Business> UpdateBusinessAsync(Business updatedBusiness)
         {
-            var currentRecord = await _businessRepository.GetByIdAsync(updatedBusiness.Id);
+            var currentRecord = await _businessRepository.GetBusinessAsync(updatedBusiness.Id);
             if(currentRecord == null) throw new Exception("Record not found.");
             var mergedRecord = Business.Merge(currentRecord, updatedBusiness);
             
@@ -53,7 +54,14 @@ namespace LoyaltySystem.Services
         }
 
         public async Task<IEnumerable<Business>> GetAllAsync() => await _businessRepository.GetAllAsync();
-        public async Task<Business> GetByIdAsync(Guid businessId) => await _businessRepository.GetByIdAsync(businessId);
+
+        public async Task<Business> GetBusinessAsync(Guid businessId)
+        {
+            var business = await _businessRepository.GetBusinessAsync(businessId);
+            if (business == null) throw new ResourceNotFoundException("Business not found");
+            return business;
+        }
+
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
     }
 }

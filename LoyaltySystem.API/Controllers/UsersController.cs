@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
@@ -40,7 +41,23 @@ namespace LoyaltySystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(Guid id) => Ok(await _userService.GetByIdAsync(id));
+        [HttpGet("{userId:guid}")]
+        public async Task<IActionResult> GetUser(Guid userId)
+        {
+            try
+            {
+                var user = await _userService.GetUserAsync(userId);
+                return Ok(user);
+            }
+            catch(ResourceNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch(Exception ex)
+            {
+                // Handle other exceptions as needed
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

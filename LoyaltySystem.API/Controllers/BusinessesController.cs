@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
@@ -28,9 +29,25 @@ public class BusinessesController : ControllerBase
 
         return Ok(updatedBusiness);
     }
-    
+
     [HttpGet("{businessId:guid}")]
-    public async Task<IActionResult> GetBusiness(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
+    public async Task<IActionResult> GetBusiness(Guid businessId)
+    {
+        try
+        {
+            var card = await _businessService.GetBusinessAsync(businessId);
+            return Ok(card);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, "Internal server error");
+        }
+    }
 
     [HttpDelete("{businessId:guid}")]
     public async Task<IActionResult> DeleteBusiness(Guid businessId)
@@ -48,15 +65,13 @@ public class BusinessesController : ControllerBase
         return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
     }
     
-    
-    
     [HttpGet]
     [Route("{businessId:guid}/campaigns")]
-    public async Task<IActionResult> GetCampaigns(Guid businessId) => Ok(await _businessService.GetByIdAsync(businessId));
+    public async Task<IActionResult> GetCampaigns(Guid businessId) => Ok(await _businessService.GetBusinessAsync(businessId));
     
     [HttpGet]
     [Route("{businessId:guid}/campaigns/{campaignId:guid}")]
-    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId) => Ok(await _businessService.GetByIdAsync(businessId));
+    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId) => Ok(await _businessService.GetBusinessAsync(businessId));
     
     [HttpPost]
     [HttpPut]

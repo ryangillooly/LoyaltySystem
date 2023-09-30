@@ -1,7 +1,6 @@
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
-using LoyaltySystem.Data.Clients;
 namespace LoyaltySystem.Data.Repositories;
 
 public class UserRepository : IUserRepository
@@ -25,26 +24,27 @@ public class UserRepository : IUserRepository
       await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
    }
    
-   public async Task<User> GetByIdAsync(Guid id)
+   public async Task<User?> GetUserAsync(Guid id)
    {
       var response = await _dynamoDbClient.GetUserAsync(id);
+
+      if (response is null) return null;
+      
       var user = new User
       {
-         Id = Guid.Parse(response.Item["UserId"].S),
+         Id          = Guid.Parse(response.Item["UserId"].S),
          ContactInfo = new ContactInfo
                         {
                            Email       = response.Item["Email"].S, 
                            PhoneNumber = response.Item["PhoneNumber"].S
                         },
-         FirstName = response.Item["FirstName"].S,
-         LastName = response.Item["LastName"].S,
-         //Permissions = response.Item["Permissions"].S, // Deserialize Json to List<UserPermission>
-         Status =  Enum.Parse<UserStatus>(response.Item["Status"].S)
+         FirstName   = response.Item["FirstName"].S,
+         LastName    = response.Item["LastName"].S,
+         Status      =  Enum.Parse<UserStatus>(response.Item["Status"].S)
       };
 
       if (response.Item.ContainsKey("DateOfBirth") && response.Item["DateOfBirth"].S != null)
          user.DateOfBirth = DateTime.Parse(response.Item["DateOfBirth"].S);
-
       
       return user;
    }

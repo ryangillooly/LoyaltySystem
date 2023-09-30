@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +26,23 @@ public class LoyaltyCardsController : ControllerBase
         // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
         return NoContent();
     }
-    
+
     [HttpGet("{businessId:guid}")]
-    public async Task<IActionResult> GetLoyaltyCard(Guid userId, Guid businessId) => Ok(await _loyaltyCardService.GetLoyaltyCardAsync(userId, businessId));
+    public async Task<IActionResult> GetLoyaltyCard(Guid userId, Guid businessId)
+    {
+        try
+        {
+            var card = await _loyaltyCardService.GetLoyaltyCardAsync(userId, businessId);
+            return Ok(card);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, "Internal server error");
+        }
+    }
 }
