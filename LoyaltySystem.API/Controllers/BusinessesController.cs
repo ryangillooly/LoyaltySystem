@@ -64,10 +64,26 @@ public class BusinessesController : ControllerBase
         var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
         return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
     }
-    
+
     [HttpGet]
     [Route("{businessId:guid}/campaigns")]
-    public async Task<IActionResult> GetCampaigns(Guid businessId) => Ok(await _businessService.GetBusinessAsync(businessId));
+    public async Task<IActionResult> GetAllCampaigns(Guid businessId)
+    {
+        try
+        {
+            var campaigns = await _businessService.GetAllCampaignsAsync(businessId);
+            return Ok(campaigns);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
 
     [HttpGet]
     [Route("{businessId:guid}/campaigns/{campaignId:guid}")]

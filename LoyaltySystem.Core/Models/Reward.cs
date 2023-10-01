@@ -4,9 +4,10 @@ namespace LoyaltySystem.Core.Models;
 
 public class Reward
 {
-    public Reward(string title, string description, int pointsRequired) =>
-        (Title, Description, PointsRequired) = (title, description, pointsRequired);
+    public Reward(Guid id, string title, string description, int pointsRequired) =>
+        (Id, Title, Description, PointsRequired) = (id, title, description, pointsRequired);
     
+    public Guid Id { get; set; }
     public string Title { get; set; }
     public string Description { get; set; }
     public int PointsRequired { get; set; }  // For example, if users earn points and can redeem them for rewards

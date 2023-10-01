@@ -13,7 +13,7 @@ public class DynamoDbClient : IDynamoDbClient
     public DynamoDbClient(IAmazonDynamoDB dynamoDb, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDb, _dynamoDbSettings) = (dynamoDb, dynamoDbSettings);
 
-    public async Task<GetItemResponse> GetUserAsync(Guid userId)
+    public async Task<GetItemResponse?> GetUserAsync(Guid userId)
     {
         var request = new GetItemRequest
         {
@@ -33,7 +33,7 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
     
-    public async Task<GetItemResponse> GetBusinessAsync(Guid businessId)
+    public async Task<GetItemResponse?> GetBusinessAsync(Guid businessId)
     {
         var request = new GetItemRequest
         {
@@ -53,7 +53,7 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
 
-    public async Task<GetItemResponse> GetCampaignAsync(Guid businessId, Guid campaignId)
+    public async Task<GetItemResponse?> GetCampaignAsync(Guid businessId, Guid campaignId)
     {
         var request = new GetItemRequest
         {
@@ -73,7 +73,29 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
     
-    public async Task<GetItemResponse> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    public async Task<QueryResponse?> GetAllCampaignsAsync(Guid businessId)
+    {
+        var request = new QueryRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            KeyConditionExpression = "PK = :businessId AND begins_with(SK, :campaignPrefix)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                {":businessId",     new AttributeValue { S = $"Business#{businessId.ToString()}" }},
+                {":campaignPrefix", new AttributeValue { S = "Campaign#" }}
+            }
+        };
+
+        var response = await _dynamoDb.QueryAsync(request);
+
+        if (response.Items.Count is 0 || response.Items is null)
+            return null;
+
+        return response;
+    }
+
+    
+    public async Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var request = new GetItemRequest
         {

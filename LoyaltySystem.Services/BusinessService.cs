@@ -53,7 +53,12 @@ namespace LoyaltySystem.Services
             return newCampaign;
         }
 
-        public async Task<IEnumerable<Business>> GetAllAsync() => await _businessRepository.GetAllAsync();
+        public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
+        {
+            var campaigns = await _businessRepository.GetAllCampaignsAsync(businessId);
+            if (campaigns == null) throw new ResourceNotFoundException("No Campaigns found");
+            return campaigns;
+        }
 
         public async Task<Business> GetBusinessAsync(Guid businessId)
         {

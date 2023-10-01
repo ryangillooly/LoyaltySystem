@@ -41,9 +41,6 @@ public class BusinessRepository : IBusinessRepository
         }
     }
     
-    
-   public Task<IEnumerable<Business>> GetAllAsync() => throw new NotImplementedException();
-
    public async Task<Business?> GetBusinessAsync(Guid businessId)
    {
        var response = await _dynamoDbClient.GetBusinessAsync(businessId);
@@ -69,6 +66,41 @@ public class BusinessRepository : IBusinessRepository
    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
    public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId) => await _dynamoDbClient.DeleteCampaignAsync(businessId, campaignId);
 
+   public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
+   {
+       var response = await _dynamoDbClient.GetAllCampaignsAsync(businessId);
+       
+       if (response is null) return null;
+
+       var campaignList = new List<Campaign>();
+
+       foreach (var item in response.Items)
+       {
+           var campaign = new Campaign
+           {
+               Id         = Guid.Parse(item["CampaignId"].S),
+               BusinessId = Guid.Parse(item["BusinessId"].S),
+               Name       = item["Name"].S,
+               StartTime  = DateTime.Parse(item["StartTime"].S),
+               EndTime    = DateTime.Parse(item["EndTime"].S),
+               IsActive   = item["IsActive"].BOOL
+           };
+
+           var settings = new JsonSerializerSettings
+           {
+               MissingMemberHandling = MissingMemberHandling.Ignore
+           };
+           
+           var rewards = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S, settings);
+
+           campaign.Rewards = rewards;
+           
+           campaignList.Add(campaign);
+       }
+
+       return campaignList;
+   }
+   
    public async Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId)
    {
        var response = await _dynamoDbClient.GetCampaignAsync(businessId, campaignId);
