@@ -163,19 +163,52 @@ public class DynamoDbClient : IDynamoDbClient
         await _dynamoDb.DeleteItemAsync(deleteRequest);
     }
     
-    public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId)
+    public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds)
     {
-        var deleteRequest = new DeleteItemRequest
+        // Create batch delete requests
+        var batchRequests = new List<WriteRequest>();
+        foreach (var campaignId in campaignIds)
         {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
+            batchRequests.Add(new WriteRequest
             {
-                { "PK", new AttributeValue { S = $"Business#{businessId}" } },
-                { "SK", new AttributeValue { S = $"Campaign#{campaignId}" } }
-            }
-        };
+                DeleteRequest = new DeleteRequest
+                {
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        { "PK", new AttributeValue { S = $"Business#{businessId}" } },
+                        { "SK", new AttributeValue { S = $"Campaign#{campaignId}" } }
+                    }
+                }
+            });
+        }
 
-        await _dynamoDb.DeleteItemAsync(deleteRequest);
+        // Split requests into chunks of 25, which is the max for a single BatchWriteItem request
+        var chunkedBatchRequests = new List<List<WriteRequest>>();
+        for (var i = 0; i < batchRequests.Count; i += 25)
+        {
+            chunkedBatchRequests.Add(batchRequests.GetRange(i, Math.Min(25, batchRequests.Count - i)));
+        }
+
+        // Perform the BatchWriteItem for each chunk
+        foreach (var chunk in chunkedBatchRequests)
+        {
+            var batchWriteItemRequest = new BatchWriteItemRequest
+            {
+                RequestItems = new Dictionary<string, List<WriteRequest>>
+                {
+                    {_dynamoDbSettings.TableName, chunk}
+                }
+            };
+
+            try
+            {
+                await _dynamoDb.BatchWriteItemAsync(batchWriteItemRequest);
+            }
+            catch (ConditionalCheckFailedException)
+            {
+                throw new Exception($"Failed to delete items with PK - Business#{businessId} due to condition check");
+            }
+        }
     }
     
     public async Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
@@ -188,7 +221,6 @@ public class DynamoDbClient : IDynamoDbClient
 
         await _dynamoDb.PutItemAsync(request);
     }
-    
     public async Task<List<string>> GetAllSortKeysForPartitionKey(string PK)
     {
         var queryRequest = new QueryRequest
@@ -206,7 +238,6 @@ public class DynamoDbClient : IDynamoDbClient
         // Extract sort keys (SKs) from the response
         return response.Items.Select(item => item["SK"].S).ToList();
     }
-    
     public async Task DeleteItemsWithPK(string PK)
     {
         var sortKeys = await GetAllSortKeysForPartitionKey(PK);

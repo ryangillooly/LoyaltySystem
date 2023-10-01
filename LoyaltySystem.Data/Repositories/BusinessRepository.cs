@@ -14,24 +14,42 @@ public class BusinessRepository : IBusinessRepository
     public BusinessRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper) =>
         (_dynamoDbClient, _dynamoDbMapper) = (dynamoDbClient, dynamoDbMapper);
     
+    // Businesses
     public async Task CreateBusinessAsync(Business newBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(newBusiness);
         await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
     }
-
+    public async Task<Business?> GetBusinessAsync(Guid businessId)
+    {
+        var response = await _dynamoDbClient.GetBusinessAsync(businessId);
+       
+        if (response is null) return null;
+       
+        return new Business
+        {
+            Id           = Guid.Parse(response.Item["BusinessId"].S),
+            OwnerId      = Guid.Parse(response.Item["OwnerId"].S),
+            Name         = response.Item["Name"].S,
+            Description  = response.Item["Desc"]?.S,
+            Location     = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S),
+            OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S),
+            ContactInfo  = new ContactInfo
+            {
+                Email       = response.Item["Email"].S, 
+                PhoneNumber = response.Item["PhoneNumber"].S
+            },
+            Status =  Enum.Parse<BusinessStatus>(response.Item["Status"].S)
+        };
+    }
     public async Task UpdateBusinessAsync(Business updatedBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
         await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
-    
-     public async Task CreateCampaignAsync(Campaign newCampaign)
-    {
-        var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(newCampaign);
-        await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
-    }
-     
+    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
+
+    // Permissions
     public async Task UpdatePermissionsAsync(List<Permission> permissions)
     {
         foreach (var permission in permissions)
@@ -41,31 +59,12 @@ public class BusinessRepository : IBusinessRepository
         }
     }
     
-   public async Task<Business?> GetBusinessAsync(Guid businessId)
+   // Campaigns
+   public async Task CreateCampaignAsync(Campaign newCampaign)
    {
-       var response = await _dynamoDbClient.GetBusinessAsync(businessId);
-       
-       if (response is null) return null;
-       
-       return new Business
-       {
-           Id           = Guid.Parse(response.Item["BusinessId"].S),
-           OwnerId      = Guid.Parse(response.Item["OwnerId"].S),
-           Name         = response.Item["Name"].S,
-           Description  = response.Item["Desc"]?.S,
-           Location     = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S),
-           OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S),
-           ContactInfo  = new ContactInfo
-           {
-               Email       = response.Item["Email"].S, 
-               PhoneNumber = response.Item["PhoneNumber"].S
-           },
-           Status =  Enum.Parse<BusinessStatus>(response.Item["Status"].S)
-       };
+       var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(newCampaign);
+       await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
    }
-   public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
-   public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId) => await _dynamoDbClient.DeleteCampaignAsync(businessId, campaignId);
-
    public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
    {
        var response = await _dynamoDbClient.GetAllCampaignsAsync(businessId);
@@ -100,7 +99,6 @@ public class BusinessRepository : IBusinessRepository
 
        return campaignList;
    }
-   
    public async Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId)
    {
        var response = await _dynamoDbClient.GetCampaignAsync(businessId, campaignId);
@@ -118,4 +116,11 @@ public class BusinessRepository : IBusinessRepository
            IsActive   = response.Item["IsActive"].BOOL
        };
    }
+   public async Task UpdateCampaignAsync(Campaign updatedCampaign)
+   {
+       var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(updatedCampaign);
+       await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+   }
+   public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => await _dynamoDbClient.DeleteCampaignAsync(businessId, campaignIds);
+
 }

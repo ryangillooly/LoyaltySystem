@@ -13,5 +13,5 @@ public interface IDynamoDbClient
     Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteItemsWithPkAsync(string pk);
-    Task DeleteCampaignAsync(Guid businessId, Guid campaignId);
+    Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds);
 }

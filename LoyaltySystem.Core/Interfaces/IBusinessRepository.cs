@@ -10,7 +10,8 @@ public interface IBusinessRepository
     Task CreateBusinessAsync(Business entity);
     Task CreateCampaignAsync(Campaign campaign);
     Task UpdateBusinessAsync(Business updatedBusinessAsync);
+    Task UpdateCampaignAsync(Campaign updatedCampaign);
     Task UpdatePermissionsAsync(List<Permission> permissions);
     Task DeleteBusinessAsync(Guid businessId);
-    Task DeleteCampaignAsync(Guid businessId, Guid campaignId);
+    Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds);
 }

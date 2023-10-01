@@ -12,6 +12,8 @@ namespace LoyaltySystem.Services
         
         public BusinessService(IBusinessRepository businessRepository, IEmailService emailService) 
             => (_businessRepository, _emailService) = (businessRepository, emailService);
+        
+        // Businesses
         public async Task<Business> CreateBusinessAsync(Business newBusiness)
         {
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
@@ -31,7 +33,6 @@ namespace LoyaltySystem.Services
             
             return newBusiness;
         }
-
         public async Task<Business> UpdateBusinessAsync(Business updatedBusiness)
         {
             var currentRecord = await _businessRepository.GetBusinessAsync(updatedBusiness.Id);
@@ -42,39 +43,48 @@ namespace LoyaltySystem.Services
             
             return mergedRecord;
         }
-        
-        public async Task UpdatePermissionsAsync(List<Permission> permissions)
-        {
-            await _businessRepository.UpdatePermissionsAsync(permissions);
-        }
-        public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
-        {
-            await _businessRepository.CreateCampaignAsync(newCampaign);
-            return newCampaign;
-        }
-
-        public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
-        {
-            var campaigns = await _businessRepository.GetAllCampaignsAsync(businessId);
-            if (campaigns == null) throw new ResourceNotFoundException("No Campaigns found");
-            return campaigns;
-        }
-
         public async Task<Business> GetBusinessAsync(Guid businessId)
         {
             var business = await _businessRepository.GetBusinessAsync(businessId);
             if (business == null) throw new ResourceNotFoundException("Business not found");
             return business;
         }
+        public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
+        // Permissions
+        public async Task UpdatePermissionsAsync(List<Permission> permissions)
+        {
+            await _businessRepository.UpdatePermissionsAsync(permissions);
+        }
+       
+        // Campaigns
+        public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
+        {
+            await _businessRepository.CreateCampaignAsync(newCampaign);
+            return newCampaign;
+        }
+        public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
+        {
+            var campaigns = await _businessRepository.GetAllCampaignsAsync(businessId);
+            if (campaigns == null) throw new ResourceNotFoundException("No Campaigns found");
+            return campaigns;
+        }
         public async Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId)
         {
             var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
             if (campaign == null) throw new ResourceNotFoundException("Campaign not found");
             return campaign;
         }
-
-        public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
-        public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId) => await _businessRepository.DeleteCampaignAsync(businessId, campaignId);
+        public async Task<Campaign> UpdateCampaignAsync(Campaign updatedCampaign)
+        {
+            var currentRecord = await _businessRepository.GetCampaignAsync(updatedCampaign.BusinessId, updatedCampaign.Id);
+            if(currentRecord == null) throw new Exception("Record not found.");
+            var mergedRecord = Campaign.Merge(currentRecord, updatedCampaign);
+            
+            await _businessRepository.UpdateCampaignAsync(mergedRecord);
+            
+            return mergedRecord;
+        }
+        public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => await _businessRepository.DeleteCampaignAsync(businessId, campaignIds);
     }
 }
