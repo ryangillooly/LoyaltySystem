@@ -53,6 +53,26 @@ public class DynamoDbClient : IDynamoDbClient
         return response;
     }
 
+    public async Task<GetItemResponse> GetCampaignAsync(Guid businessId, Guid campaignId)
+    {
+        var request = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+                { "SK", new AttributeValue { S = $"Campaign#{campaignId}" }}
+            }
+        };
+
+        var response = await _dynamoDb.GetItemAsync(request);
+
+        if (response.Item == null || !response.IsItemSet)
+            return null;
+
+        return response;
+    }
+    
     public async Task<GetItemResponse> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var request = new GetItemRequest
@@ -86,7 +106,7 @@ public class DynamoDbClient : IDynamoDbClient
 
         try
         {
-            var response = await _dynamoDb.PutItemAsync(request);
+            await _dynamoDb.PutItemAsync(request);
         }
         catch (ConditionalCheckFailedException)
         {
@@ -115,6 +135,21 @@ public class DynamoDbClient : IDynamoDbClient
             {
                 { "PK", new AttributeValue { S = $"User#{userId}" } },
                 { "SK", new AttributeValue { S = $"Card#Business#{businessId}" } }
+            }
+        };
+
+        await _dynamoDb.DeleteItemAsync(deleteRequest);
+    }
+    
+    public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId)
+    {
+        var deleteRequest = new DeleteItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{businessId}" } },
+                { "SK", new AttributeValue { S = $"Campaign#{campaignId}" } }
             }
         };
 

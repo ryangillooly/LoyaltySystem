@@ -68,15 +68,38 @@ public class BusinessesController : ControllerBase
     [HttpGet]
     [Route("{businessId:guid}/campaigns")]
     public async Task<IActionResult> GetCampaigns(Guid businessId) => Ok(await _businessService.GetBusinessAsync(businessId));
-    
+
     [HttpGet]
     [Route("{businessId:guid}/campaigns/{campaignId:guid}")]
-    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId) => Ok(await _businessService.GetBusinessAsync(businessId));
+    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId)
+    {
+        try
+        {
+            var campaign = await _businessService.GetCampaignAsync(businessId, campaignId);
+            return Ok(campaign);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
     
+    [HttpDelete("{businessId:guid}/campaigns/{campaignId:guid}")]
+    public async Task<IActionResult> DeleteCampaign(Guid businessId, Guid campaignId)
+    {
+        await _businessService.DeleteCampaignAsync(businessId, campaignId);
+        return NoContent();
+    }
+
     [HttpPost]
     [HttpPut]
-    [Route("{businessId:guid}/users/{userId:guid}")]
-    public async Task<bool> PutUserPermission(Guid businessId, Guid userId, [FromBody] List<Permission> permissions)
+    [Route("{businessId:guid}/users")]
+    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<Permission> permissions)
     {
         var permissionList = new List<Permission>();
             
@@ -86,7 +109,7 @@ public class BusinessesController : ControllerBase
             (
                 new Permission
                 {
-                    UserId = userId,
+                    UserId = permission.UserId,
                     BusinessId = businessId,
                     Role = Enum.Parse<UserRole>(permission.Role.ToString())
                 }

@@ -20,11 +20,6 @@ namespace LoyaltySystem.Services
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
 
-            var auditRecord = new AuditRecord(EntityType.User, newUser.Id, ActionType.CreateAccount)
-            {
-                Source = "Mobile Webpage"
-            };
-            
             await _userRepository.CreateAsync(newUser);
             // await _auditService.CreateAuditRecordAsync<User>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
             

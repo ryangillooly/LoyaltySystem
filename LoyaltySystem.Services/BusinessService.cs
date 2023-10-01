@@ -61,7 +61,15 @@ namespace LoyaltySystem.Services
             if (business == null) throw new ResourceNotFoundException("Business not found");
             return business;
         }
+        
+        public async Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId)
+        {
+            var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
+            if (campaign == null) throw new ResourceNotFoundException("Campaign not found");
+            return campaign;
+        }
 
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
+        public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId) => await _businessRepository.DeleteCampaignAsync(businessId, campaignId);
     }
 }

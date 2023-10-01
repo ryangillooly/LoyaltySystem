@@ -50,17 +50,14 @@ public class BusinessRepository : IBusinessRepository
        
        if (response is null) return null;
        
-       var location     = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S);
-       var openingHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S);
-       
        return new Business
        {
            Id           = Guid.Parse(response.Item["BusinessId"].S),
            OwnerId      = Guid.Parse(response.Item["OwnerId"].S),
            Name         = response.Item["Name"].S,
            Description  = response.Item["Desc"]?.S,
-           Location     = location,
-           OpeningHours = openingHours,
+           Location     = JsonConvert.DeserializeObject<Location>(response.Item["Location"].S),
+           OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(response.Item["OpeningHours"].S),
            ContactInfo  = new ContactInfo
            {
                Email       = response.Item["Email"].S, 
@@ -70,4 +67,23 @@ public class BusinessRepository : IBusinessRepository
        };
    }
    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
+   public async Task DeleteCampaignAsync(Guid businessId, Guid campaignId) => await _dynamoDbClient.DeleteCampaignAsync(businessId, campaignId);
+
+   public async Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId)
+   {
+       var response = await _dynamoDbClient.GetCampaignAsync(businessId, campaignId);
+       
+       if (response is null) return null;
+       
+      return new Campaign
+       {
+           Id         = Guid.Parse(response.Item["CampaignId"].S),
+           BusinessId = Guid.Parse(response.Item["BusinessId"].S),
+           Name       = response.Item["Name"].S,
+           Rewards    = JsonConvert.DeserializeObject<List<Reward>>(response.Item["Rewards"].S),
+           StartTime  = DateTime.Parse(response.Item["StartTime"].S),
+           EndTime    = DateTime.Parse(response.Item["EndTime"].S),
+           IsActive   = response.Item["IsActive"].BOOL
+       };
+   }
 }
