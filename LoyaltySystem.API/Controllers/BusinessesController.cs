@@ -55,19 +55,40 @@ public class BusinessesController : ControllerBase
         return NoContent();
     }
 
+    // Business Users
+    [HttpPost("{businessId:guid}/users")]
+    public async Task<IActionResult> CreateBusinessUserPermission(Guid businessId, User newBusinessUser)
+    {
+        var createdBusinessUser = await _businessService.CreateBusinessUserPermissionAsync(newBusinessUserPermission);
+        return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUser.Id }, createdBusinessUser);
+    }
+    
+    [HttpGet("{businessId:guid}/users/{userId:guid}")]
+    public async Task<IActionResult> GetBusinessUserPermission(Guid businessId, Guid userId) => throw new NotImplementedException();
+    
+    [HttpGet("{businessId:guid}/users")]
+    public async Task<IActionResult> GetBusinessUsers(Guid businessId, User user) => throw new NotImplementedException();
+    
+    [HttpPut("{businessId:guid}/users/{userId:guid}")]
+    public async Task<IActionResult> UpdateBusinessUser(Guid businessId, Guid userId, User user) => throw new NotImplementedException();
+    
+    [HttpPut("{businessId:guid}/users/{userId:guid}")]
+    public async Task<IActionResult> DeleteBusinessUser(Guid businessId, Guid userId) => throw new NotImplementedException();
+
+
     // Permissions
     [HttpPost]
     [HttpPut]
     [Route("{businessId:guid}/users")]
-    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<Permission> permissions)
+    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<BusinessUserPermission> permissions)
     {
-        var permissionList = new List<Permission>();
+        var permissionList = new List<BusinessUserPermission>();
             
         foreach (var permission in permissions)
         {
             permissionList.Add
             (
-                new Permission
+                new BusinessUserPermission
                 {
                     UserId = permission.UserId,
                     BusinessId = businessId,
@@ -86,7 +107,7 @@ public class BusinessesController : ControllerBase
     {
         newCampaign.BusinessId = businessId;
         var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
-        return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
+        return CreatedAtAction(nameof(GetCampaign), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
     }
     [HttpGet("{businessId:guid}/campaigns")]
     public async Task<IActionResult> GetAllCampaigns(Guid businessId)
@@ -107,7 +128,7 @@ public class BusinessesController : ControllerBase
         }
     }
     [HttpGet("{businessId:guid}/campaigns/{campaignId:guid}")]
-    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId)
+    public async Task<IActionResult> GetCampaign(Guid businessId, Guid campaignId)
     {
         try
         {

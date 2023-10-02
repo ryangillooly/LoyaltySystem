@@ -49,15 +49,29 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 
-    // Permissions
-    public async Task UpdatePermissionsAsync(List<Permission> permissions)
+    
+    // Business User Permissions
+    public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermission> newBusinessUserPermissions)
     {
-        foreach (var permission in permissions)
+        // This needs to be changed to a BatchWriteItem request, to make use of batching, and limit DDB calls
+        foreach (var permission in newBusinessUserPermissions)
         {
-            var dynamoRecord = _dynamoDbMapper.MapPermissionToItem(permission);
+            var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(permission);
+            await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
+        }
+    }
+    
+    /*
+    public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermission> updatedBusinessUserPermissions)
+    {
+        // This needs to be changed to a BatchWriteItem request, to make use of batching, and limit DDB calls
+        foreach (var permission in updatedBusinessUserPermissions)
+        {
+            var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(permission);
             await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         }
     }
+    */
     
    // Campaigns
    public async Task CreateCampaignAsync(Campaign newCampaign)

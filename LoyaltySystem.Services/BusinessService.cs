@@ -21,7 +21,7 @@ namespace LoyaltySystem.Services
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
 
-            var permission = new Permission
+            var permission = new BusinessUserPermission
             {
                 UserId     = newBusiness.OwnerId,
                 BusinessId = newBusiness.Id,
@@ -29,7 +29,7 @@ namespace LoyaltySystem.Services
             };
             
             await _businessRepository.CreateBusinessAsync(newBusiness);
-            await _businessRepository.UpdatePermissionsAsync(new List<Permission>{permission});
+            await _businessRepository.UpdatePermissionsAsync(new List<BusinessUserPermission>{permission});
             
             return newBusiness;
         }
@@ -51,8 +51,15 @@ namespace LoyaltySystem.Services
         }
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
+        // Business Users
+        public async Task<User> CreateBusinessUserAsync(User newBusinessUser)
+        {
+            await _businessRepository.CreateBusinessUserAsync(newBusinessUser);
+            return newBusinessUser;
+        }
+        
         // Permissions
-        public async Task UpdatePermissionsAsync(List<Permission> permissions)
+        public async Task UpdatePermissionsAsync(List<BusinessUserPermission> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);
         }
