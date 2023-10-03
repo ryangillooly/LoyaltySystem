@@ -114,6 +114,47 @@ public class DynamoDbClient : IDynamoDbClient
 
         return response;
     }
+
+    public async Task WriteBatchAsync(List<Dictionary<string, AttributeValue>> itemList)
+    {
+        // Create batch delete requests
+        var batchRequests = new List<WriteRequest>();
+        foreach (var item in itemList)
+        {
+            batchRequests.Add(new WriteRequest
+            {
+                PutRequest = new PutRequest { Item = item }
+            });
+        }
+
+        // Split requests into chunks of 25, which is the max for a single BatchWriteItem request
+        var chunkedBatchRequests = new List<List<WriteRequest>>();
+        for (var i = 0; i < batchRequests.Count; i += 25)
+        {
+            chunkedBatchRequests.Add(batchRequests.GetRange(i, Math.Min(25, batchRequests.Count - i)));
+        }
+
+        // Perform the BatchWriteItem for each chunk
+        foreach (var chunk in chunkedBatchRequests)
+        {
+            var batchWriteItemRequest = new BatchWriteItemRequest
+            {
+                RequestItems = new Dictionary<string, List<WriteRequest>>
+                {
+                    {_dynamoDbSettings.TableName, chunk}
+                }
+            };
+
+            try
+            {
+                await _dynamoDb.BatchWriteItemAsync(batchWriteItemRequest);
+            }
+            catch (ConditionalCheckFailedException)
+            {
+                throw new Exception($"Failed to Create items - WriteBatchItemsAsync");
+            }
+        }
+    }
     
     public async Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
     {

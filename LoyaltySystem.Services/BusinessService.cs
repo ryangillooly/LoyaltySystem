@@ -26,7 +26,7 @@ namespace LoyaltySystem.Services
                 newBusiness.Id, 
                 new List<UserPermission>
                 {
-                    new UserPermission
+                    new ()
                     {
                         UserId = newBusiness.OwnerId,
                         Role   = UserRole.Owner
@@ -57,18 +57,20 @@ namespace LoyaltySystem.Services
         }
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
-        // Business Users
-        public async Task<List<BusinessUserPermissions>> CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
+        
+        // Business User Permissions
+        public async Task<BusinessUserPermissions> CreateBusinessUserPermissionsAsync(BusinessUserPermissions newBusinessUserPermissions)
         {
             await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
             return newBusinessUserPermissions;
         }
         
-        // Permissions
+        /*
         public async Task UpdatePermissionsAsync(List<BusinessUserPermissions> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);
         }
+        */
        
         // Campaigns
         public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 

@@ -61,7 +61,7 @@ public class BusinessesController : ControllerBase
     {
         newBusinessUserPermissions.BusinessId = businessId;
         var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
-        //return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUserPermissions.Id }, createdBusinessUser);
+        return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUserPermissions.Permissions[0].UserId }, createdBusinessUsers);
     }
     
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
