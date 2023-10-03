@@ -28,22 +28,24 @@ public class DynamoDbMapper : IDynamoDbMapper
         
         return item;
     }
-    
-    public Dictionary<string, AttributeValue> MapBusinessUserPermissionsToItem(BusinessUserPermission businessUserPermission) =>
-        new ()
-        {
-            // Assuming 'USER#' as a prefix for the user PK and 'BUSINESS#' as a prefix for businesses
-            { "PK",         new AttributeValue { S = $"User#{businessUserPermission.UserId}" }},
-            { "SK",         new AttributeValue { S = $"Permission#Business#{businessUserPermission.BusinessId}" }},
-            { "UserId",     new AttributeValue { S = $"{businessUserPermission.UserId}" }},
-            { "BusinessId", new AttributeValue { S = $"{businessUserPermission.BusinessId}" }},
-            { "EntityType", new AttributeValue { S = $"{EntityType.Permission}" }},
-            { "Role",       new AttributeValue { S = $"{businessUserPermission.Role}" }},
-            { "Timestamp",  new AttributeValue { S = $"{DateTime.UtcNow}" }},
 
-            { "BusinessUserList-PK",  new AttributeValue { S = $"{businessUserPermission.BusinessId}" }},
-            { "BusinessUserList-SK",  new AttributeValue { S = $"Permission#User#{businessUserPermission.UserId}" }},
-        };
+    public List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(BusinessUserPermissions businessUserPermissions) =>
+        businessUserPermissions.Permissions.Select
+        (
+            permission => new Dictionary<string, AttributeValue>
+            {
+                { "PK",                  new AttributeValue { S = $"User#{permission.UserId}" } },
+                { "SK",                  new AttributeValue { S = $"Permission#Business#{businessUserPermissions.BusinessId}" } },
+                { "UserId",              new AttributeValue { S = $"{permission.UserId}" } },
+                { "BusinessId",          new AttributeValue { S = $"{businessUserPermissions.BusinessId}" } },
+                { "EntityType",          new AttributeValue { S = $"{EntityType.Permission}" } },
+                { "Role",                new AttributeValue { S = $"{permission.Role}" } },
+                { "Timestamp",           new AttributeValue { S = $"{DateTime.UtcNow}" } },
+                { "BusinessUserList-PK", new AttributeValue { S = $"{businessUserPermissions.BusinessId}" } },
+                { "BusinessUserList-SK", new AttributeValue { S = $"Permission#User#{permission.UserId}" } }
+            }
+        )
+        .ToList();
 
     public Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard) =>
         new ()

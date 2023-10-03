@@ -57,10 +57,11 @@ public class BusinessesController : ControllerBase
 
     // Business Users
     [HttpPost("{businessId:guid}/users")]
-    public async Task<IActionResult> CreateBusinessUserPermission(Guid businessId, User newBusinessUser)
+    public async Task<IActionResult> CreateBusinessUserPermissions(Guid businessId, BusinessUserPermissions newBusinessUserPermissions)
     {
-        var createdBusinessUser = await _businessService.CreateBusinessUserPermissionAsync(newBusinessUserPermission);
-        return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUser.Id }, createdBusinessUser);
+        newBusinessUserPermissions.BusinessId = businessId;
+        var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
+        //return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUserPermissions.Id }, createdBusinessUser);
     }
     
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
@@ -80,15 +81,15 @@ public class BusinessesController : ControllerBase
     [HttpPost]
     [HttpPut]
     [Route("{businessId:guid}/users")]
-    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<BusinessUserPermission> permissions)
+    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<BusinessUserPermissions> permissions)
     {
-        var permissionList = new List<BusinessUserPermission>();
+        var permissionList = new List<BusinessUserPermissions>();
             
         foreach (var permission in permissions)
         {
             permissionList.Add
             (
-                new BusinessUserPermission
+                new BusinessUserPermissions
                 {
                     UserId = permission.UserId,
                     BusinessId = businessId,

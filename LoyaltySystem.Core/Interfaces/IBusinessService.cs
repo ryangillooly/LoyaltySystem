@@ -10,10 +10,10 @@ public interface IBusinessService
     Task<Business> GetBusinessAsync(Guid businessId);
     Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId);
     Task<Business> CreateBusinessAsync(Business newBusiness);
-    Task<User> CreateBusinessUserAsync(User newBusinessUser);
+    Task<User> CreateBusinessUserPermissionsAsync(User newBusinessUser);
     Task<Campaign> CreateCampaignAsync(Campaign newCampaign);
     Task<Business> UpdateBusinessAsync(Business updatedBusiness);
-    Task UpdatePermissionsAsync(List<BusinessUserPermission> permissions);
+    Task UpdatePermissionsAsync(List<BusinessUserPermissions> permissions);
     Task<Campaign> UpdateCampaignAsync(Campaign updatedCampaign);
     Task DeleteBusinessAsync(Guid businessId);
     Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds);

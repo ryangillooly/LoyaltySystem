@@ -3,9 +3,9 @@ using LoyaltySystem.Core.Enums;
 
 namespace LoyaltySystem.Core.Models;
 
-public class BusinessUserPermission
+public class BusinessUserPermissions
 {
-    public BusinessUserPermission(Guid businessId, List<UserPermission> permissions) =>
+    public BusinessUserPermissions(Guid businessId, List<UserPermission> permissions) =>
     (BusinessId, Permissions) = (businessId, permissions);
     
     public Guid BusinessId { get; set; }

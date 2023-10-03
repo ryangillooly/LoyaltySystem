@@ -20,16 +20,22 @@ namespace LoyaltySystem.Services
 
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
-
-            var permission = new BusinessUserPermission
-            {
-                UserId     = newBusiness.OwnerId,
-                BusinessId = newBusiness.Id,
-                Role       = UserRole.Owner
-            };
             
+            var permissions = new BusinessUserPermissions
+            (
+                newBusiness.Id, 
+                new List<UserPermission>
+                {
+                    new UserPermission
+                    {
+                        UserId = newBusiness.OwnerId,
+                        Role   = UserRole.Owner
+                    }
+                }
+            );
+
             await _businessRepository.CreateBusinessAsync(newBusiness);
-            await _businessRepository.UpdatePermissionsAsync(new List<BusinessUserPermission>{permission});
+            await _businessRepository.UpdateBusinessUserPermissionsAsync(permissions);
             
             return newBusiness;
         }
@@ -52,14 +58,14 @@ namespace LoyaltySystem.Services
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
         // Business Users
-        public async Task<User> CreateBusinessUserAsync(User newBusinessUser)
+        public async Task<List<BusinessUserPermissions>> CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
         {
-            await _businessRepository.CreateBusinessUserAsync(newBusinessUser);
-            return newBusinessUser;
+            await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
+            return newBusinessUserPermissions;
         }
         
         // Permissions
-        public async Task UpdatePermissionsAsync(List<BusinessUserPermission> permissions)
+        public async Task UpdatePermissionsAsync(List<BusinessUserPermissions> permissions)
         {
             await _businessRepository.UpdatePermissionsAsync(permissions);
         }
