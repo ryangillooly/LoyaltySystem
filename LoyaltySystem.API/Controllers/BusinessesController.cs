@@ -65,7 +65,6 @@ public class BusinessesController : ControllerBase
         var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(permissionList);
         return CreatedAtAction(nameof(GetBusinessUsersPermission), new { businessId = businessId, userId = newBusinessUserPermissions[0].UserId }, createdBusinessUsers);
     }
-
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
     public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId)
     {
@@ -104,14 +103,15 @@ public class BusinessesController : ControllerBase
         }
     }
 
-    [HttpPut("{businessId:guid}/users/{userId:guid}")]
+    [HttpPut("{businessId:guid}/users")]
     public async Task<IActionResult> UpdateBusinessUsersPermissions(Guid businessId, List<UserPermissions> updatedBusinessUserPermissions)
     {
         var permissionList = updatedBusinessUserPermissions.Select(permission =>
             new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
 
-        var updatedBusinessUsers = await _businessService.UpdateBusinessUserPermissionsAsync(permissionList);
-        return Ok(); // TODO
+        var updatedBusinessUsers = await _businessService.UpdateBusinessUsersPermissionsAsync(permissionList);
+        
+        return Ok(updatedBusinessUsers); 
     }
     
     [HttpDelete("{businessId:guid}/users/{userId:guid}")]

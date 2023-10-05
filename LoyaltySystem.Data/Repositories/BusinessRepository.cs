@@ -63,7 +63,10 @@ public class BusinessRepository : IBusinessRepository
     public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
         var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
-        await _dynamoDbClient.WriteBatchAsync(dynamoRecords);
+        foreach (var record in dynamoRecords)
+        {
+           await _dynamoDbClient.UpdateRecordAsync(record, null);
+        }
     }
     public async Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId)
     {
@@ -88,6 +91,14 @@ public class BusinessRepository : IBusinessRepository
         Guid.Parse(response.Item["UserId"].S), 
           Enum.Parse<UserRole>(response.Item["Role"].S)
         );
+    }
+    public async Task UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
+    {
+        var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(updatedBusinessUserPermissions);
+        foreach (var record in dynamoRecord)
+        {
+            await _dynamoDbClient.UpdateRecordAsync(record, null);
+        }
     }
 
     

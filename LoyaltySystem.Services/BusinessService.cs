@@ -54,15 +54,13 @@ namespace LoyaltySystem.Services
             await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
             return newBusinessUserPermissions;
         }
-        public Task<List<BusinessUserPermissions>> UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
-        {
-            throw new NotImplementedException();
-        }
-        public async Task<List<BusinessUserPermissions>> UpdatedBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
+
+        public async Task<List<BusinessUserPermissions>> UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
         {
             await _businessRepository.UpdateBusinessUserPermissionsAsync(updatedBusinessUserPermissions);
             return updatedBusinessUserPermissions;
         }
+
         public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
         {
             var businessPermissions = await _businessRepository.GetBusinessPermissionsAsync(businessId);
