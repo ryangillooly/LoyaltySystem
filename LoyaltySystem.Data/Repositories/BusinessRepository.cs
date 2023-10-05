@@ -51,24 +51,20 @@ public class BusinessRepository : IBusinessRepository
 
     
     // Business User Permissions
-    public async Task CreateBusinessUserPermissionsAsync(BusinessUserPermissions newBusinessUserPermissions)
+    public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
-        foreach (var permission in newBusinessUserPermissions.Permissions)
+        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
+        
+        foreach (var dynamoRecord in dynamoRecords)
         {
-            // This needs to be changed to a BatchWriteItem request, to make use of batching, and limit DDB calls
-            var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
-            await _dynamoDbClient.WriteBatchAsync(dynamoRecord);
+            await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         }
     }
-    
-    public async Task UpdateBusinessUserPermissionsAsync(BusinessUserPermissions updatedBusinessUserPermissions)
+
+    public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
-        // This needs to be changed to a BatchWriteItem request, to make use of batching, and limit DDB calls
-        foreach (var permission in updatedBusinessUserPermissions.Permissions)
-        {
-            var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(permission);
-            await _dynamoDbClient.WriteBatchAsync(dynamoRecord);
-        }
+        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
+        await _dynamoDbClient.WriteBatchAsync(dynamoRecords);
     }
     
     

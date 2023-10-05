@@ -21,21 +21,10 @@ namespace LoyaltySystem.Services
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
             
-            var permissions = new BusinessUserPermissions
-            (
-                newBusiness.Id, 
-                new List<UserPermission>
-                {
-                    new ()
-                    {
-                        UserId = newBusiness.OwnerId,
-                        Role   = UserRole.Owner
-                    }
-                }
-            );
+            var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
 
             await _businessRepository.CreateBusinessAsync(newBusiness);
-            await _businessRepository.UpdateBusinessUserPermissionsAsync(permissions);
+            await _businessRepository.UpdateBusinessUserPermissionsAsync(new List<BusinessUserPermissions> { permissions });
             
             return newBusiness;
         }
@@ -59,8 +48,9 @@ namespace LoyaltySystem.Services
         
         
         // Business User Permissions
-        public async Task<BusinessUserPermissions> CreateBusinessUserPermissionsAsync(BusinessUserPermissions newBusinessUserPermissions)
+        public async Task<List<BusinessUserPermissions>> CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
         {
+
             await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
             return newBusinessUserPermissions;
         }

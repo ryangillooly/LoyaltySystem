@@ -57,28 +57,30 @@ public class BusinessesController : ControllerBase
 
     // Business Users
     [HttpPost("{businessId:guid}/users")]
-    public async Task<IActionResult> CreateBusinessUserPermissions(Guid businessId, BusinessUserPermissions newBusinessUserPermissions)
+    public async Task<IActionResult> CreateBusinessUserPermissions(Guid businessId, List<UserPermissions> newBusinessUserPermissions)
     {
-        newBusinessUserPermissions.BusinessId = businessId;
-        var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
-        return CreatedAtAction(nameof(GetBusinessUserPermission), new { businessId = businessId, userId = newBusinessUserPermissions.Permissions[0].UserId }, createdBusinessUsers);
+        var permissionList = newBusinessUserPermissions.Select(permission => new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
+
+        var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(permissionList);
+        return CreatedAtAction(nameof(GetBusinessUsersPermission), new { businessId = businessId, userId = newBusinessUserPermissions[0].UserId }, createdBusinessUsers);
     }
     
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> GetBusinessUserPermission(Guid businessId, Guid userId) => throw new NotImplementedException();
+    public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId) => throw new NotImplementedException();
     
     [HttpGet("{businessId:guid}/users")]
-    public async Task<IActionResult> GetBusinessUsers(Guid businessId, User user) => throw new NotImplementedException();
+    public async Task<IActionResult> GetBusinessUsersPermissions(Guid businessId, User user) => throw new NotImplementedException();
     
     [HttpPut("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> UpdateBusinessUser(Guid businessId, Guid userId, User user) => throw new NotImplementedException();
+    public async Task<IActionResult> UpdateBusinessUsersPermissions(Guid businessId, Guid userId, User user) => throw new NotImplementedException();
     
-    [HttpPut("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> DeleteBusinessUser(Guid businessId, Guid userId) => throw new NotImplementedException();
+    [HttpDelete("{businessId:guid}/users/{userId:guid}")]
+    public async Task<IActionResult> DeleteBusinessUsersPermissions(Guid businessId, Guid userId) => throw new NotImplementedException();
 
 
     // Permissions
-    [HttpPost]
+    /*
+    [HttpPost] 
     [HttpPut]
     [Route("{businessId:guid}/users")]
     public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<BusinessUserPermissions> permissions)
@@ -100,6 +102,7 @@ public class BusinessesController : ControllerBase
         await _businessService.UpdatePermissionsAsync(permissionList);
         return true;
     }
+    */
     
     
     // Campaigns

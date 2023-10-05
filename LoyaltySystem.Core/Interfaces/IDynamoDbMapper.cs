@@ -8,6 +8,6 @@ public interface IDynamoDbMapper
     Dictionary<string, AttributeValue> MapUserToItem(User user);
     Dictionary<string, AttributeValue> MapBusinessToItem(Business business);
     Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard);
-    List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(BusinessUserPermissions businessUserPermissions);
+    List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(List<BusinessUserPermissions> businessUserPermissions);
     Dictionary<string, AttributeValue> MapCampaignToItem(Campaign campaign);
 }

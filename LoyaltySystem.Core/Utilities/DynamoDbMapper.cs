@@ -29,23 +29,20 @@ public class DynamoDbMapper : IDynamoDbMapper
         return item;
     }
 
-    public List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(BusinessUserPermissions businessUserPermissions) =>
-        businessUserPermissions.Permissions.Select
-        (
-            permission => new Dictionary<string, AttributeValue>
+    public List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(List<BusinessUserPermissions> businessUserPermissions) =>
+        businessUserPermissions.Select(permission => new Dictionary<string, AttributeValue>
             {
                 { "PK",                  new AttributeValue { S = $"User#{permission.UserId}" } },
-                { "SK",                  new AttributeValue { S = $"Permission#Business#{businessUserPermissions.BusinessId}" } },
+                { "SK",                  new AttributeValue { S = $"Permission#Business#{permission.BusinessId}" } },
                 { "UserId",              new AttributeValue { S = $"{permission.UserId}" } },
-                { "BusinessId",          new AttributeValue { S = $"{businessUserPermissions.BusinessId}" } },
+                { "BusinessId",          new AttributeValue { S = $"{permission.BusinessId}" } },
                 { "EntityType",          new AttributeValue { S = $"{EntityType.Permission}" } },
-                { "Role",                new AttributeValue { S = $"{permission.Role}" } },
+                { "Role",                new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { "Timestamp",           new AttributeValue { S = $"{DateTime.UtcNow}" } },
-                { "BusinessUserList-PK", new AttributeValue { S = $"{businessUserPermissions.BusinessId}" } },
+                { "BusinessUserList-PK", new AttributeValue { S = $"{permission.BusinessId}" } },
                 { "BusinessUserList-SK", new AttributeValue { S = $"Permission#User#{permission.UserId}" } }
-            }
-        )
-        .ToList();
+            })
+            .ToList();
 
     public Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard) =>
         new ()
