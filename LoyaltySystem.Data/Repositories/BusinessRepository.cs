@@ -60,13 +60,36 @@ public class BusinessRepository : IBusinessRepository
             await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         }
     }
-
     public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
         var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
         await _dynamoDbClient.WriteBatchAsync(dynamoRecords);
     }
-    
+    public async Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId)
+    {
+        var response = await _dynamoDbClient.GetBusinessPermissions(businessId);
+
+        return response?.Items
+            .Select(permission => 
+                new BusinessUserPermissions(
+                    Guid.Parse(permission["BusinessUserList-PK"].S), 
+                    Guid.Parse(permission["UserId"].S), 
+                    Enum.Parse<UserRole>(permission["Role"].S)))
+            .ToList();
+    }
+    public async Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
+    {
+        var response = await _dynamoDbClient.GetBusinessUsersPermissions(businessId, userId);
+
+        if (response is null || !response.IsItemSet) return null;
+        
+        return  new BusinessUserPermissions(
+    Guid.Parse(response.Item["BusinessUserList-PK"].S), 
+        Guid.Parse(response.Item["UserId"].S), 
+          Enum.Parse<UserRole>(response.Item["Role"].S)
+        );
+    }
+
     
    // Campaigns
    public async Task CreateCampaignAsync(Campaign newCampaign)

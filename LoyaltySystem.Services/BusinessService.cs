@@ -54,14 +54,28 @@ namespace LoyaltySystem.Services
             await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
             return newBusinessUserPermissions;
         }
-        
-        /*
-        public async Task UpdatePermissionsAsync(List<BusinessUserPermissions> permissions)
+        public Task<List<BusinessUserPermissions>> UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
         {
-            await _businessRepository.UpdatePermissionsAsync(permissions);
+            throw new NotImplementedException();
         }
-        */
-       
+        public async Task<List<BusinessUserPermissions>> UpdatedBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
+        {
+            await _businessRepository.UpdateBusinessUserPermissionsAsync(updatedBusinessUserPermissions);
+            return updatedBusinessUserPermissions;
+        }
+        public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
+        {
+            var businessPermissions = await _businessRepository.GetBusinessPermissionsAsync(businessId);
+            if (businessPermissions is null) throw new ResourceNotFoundException($"No Permissions found");
+            return businessPermissions;
+        }
+        public async Task<BusinessUserPermissions> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
+        {
+            var businessPermissions = await _businessRepository.GetBusinessUsersPermissionsAsync(businessId, userId);
+            if (businessPermissions is null) throw new ResourceNotFoundException($"No Permissions found");
+            return businessPermissions;
+        }
+        
         // Campaigns
         public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
         {
@@ -71,19 +85,19 @@ namespace LoyaltySystem.Services
         public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
         {
             var campaigns = await _businessRepository.GetAllCampaignsAsync(businessId);
-            if (campaigns == null) throw new ResourceNotFoundException("No Campaigns found");
+            if (campaigns is null) throw new ResourceNotFoundException("No Campaigns found");
             return campaigns;
         }
         public async Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId)
         {
             var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
-            if (campaign == null) throw new ResourceNotFoundException("Campaign not found");
+            if (campaign is null) throw new ResourceNotFoundException("Campaign not found");
             return campaign;
         }
         public async Task<Campaign> UpdateCampaignAsync(Campaign updatedCampaign)
         {
             var currentRecord = await _businessRepository.GetCampaignAsync(updatedCampaign.BusinessId, updatedCampaign.Id);
-            if(currentRecord == null) throw new Exception("Record not found.");
+            if(currentRecord is null) throw new Exception("Record not found.");
             var mergedRecord = Campaign.Merge(currentRecord, updatedCampaign);
             
             await _businessRepository.UpdateCampaignAsync(mergedRecord);

@@ -59,20 +59,60 @@ public class BusinessesController : ControllerBase
     [HttpPost("{businessId:guid}/users")]
     public async Task<IActionResult> CreateBusinessUserPermissions(Guid businessId, List<UserPermissions> newBusinessUserPermissions)
     {
-        var permissionList = newBusinessUserPermissions.Select(permission => new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
+        var permissionList = newBusinessUserPermissions.Select(permission => 
+            new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
 
         var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(permissionList);
         return CreatedAtAction(nameof(GetBusinessUsersPermission), new { businessId = businessId, userId = newBusinessUserPermissions[0].UserId }, createdBusinessUsers);
     }
-    
+
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId) => throw new NotImplementedException();
-    
+    public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId)
+    {
+        try
+        {
+            var businessPermissions = await _businessService.GetBusinessUsersPermissionsAsync(businessId, userId);
+            return Ok(businessPermissions);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
     [HttpGet("{businessId:guid}/users")]
-    public async Task<IActionResult> GetBusinessUsersPermissions(Guid businessId, User user) => throw new NotImplementedException();
-    
+    public async Task<IActionResult> GetBusinessPermissions(Guid businessId)
+    {
+        try
+        {
+            var businessPermissions = await _businessService.GetBusinessPermissionsAsync(businessId);
+            return Ok(businessPermissions);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
     [HttpPut("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> UpdateBusinessUsersPermissions(Guid businessId, Guid userId, User user) => throw new NotImplementedException();
+    public async Task<IActionResult> UpdateBusinessUsersPermissions(Guid businessId, List<UserPermissions> updatedBusinessUserPermissions)
+    {
+        var permissionList = updatedBusinessUserPermissions.Select(permission =>
+            new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
+
+        var updatedBusinessUsers = await _businessService.UpdateBusinessUserPermissionsAsync(permissionList);
+        return Ok(); // TODO
+    }
     
     [HttpDelete("{businessId:guid}/users/{userId:guid}")]
     public async Task<IActionResult> DeleteBusinessUsersPermissions(Guid businessId, Guid userId) => throw new NotImplementedException();

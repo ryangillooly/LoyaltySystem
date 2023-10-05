@@ -14,6 +14,9 @@ public interface IBusinessRepository
     // Business User Permissions
     Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions);
     Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions);
+    Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId);
+    Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId);
+
     
     
     // Business Campaigns
