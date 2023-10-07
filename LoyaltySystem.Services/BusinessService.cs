@@ -54,13 +54,11 @@ namespace LoyaltySystem.Services
             await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
             return newBusinessUserPermissions;
         }
-
         public async Task<List<BusinessUserPermissions>> UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
         {
             await _businessRepository.UpdateBusinessUserPermissionsAsync(updatedBusinessUserPermissions);
             return updatedBusinessUserPermissions;
         }
-
         public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
         {
             var businessPermissions = await _businessRepository.GetBusinessPermissionsAsync(businessId);
@@ -73,6 +71,9 @@ namespace LoyaltySystem.Services
             if (businessPermissions is null) throw new ResourceNotFoundException($"No Permissions found");
             return businessPermissions;
         }
+
+        public async Task DeleteBusinessUsersPermissionsAsync(Guid businessId, List<Guid> userIdList) =>
+            await _businessRepository.DeleteUsersPermissionsAsync(businessId, userIdList);
         
         // Campaigns
         public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
@@ -102,6 +103,7 @@ namespace LoyaltySystem.Services
             
             return mergedRecord;
         }
-        public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => await _businessRepository.DeleteCampaignAsync(businessId, campaignIds);
+        public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => 
+            await _businessRepository.DeleteCampaignAsync(businessId, campaignIds);
     }
 }

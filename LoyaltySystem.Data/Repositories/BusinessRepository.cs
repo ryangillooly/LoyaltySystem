@@ -47,7 +47,8 @@ public class BusinessRepository : IBusinessRepository
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
         await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
-    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
+    public async Task DeleteBusinessAsync(Guid businessId) => 
+        await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 
     
     // Business User Permissions
@@ -60,9 +61,9 @@ public class BusinessRepository : IBusinessRepository
             await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         }
     }
-    public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
+    public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
     {
-        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
+        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(updatedBusinessUserPermissions);
         foreach (var record in dynamoRecords)
         {
            await _dynamoDbClient.UpdateRecordAsync(record, null);
@@ -92,14 +93,8 @@ public class BusinessRepository : IBusinessRepository
           Enum.Parse<UserRole>(response.Item["Role"].S)
         );
     }
-    public async Task UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
-    {
-        var dynamoRecord = _dynamoDbMapper.MapBusinessUserPermissionsToItem(updatedBusinessUserPermissions);
-        foreach (var record in dynamoRecord)
-        {
-            await _dynamoDbClient.UpdateRecordAsync(record, null);
-        }
-    }
+    public async Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList) =>
+        await _dynamoDbClient.DeleteBusinessUsersPermissions(businessId, userIdList);
 
     
    // Campaigns

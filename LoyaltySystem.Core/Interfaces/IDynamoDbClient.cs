@@ -18,6 +18,7 @@ public interface IDynamoDbClient
     // Business Users
     Task<QueryResponse?> GetBusinessPermissions(Guid businessId);
     Task<GetItemResponse?> GetBusinessUsersPermissions(Guid businessId, Guid userId);
+    Task DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userId);
     
     // LoyaltyCard
     Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId);

@@ -113,38 +113,15 @@ public class BusinessesController : ControllerBase
         
         return Ok(updatedBusinessUsers); 
     }
-    
-    [HttpDelete("{businessId:guid}/users/{userId:guid}")]
-    public async Task<IActionResult> DeleteBusinessUsersPermissions(Guid businessId, Guid userId) => throw new NotImplementedException();
 
-
-    // Permissions
-    /*
-    [HttpPost] 
-    [HttpPut]
-    [Route("{businessId:guid}/users")]
-    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<BusinessUserPermissions> permissions)
+    [HttpDelete("{businessId:guid}/users")]
+    public async Task<IActionResult> DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userIdList)
     {
-        var permissionList = new List<BusinessUserPermissions>();
-            
-        foreach (var permission in permissions)
-        {
-            permissionList.Add
-            (
-                new BusinessUserPermissions
-                {
-                    UserId = permission.UserId,
-                    BusinessId = businessId,
-                    Role = Enum.Parse<UserRole>(permission.Role.ToString())
-                }
-            );
-        }
-        await _businessService.UpdatePermissionsAsync(permissionList);
-        return true;
+        await _businessService.DeleteBusinessUsersPermissionsAsync(businessId, userIdList);
+        return NoContent();
     }
-    */
-    
-    
+
+
     // Campaigns
     [HttpPost("{businessId:guid}/campaigns")]
     public async Task<IActionResult> CreateCampaign(Guid businessId, [FromBody] Campaign newCampaign)

@@ -18,7 +18,7 @@ public interface IBusinessService
     Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId);
     Task<BusinessUserPermissions> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId);
     Task<List<BusinessUserPermissions>> UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions);
-    
+    Task DeleteBusinessUsersPermissionsAsync(Guid businessId, List<Guid> userIdList);
     
     // Business Campaigns
     Task<Campaign> CreateCampaignAsync(Campaign newCampaign);

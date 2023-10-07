@@ -100,6 +100,24 @@ public class DynamoDbClient : IDynamoDbClient
 
         return response;
     }
+
+    public async Task DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userIdList)
+    {
+        foreach (var userId in userIdList)
+        {
+            var deleteRequest = new DeleteItemRequest
+            {
+                TableName = _dynamoDbSettings.TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", new AttributeValue { S = $"User#{userId}" } },
+                    { "SK", new AttributeValue { S = $"Permission#Business#{businessId}" } }
+                }
+            };
+
+            await _dynamoDb.DeleteItemAsync(deleteRequest); // Replace with batching
+        }
+    }
     
     // Business Campaigns
     public async Task<GetItemResponse?> GetCampaignAsync(Guid businessId, Guid campaignId)

@@ -16,6 +16,7 @@ public interface IBusinessRepository
     Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions);
     Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId);
     Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId);
+    Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList);
 
     
     
