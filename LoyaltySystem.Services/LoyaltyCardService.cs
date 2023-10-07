@@ -51,7 +51,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         currentRecord.Points += 1;
         currentRecord.DateLastStamped = DateTime.UtcNow;
         
-        await _loyaltyCardRepository.UpdateLoyaltyCardAsync(currentRecord);
+        await _loyaltyCardRepository.StampLoyaltyCardAsync(currentRecord);
             
         return currentRecord;
     }

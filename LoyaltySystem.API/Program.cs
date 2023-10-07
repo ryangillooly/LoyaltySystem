@@ -19,22 +19,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add AWS Services
-//builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddAWSService<IAmazonDynamoDB>();
 
 // Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
 var dynamoDbSettings = new DynamoDbSettings();
 builder.Configuration.GetSection("DynamoDbSettings").Bind(dynamoDbSettings);
 builder.Services.AddSingleton(dynamoDbSettings);
-builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
-{
-    var config = new AmazonDynamoDBConfig
-    {
-        ServiceURL = dynamoDbSettings.LocalServiceUrl,
-        RegionEndpoint = RegionEndpoint.EUWest2,
-        
-    };
-    return new AmazonDynamoDBClient("dummyAccessKey", "dummySecretKey", config);
-});
 
 // Add Clients
 builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();

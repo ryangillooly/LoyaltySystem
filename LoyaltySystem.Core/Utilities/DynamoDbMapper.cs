@@ -67,24 +67,29 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "LastStampDate", new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" }},
             { "Status",        new AttributeValue { S = $"{loyaltyCard.Status}" }},
 
-            { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#{loyaltyCard.Id}" } }
+            { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+            { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#{loyaltyCard.Id}" }}
         };
-    
-    public Dictionary<string, AttributeValue> MapLoyaltyCardToStampItem(LoyaltyCard loyaltyCard) =>
-        new ()
+
+    public Dictionary<string, AttributeValue> MapLoyaltyCardToStampItem(LoyaltyCard loyaltyCard)
+    {
+        var stampId = Guid.NewGuid();
+        return 
+        new()
         {
             // Primary Key + Sort Key
             { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
-            { "SK", new AttributeValue { S = $"Stamp#Business#{loyaltyCard.BusinessId}#{Guid.NewGuid()}" }},
+            { "SK", new AttributeValue { S = $"Action#Stamp#Business#{loyaltyCard.BusinessId}#{stampId}" }},
 
             // Attributes
-            { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" }},
-            { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
-            { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" }},
-            { "EntityType",    new AttributeValue { S = "Stamp" }},
-            { "StampDate",     new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" }}
+            { "CardId",     new AttributeValue { S = $"{loyaltyCard.Id}" }},
+            { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+            { "UserId",     new AttributeValue { S = $"{loyaltyCard.UserId}" }},
+            { "StampId",    new AttributeValue { S = $"{stampId}" }},
+            { "EntityType", new AttributeValue { S = "Stamp" }},
+            { "StampDate",  new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" }}
         };
+    }
 
     public Dictionary<string, AttributeValue> MapBusinessToItem(Business business)
     {
@@ -99,7 +104,7 @@ public class DynamoDbMapper : IDynamoDbMapper
          
             // Attributes
             { "BusinessId",   new AttributeValue { S = business.Id.ToString()} },
-            { "OwnerId",      new AttributeValue { S = business.OwnerId.ToString()} },
+            { "OwnerId",      new AttributeValue { S = business.OwnerId.ToString() }},
             { "EntityType",   new AttributeValue { S = business.GetType().Name} },
             { "Name",         new AttributeValue { S = business.Name }},
             { "OpeningHours", new AttributeValue { S = openingHoursJson }},

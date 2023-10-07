@@ -48,17 +48,11 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
-       // Map the Loyalty Card, to a "Stamp" Item
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
-        
-        // Map the Loyalty Card to a "LoyaltyCard" Item
-        var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
-        
-        // TODO: This should later be changed to be contained within a Transaction, however this is just to get working
-        // Write the Stamp item to the DB as it's own record 
         await _dynamoDbClient.WriteRecordAsync(stampRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         
-        // Update the existing LoyaltyCard record, and increment the Points by 1, and LastStampDate
+        // TODO: This should later be changed to be contained within a Transaction, however this is just to get working
+        var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
         await _dynamoDbClient.UpdateRecordAsync(loyaltyRecord, null);
     }
 }
