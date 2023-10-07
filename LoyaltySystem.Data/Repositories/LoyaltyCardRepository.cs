@@ -13,9 +13,10 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 {
     private readonly IDynamoDbClient _dynamoDbClient;
     private readonly IDynamoDbMapper _dynamoDbMapper;
+    private readonly DynamoDbSettings _dynamoDbSettings;
 
-    public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper) =>
-        (_dynamoDbClient, _dynamoDbMapper) = (dynamoDbClient, dynamoDbMapper);
+    public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
+        (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
@@ -49,10 +50,43 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
-        await _dynamoDbClient.WriteRecordAsync(stampRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
-        
-        // TODO: This should later be changed to be contained within a Transaction, however this is just to get working
         var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
-        await _dynamoDbClient.UpdateRecordAsync(loyaltyRecord, null);
+        
+        // await _dynamoDbClient.WriteRecordAsync(stampRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
+        // TODO: This should later be changed to be contained within a Transaction, however this is just to get working
+        // await _dynamoDbClient.UpdateRecordAsync(loyaltyRecord, null);
+        
+        var transactWriteItems = new List<TransactWriteItem>
+        {
+            new ()
+            {
+                Put = new Put
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Item = stampRecord,
+                    ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            },
+            new ()
+            {
+                Update = new Update
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                         {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
+                         {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
+                    },
+                    UpdateExpression = "SET Points = :points, LastStampDate = :lastStampDate",
+                    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                    {
+                        {":points",        new AttributeValue {N = loyaltyRecord["Points"].N}},
+                        {":lastStampDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
+                    }
+                }
+            }
+        };
+
+        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
 }

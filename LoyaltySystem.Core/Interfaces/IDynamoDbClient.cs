@@ -24,11 +24,12 @@ public interface IDynamoDbClient
     // LoyaltyCard
     Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
-    Task StampLoyaltyCardAsync(Dictionary<string, AttributeValue> item);
     
     // General
     Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
     Task WriteBatchAsync(List<Dictionary<string, AttributeValue>> itemList);
     Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
     Task DeleteItemsWithPkAsync(string pk);
+    Task TransactWriteItemsAsync(List<TransactWriteItem> transactWriteItems);
+
 }

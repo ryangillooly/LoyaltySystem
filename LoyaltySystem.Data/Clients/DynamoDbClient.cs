@@ -243,12 +243,8 @@ public class DynamoDbClient : IDynamoDbClient
             }
         }
     }
-    public async Task StampLoyaltyCardAsync(Dictionary<string, AttributeValue> item)
-    {
-        
-    }
-    
-    
+
+
     // Common
     public async Task WriteBatchAsync(List<Dictionary<string, AttributeValue>> itemList)
     {
@@ -396,5 +392,14 @@ public class DynamoDbClient : IDynamoDbClient
                 throw new Exception($"Failed to delete item with PK - {PK} due to condition check");
             }
         }
+    }
+    public async Task TransactWriteItemsAsync(List<TransactWriteItem> transactWriteItems)
+    {
+        var request = new TransactWriteItemsRequest
+        {
+            TransactItems = transactWriteItems
+        };
+
+        await _dynamoDb.TransactWriteItemsAsync(request);
     }
 }
