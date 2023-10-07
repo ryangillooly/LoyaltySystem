@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Data.Clients;
@@ -100,7 +101,6 @@ public class DynamoDbClient : IDynamoDbClient
 
         return response;
     }
-
     public async Task DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userIdList)
     {
         foreach (var userId in userIdList)
@@ -118,6 +118,7 @@ public class DynamoDbClient : IDynamoDbClient
             await _dynamoDb.DeleteItemAsync(deleteRequest); // Replace with batching
         }
     }
+    
     
     // Business Campaigns
     public async Task<GetItemResponse?> GetCampaignAsync(Guid businessId, Guid campaignId)
@@ -159,6 +160,7 @@ public class DynamoDbClient : IDynamoDbClient
 
         return response;
     }
+    
     
     // Business Loyalty Cards
     public async Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
@@ -241,6 +243,11 @@ public class DynamoDbClient : IDynamoDbClient
             }
         }
     }
+    public async Task StampLoyaltyCardAsync(Dictionary<string, AttributeValue> item)
+    {
+        
+    }
+    
     
     // Common
     public async Task WriteBatchAsync(List<Dictionary<string, AttributeValue>> itemList)

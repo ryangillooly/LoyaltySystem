@@ -12,4 +12,5 @@ public interface ILoyaltyCardService
     Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
     Task<LoyaltyCard> UpdateLoyaltyCardAsync(Guid userId, Guid businessId, LoyaltyStatus status);
+    Task<LoyaltyCard> StampLoyaltyCardAsync(Guid userId, Guid businessId);
 }

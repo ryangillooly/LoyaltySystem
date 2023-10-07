@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="accountSettings">
-    <option name="activeProfile" value="profile:default" />
+    <option name="activeProfile" value="profile:local" />
     <option name="activeRegion" value="eu-west-2" />
     <option name="recentlyUsedProfiles">
       <list>
+        <option value="profile:local" />
         <option value="profile:default" />
-        <option value="profile:RG2" />
         <option value="profile:RG" />
+        <option value="profile:RG2" />
       </list>
     </option>
     <option name="recentlyUsedRegions">

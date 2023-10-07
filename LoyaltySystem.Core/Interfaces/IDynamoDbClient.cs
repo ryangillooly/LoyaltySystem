@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
 
@@ -23,6 +24,7 @@ public interface IDynamoDbClient
     // LoyaltyCard
     Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
+    Task StampLoyaltyCardAsync(Dictionary<string, AttributeValue> item);
     
     // General
     Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);

@@ -12,8 +12,11 @@ public class DynamoDbMapper : IDynamoDbMapper
     {
         var item = new Dictionary<string, AttributeValue>
         {
+            // Primary Key + Sort Key
             { "PK",          new AttributeValue { S = "User#" + user.Id } },
             { "SK",          new AttributeValue { S = "Meta#UserInfo" } },
+            
+            // Attributes
             { "UserId",      new AttributeValue { S = user.Id.ToString() } },
             { "EntityType",  new AttributeValue { S = user.GetType().Name } },
             { "Email",       new AttributeValue { S = user.ContactInfo.Email } },
@@ -32,8 +35,11 @@ public class DynamoDbMapper : IDynamoDbMapper
     public List<Dictionary<string, AttributeValue>> MapBusinessUserPermissionsToItem(List<BusinessUserPermissions> businessUserPermissions) =>
         businessUserPermissions.Select(permission => new Dictionary<string, AttributeValue>
             {
+                // Primary Key + Sort Key
                 { "PK",                  new AttributeValue { S = $"User#{permission.UserId}" } },
                 { "SK",                  new AttributeValue { S = $"Permission#Business#{permission.BusinessId}" } },
+                
+                // Attributes
                 { "UserId",              new AttributeValue { S = $"{permission.UserId}" } },
                 { "BusinessId",          new AttributeValue { S = $"{permission.BusinessId}" } },
                 { "EntityType",          new AttributeValue { S = $"{EntityType.Permission}" } },
@@ -47,11 +53,11 @@ public class DynamoDbMapper : IDynamoDbMapper
     public Dictionary<string, AttributeValue> MapLoyaltyCardToItem(LoyaltyCard loyaltyCard) =>
         new ()
         {
-            // New PK and SK patterns
+            // Primary Key + Sort Key
             { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
             { "SK", new AttributeValue { S = $"Card#Business#{loyaltyCard.BusinessId}" }},
 
-            // New Type attribute
+            // Attributes
             { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" }},
             { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
             { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" }},
@@ -64,6 +70,21 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
             { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#{loyaltyCard.Id}" } }
         };
+    
+    public Dictionary<string, AttributeValue> MapLoyaltyCardToStampItem(LoyaltyCard loyaltyCard) =>
+        new ()
+        {
+            // Primary Key + Sort Key
+            { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
+            { "SK", new AttributeValue { S = $"Stamp#Business#{loyaltyCard.BusinessId}#{Guid.NewGuid()}" }},
+
+            // Attributes
+            { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" }},
+            { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+            { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" }},
+            { "EntityType",    new AttributeValue { S = "Stamp" }},
+            { "StampDate",     new AttributeValue { S = $"{loyaltyCard.DateLastStamped}" }}
+        };
 
     public Dictionary<string, AttributeValue> MapBusinessToItem(Business business)
     {
@@ -72,11 +93,11 @@ public class DynamoDbMapper : IDynamoDbMapper
         
         return new Dictionary<string, AttributeValue>
         {
-            // New PK and SK patterns
+            // Primary Key + Sort Key
             { "PK",          new AttributeValue { S = "Business#" + business.Id }},
             { "SK",          new AttributeValue { S = "Meta#BusinessInfo" }},
          
-            // New Type attribute
+            // Attributes
             { "BusinessId",   new AttributeValue { S = business.Id.ToString()} },
             { "OwnerId",      new AttributeValue { S = business.OwnerId.ToString()} },
             { "EntityType",   new AttributeValue { S = business.GetType().Name} },
@@ -93,11 +114,11 @@ public class DynamoDbMapper : IDynamoDbMapper
     public Dictionary<string, AttributeValue> MapCampaignToItem(Campaign campaign) =>
         new ()
         {
-            // New PK and SK patterns
+            // Primary Key + Sort Key
             { "PK", new AttributeValue { S = $"Business#{campaign.BusinessId}" }},
             { "SK", new AttributeValue { S = $"Campaign#{campaign.Id}" }},
 
-            // New Type attribute
+            // Attributes
             { "BusinessId", new AttributeValue { S = $"{campaign.BusinessId}" }},
             { "EntityType", new AttributeValue { S = campaign.GetType().Name }},
             { "Name",       new AttributeValue { S = $"{campaign.Name}" }},

@@ -6,4 +6,5 @@ public class DynamoDbSettings
     public string BusinessUserListGsi { get; set; }
     public string EmailGsi { get; set; }
     public string BusinessLoyaltyListGsi { get; set; }
+    public string? LocalServiceUrl { get; set; }
 }
