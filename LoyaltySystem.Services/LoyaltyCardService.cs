@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
 
@@ -46,7 +47,9 @@ public class LoyaltyCardService : ILoyaltyCardService
     public async Task<LoyaltyCard> StampLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
-        if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
+        
+        if (currentRecord == null)                        throw new CardNotFoundException(userId, businessId);
+        if (currentRecord.Status != LoyaltyStatus.Active) throw new InactiveCardException(userId, businessId);
 
         currentRecord.Points += 1;
         currentRecord.LastStampedDate = DateTime.UtcNow;

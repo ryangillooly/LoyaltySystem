@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -30,7 +31,7 @@ public class DynamoDbClient : IDynamoDbClient
         var response = await _dynamoDb.GetItemAsync(request);
 
         if (response.Item == null || !response.IsItemSet)
-            return null;
+            return null; // TODO: Change to Custom Exception
 
         return response;
     }
@@ -51,7 +52,7 @@ public class DynamoDbClient : IDynamoDbClient
         var response = await _dynamoDb.GetItemAsync(request);
 
         if (response.Item == null || !response.IsItemSet)
-            return null;
+            return null; // TODO: Change to Custom Exception
 
         return response;
     }
@@ -97,7 +98,8 @@ public class DynamoDbClient : IDynamoDbClient
         
         var response = await _dynamoDb.GetItemAsync(request);
 
-        if (response.Item is null || !response.IsItemSet) return null;
+        if (response.Item is null || !response.IsItemSet)
+            throw new BusinessUserPermissionNotFoundException(userId, businessId);
 
         return response;
     }
@@ -136,7 +138,7 @@ public class DynamoDbClient : IDynamoDbClient
         var response = await _dynamoDb.GetItemAsync(request);
 
         if (response.Item == null || !response.IsItemSet)
-            return null;
+            throw new CampaignNotFoundException(campaignId, businessId);
 
         return response;
     }
@@ -163,20 +165,6 @@ public class DynamoDbClient : IDynamoDbClient
     
     
     // Business Loyalty Cards
-    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
-    {
-        var deleteRequest = new DeleteItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                { "PK", new AttributeValue { S = $"User#{userId}" } },
-                { "SK", new AttributeValue { S = $"Card#Business#{businessId}" } }
-            }
-        };
-
-        await _dynamoDb.DeleteItemAsync(deleteRequest);
-    }
     public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds)
     {
         // Create batch delete requests

@@ -21,9 +21,7 @@ public interface IDynamoDbClient
     Task<GetItemResponse?> GetBusinessUsersPermissions(Guid businessId, Guid userId);
     Task DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userId);
     
-    // LoyaltyCard
-    Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
-    
+
     // General
     Task UpdateRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression);
     Task DeleteItemsWithPkAsync(string pk);

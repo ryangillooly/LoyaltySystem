@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -46,7 +47,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         
         var response = await _dynamoDbClient.GetItemAsync(getRequest);
         
-        if (response is null) return null;
+        if (response.Item.Count == 0 || !response.IsItemSet)
+            throw new CardNotFoundException(userId, businessId);
         
         return new LoyaltyCard(userId, businessId)
         {
@@ -86,7 +88,25 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         await _dynamoDbClient.UpdateItemAsync(updateRequest);
         //await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
-    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _dynamoDbClient.DeleteLoyaltyCardAsync(userId, businessId);
+
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var deleteRequest = new DeleteItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue {S = $"User#{userId}"}},
+                {"SK", new AttributeValue {S = $"Card#Business#{businessId}"}}
+            }
+        };
+
+        await _dynamoDbClient.DeleteItemAsync(deleteRequest);
+    }
+
+
+
+
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
@@ -125,44 +145,4 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
-    
-    /*
-
-
-   
-
-    public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
-    {
-        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
-        var updateRequest = new UpdateItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                {"PK", new AttributeValue {S = dynamoRecord["PK"].S}},
-                {"SK", new AttributeValue {S = dynamoRecord["SK"].S}}
-            },
-            // ... (your update logic remains the same) ...
-        };
-
-        await _dynamoDbClient.UpdateItemAsync(updateRequest);
-    }
-
-    // ... StampLoyaltyCardAsync remains the same since it's using TransactWriteItemsAsync ...
-
-    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
-    {
-        var deleteRequest = new DeleteItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                {"PK", new AttributeValue {S = $"User#{userId}"}},
-                {"SK", new AttributeValue {S = $"Business#{businessId}"}}
-            }
-        };
-
-        await _dynamoDbClient.DeleteItemAsync(deleteRequest);
-    }
-    */
 }
