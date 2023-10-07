@@ -17,45 +17,81 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
     public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
+    
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
-        await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
+        var putRequest = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = dynamoRecord,
+            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+        };
+        await _dynamoDbClient.PutItemAsync(putRequest);
     }
-
+    
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
     public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
-        var response = await _dynamoDbClient.GetLoyaltyCardAsync(userId, businessId);
-
+        var getRequest = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue {S = $"User#{userId}"}},
+                {"SK", new AttributeValue {S = $"Card#Business#{businessId}"}}
+            }
+        };
+        
+        var response = await _dynamoDbClient.GetItemAsync(getRequest);
+        
         if (response is null) return null;
         
         return new LoyaltyCard(userId, businessId)
         {
             Id              = Guid.Parse(response.Item["CardId"].S),
             Points          = Convert.ToInt32(response.Item["Points"].N),
-            DateIssued      = Convert.ToDateTime(response.Item["DateIssued"].S),
-            DateLastStamped = Convert.ToDateTime(response.Item["LastStampDate"].S),
+            IssueDate       = Convert.ToDateTime(response.Item["IssueDate"].S),
+            LastStampedDate = Convert.ToDateTime(response.Item["LastStampDate"].S),
             Status          = Enum.Parse<LoyaltyStatus>(response.Item["Status"].S)
         };
     }
+
     public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
-        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue { S = dynamoRecord["PK"].S }},
+                {"SK", new AttributeValue { S = dynamoRecord["SK"].S }}
+            },
+            UpdateExpression = "SET #St = :status, LastUpdatedDate = :lastUpdatedDate",  // Using the alias #St for Status
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                {":status",          new AttributeValue { S = dynamoRecord["Status"].S }},
+                {":lastUpdatedDate", new AttributeValue { S = updatedLoyaltyCard.LastUpdatedDate.ToString() }}
+            },
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                {"#St", "Status"}  // Mapping the alias #St to the actual attribute name "Status"
+            }
+        };
+
+
+        await _dynamoDbClient.UpdateItemAsync(updateRequest);
+        //await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _dynamoDbClient.DeleteLoyaltyCardAsync(userId, businessId);
-
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
         var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
-        
-        // await _dynamoDbClient.WriteRecordAsync(stampRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
-        // TODO: This should later be changed to be contained within a Transaction, however this is just to get working
-        // await _dynamoDbClient.UpdateRecordAsync(loyaltyRecord, null);
-        
+
         var transactWriteItems = new List<TransactWriteItem>
         {
             new ()
@@ -89,4 +125,44 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
+    
+    /*
+
+
+   
+
+    public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
+    {
+        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue {S = dynamoRecord["PK"].S}},
+                {"SK", new AttributeValue {S = dynamoRecord["SK"].S}}
+            },
+            // ... (your update logic remains the same) ...
+        };
+
+        await _dynamoDbClient.UpdateItemAsync(updateRequest);
+    }
+
+    // ... StampLoyaltyCardAsync remains the same since it's using TransactWriteItemsAsync ...
+
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var deleteRequest = new DeleteItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue {S = $"User#{userId}"}},
+                {"SK", new AttributeValue {S = $"Business#{businessId}"}}
+            }
+        };
+
+        await _dynamoDbClient.DeleteItemAsync(deleteRequest);
+    }
+    */
 }

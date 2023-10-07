@@ -20,17 +20,19 @@ public class LoyaltyCard
     public Guid BusinessId { get; set; }
     public Guid UserId { get; set; }
     public int Points { get; set; } = 1;
-    public DateTime DateIssued { get; set; } = DateTime.UtcNow;
-    public DateTime DateLastStamped { get; set; } = DateTime.UtcNow;
+    public DateTime IssueDate { get; set; } = DateTime.UtcNow;
+    public DateTime LastStampedDate { get; set; } = DateTime.UtcNow;
+    public DateTime? LastUpdatedDate { get; set; }
     public LoyaltyStatus Status { get; set; } = LoyaltyStatus.Active;
-    
+
     public static LoyaltyCard Merge(LoyaltyCard current, LoyaltyCard updated) =>
         new (current.UserId, current.BusinessId)
         {
             Id              = current.Id,
             Points          = current.Points,
-            DateIssued      = current.DateIssued,
-            DateLastStamped = current.DateLastStamped,
+            IssueDate       = current.IssueDate,
+            LastStampedDate = current.LastStampedDate,
+            LastUpdatedDate = DateTime.UtcNow,
             Status          = updated.Status == current.Status ? current.Status : updated.Status
         };
 }

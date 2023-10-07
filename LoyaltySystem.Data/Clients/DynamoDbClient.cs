@@ -163,25 +163,6 @@ public class DynamoDbClient : IDynamoDbClient
     
     
     // Business Loyalty Cards
-    public async Task<GetItemResponse?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
-    {
-        var request = new GetItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                { "PK", new AttributeValue { S = $"User#{userId}" }},
-                { "SK", new AttributeValue { S = $"Card#Business#{businessId}"  }}
-            }
-        };
-
-        var response = await _dynamoDb.GetItemAsync(request);
-
-        if (response.Item == null || !response.IsItemSet)
-            return null;
-
-        return response;
-    }
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var deleteRequest = new DeleteItemRequest
@@ -246,66 +227,77 @@ public class DynamoDbClient : IDynamoDbClient
 
 
     // Common
-    public async Task WriteBatchAsync(List<Dictionary<string, AttributeValue>> itemList)
+    public async Task BatchWriteRecordsAsync(List<Dictionary<string, AttributeValue>> items)
     {
-        // Create batch delete requests
-        var batchRequests = new List<WriteRequest>();
-        foreach (var item in itemList)
-        {
-            batchRequests.Add(new WriteRequest
+        var writeRequests = items.Select(item => 
+            new WriteRequest 
             {
                 PutRequest = new PutRequest { Item = item }
-            });
-        }
+            }).ToList();
 
-        // Split requests into chunks of 25, which is the max for a single BatchWriteItem request
-        var chunkedBatchRequests = new List<List<WriteRequest>>();
-        for (var i = 0; i < batchRequests.Count; i += 25)
+        var request = new BatchWriteItemRequest
         {
-            chunkedBatchRequests.Add(batchRequests.GetRange(i, Math.Min(25, batchRequests.Count - i)));
-        }
-
-        // Perform the BatchWriteItem for each chunk
-        foreach (var chunk in chunkedBatchRequests)
-        {
-            var batchWriteItemRequest = new BatchWriteItemRequest
+            RequestItems = new Dictionary<string, List<WriteRequest>>
             {
-                RequestItems = new Dictionary<string, List<WriteRequest>>
+                { _dynamoDbSettings.TableName, writeRequests }
+            }
+        };
+
+        try
+        {
+            await _dynamoDb.BatchWriteItemAsync(request);
+        }
+        catch (Exception ex)  // You can add more specific exceptions here if needed
+        {
+            // Handle or throw exceptions as per your application's requirements
+            throw new Exception("Failed to batch write items", ex);
+        }
+    }
+    public async Task TransactWriteRecordsAsync(List<Dictionary<string, AttributeValue>> items)
+    {
+        var chunks = ChunkList(items, 25);
+
+        foreach (var chunk in chunks)
+        {
+            var transactItems = chunk.Select(item => 
+                new TransactWriteItem
                 {
-                    {_dynamoDbSettings.TableName, chunk}
-                }
+                    Put = new Put
+                    {
+                        TableName = _dynamoDbSettings.TableName,
+                        Item = item
+                    }
+                }).ToList();
+
+            var request = new TransactWriteItemsRequest
+            {
+                TransactItems = transactItems
             };
 
             try
             {
-                await _dynamoDb.BatchWriteItemAsync(batchWriteItemRequest);
+                await _dynamoDb.TransactWriteItemsAsync(request);
             }
-            catch (ConditionalCheckFailedException)
+            catch (Exception ex)
             {
-                throw new Exception($"Failed to Create items - WriteBatchItemsAsync");
+                // Handle or throw exceptions as per your application's requirements.
+                // Note: you might want to catch the specific TransactionCanceledException 
+                // to get details about which item caused the transaction to fail.
+                throw new Exception("Failed to transact write items", ex);
             }
         }
     }
-    public async Task WriteRecordAsync(Dictionary<string, AttributeValue> item, string? conditionExpression)
+
+    // Helper method to break a list into chunks
+    private static IEnumerable<List<T>> ChunkList<T>(List<T> list, int chunkSize)
     {
-        var request = new PutItemRequest
+        for (int i = 0; i < list.Count; i += chunkSize)
         {
-            TableName = _dynamoDbSettings.TableName,
-            Item = item
-        };
-
-        if (conditionExpression is not null)
-            request.ConditionExpression = conditionExpression;
-
-        try
-        {
-            await _dynamoDb.PutItemAsync(request);
-        }
-        catch (ConditionalCheckFailedException)
-        {
-            throw new Exception($"PK - {item["PK"].S}; SK - {item["SK"].S} is already in use");
+            yield return list.GetRange(i, Math.Min(chunkSize, list.Count - i));
         }
     }
+
+    
     public async Task DeleteItemsWithPkAsync(string pk)
     {
         try
@@ -401,5 +393,42 @@ public class DynamoDbClient : IDynamoDbClient
         };
 
         await _dynamoDb.TransactWriteItemsAsync(request);
+    }
+
+    
+    // Dynamo Methods
+    public async Task<PutItemResponse> PutItemAsync(PutItemRequest request)
+    {
+        return await _dynamoDb.PutItemAsync(request);
+    }
+
+    public async Task<DeleteItemResponse> DeleteItemAsync(DeleteItemRequest request)
+    {
+        return await _dynamoDb.DeleteItemAsync(request);
+    }
+
+    public async Task<UpdateItemResponse> UpdateItemAsync(UpdateItemRequest request)
+    {
+        return await _dynamoDb.UpdateItemAsync(request);
+    }
+
+    public async Task<GetItemResponse> GetItemAsync(GetItemRequest request)
+    {
+        return await _dynamoDb.GetItemAsync(request);
+    }
+
+    public async Task<QueryResponse> QueryAsync(QueryRequest request)
+    {
+        return await _dynamoDb.QueryAsync(request);
+    }
+
+    public async Task<ScanResponse> ScanAsync(ScanRequest request)
+    {
+        return await _dynamoDb.ScanAsync(request);
+    }
+
+    public async Task<BatchWriteItemResponse> BatchWriteItemsAsync(BatchWriteItemRequest request)
+    {
+        return await _dynamoDb.BatchWriteItemAsync(request);
     }
 }

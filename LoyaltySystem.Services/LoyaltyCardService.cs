@@ -49,7 +49,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
 
         currentRecord.Points += 1;
-        currentRecord.DateLastStamped = DateTime.UtcNow;
+        currentRecord.LastStampedDate = DateTime.UtcNow;
         
         await _loyaltyCardRepository.StampLoyaltyCardAsync(currentRecord);
             

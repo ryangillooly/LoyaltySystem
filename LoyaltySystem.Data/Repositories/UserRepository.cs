@@ -1,21 +1,31 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Settings;
+
 namespace LoyaltySystem.Data.Repositories;
 
 public class UserRepository : IUserRepository
 {
    private readonly IDynamoDbClient _dynamoDbClient;
-   private readonly IDynamoDbMapper _dynamoDbMapper ;
+   private readonly IDynamoDbMapper _dynamoDbMapper;
+   private readonly DynamoDbSettings _dynamoDbSettings;
    
 
-   public UserRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper) =>
-      (_dynamoDbClient, _dynamoDbMapper) = (dynamoDbClient, dynamoDbMapper);
+   public UserRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
+      (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
 
    public async Task CreateAsync(User newUser)
    {
       var dynamoRecord = _dynamoDbMapper.MapUserToItem(newUser);
-      await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
+      var putRequest = new PutItemRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         Item = dynamoRecord,
+         ConditionExpression = "attribute_not_exists(PK)"
+      };
+      await _dynamoDbClient.PutItemAsync(putRequest);
    }
    
    public async Task UpdateUserAsync(User updatedUser)

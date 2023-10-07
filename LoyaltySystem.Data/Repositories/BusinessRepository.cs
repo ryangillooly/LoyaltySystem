@@ -1,6 +1,8 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Data.Clients;
 using Newtonsoft.Json;
 
@@ -10,15 +12,22 @@ public class BusinessRepository : IBusinessRepository
 {
     private readonly IDynamoDbClient _dynamoDbClient;
     private readonly IDynamoDbMapper _dynamoDbMapper;
+    private readonly DynamoDbSettings _dynamoDbSettings;
 
-    public BusinessRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper) =>
-        (_dynamoDbClient, _dynamoDbMapper) = (dynamoDbClient, dynamoDbMapper);
+    public BusinessRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
+        (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
     
     // Businesses
     public async Task CreateBusinessAsync(Business newBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(newBusiness);
-        await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK)");
+        var putRequest = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = dynamoRecord,
+            ConditionExpression = "attribute_not_exists(PK)"
+        };
+        await _dynamoDbClient.PutItemAsync(putRequest);
     }
     public async Task<Business?> GetBusinessAsync(Guid businessId)
     {
@@ -55,11 +64,7 @@ public class BusinessRepository : IBusinessRepository
     public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
         var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
-        
-        foreach (var dynamoRecord in dynamoRecords)
-        {
-            await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
-        }
+        await _dynamoDbClient.TransactWriteRecordsAsync(dynamoRecords);
     }
     public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
     {
@@ -101,7 +106,13 @@ public class BusinessRepository : IBusinessRepository
    public async Task CreateCampaignAsync(Campaign newCampaign)
    {
        var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(newCampaign);
-       await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
+       var putRequest = new PutItemRequest
+       {
+           TableName = _dynamoDbSettings.TableName,
+           Item = dynamoRecord,
+           ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+       };
+       await _dynamoDbClient.PutItemAsync(putRequest);
    }
    public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
    {
