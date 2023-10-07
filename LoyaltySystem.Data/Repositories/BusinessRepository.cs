@@ -47,17 +47,55 @@ public class BusinessRepository : IBusinessRepository
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
         await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
-    public async Task DeleteBusinessAsync(Guid businessId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
+    public async Task DeleteBusinessAsync(Guid businessId) => 
+        await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 
-    // Permissions
-    public async Task UpdatePermissionsAsync(List<Permission> permissions)
+    
+    // Business User Permissions
+    public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
-        foreach (var permission in permissions)
+        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
+        
+        foreach (var dynamoRecord in dynamoRecords)
         {
-            var dynamoRecord = _dynamoDbMapper.MapPermissionToItem(permission);
             await _dynamoDbClient.WriteRecordAsync(dynamoRecord, "attribute_not_exists(PK) AND attribute_not_exists(SK)");
         }
     }
+    public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
+    {
+        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(updatedBusinessUserPermissions);
+        foreach (var record in dynamoRecords)
+        {
+           await _dynamoDbClient.UpdateRecordAsync(record, null);
+        }
+    }
+    public async Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId)
+    {
+        var response = await _dynamoDbClient.GetBusinessPermissions(businessId);
+
+        return response?.Items
+            .Select(permission => 
+                new BusinessUserPermissions(
+                    Guid.Parse(permission["BusinessUserList-PK"].S), 
+                    Guid.Parse(permission["UserId"].S), 
+                    Enum.Parse<UserRole>(permission["Role"].S)))
+            .ToList();
+    }
+    public async Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
+    {
+        var response = await _dynamoDbClient.GetBusinessUsersPermissions(businessId, userId);
+
+        if (response is null || !response.IsItemSet) return null;
+        
+        return  new BusinessUserPermissions(
+    Guid.Parse(response.Item["BusinessUserList-PK"].S), 
+        Guid.Parse(response.Item["UserId"].S), 
+          Enum.Parse<UserRole>(response.Item["Role"].S)
+        );
+    }
+    public async Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList) =>
+        await _dynamoDbClient.DeleteBusinessUsersPermissions(businessId, userIdList);
+
     
    // Campaigns
    public async Task CreateCampaignAsync(Campaign newCampaign)

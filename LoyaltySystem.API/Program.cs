@@ -1,3 +1,4 @@
+using Amazon;
 using Amazon.DynamoDBv2;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
@@ -20,6 +21,14 @@ builder.Services.AddSwaggerGen();
 // Add AWS Services
 builder.Services.AddAWSService<IAmazonDynamoDB>();
 
+// Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
+var dynamoDbSettings = new DynamoDbSettings();
+builder.Configuration.GetSection("DynamoDbSettings").Bind(dynamoDbSettings);
+builder.Services.AddSingleton(dynamoDbSettings);
+
+// Add Clients
+builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();
+
 // Add Repositories
 builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -34,16 +43,8 @@ builder.Services.AddScoped<ILoyaltyCardService, LoyaltyCardService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Add Clients
-builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();
-
 // Add Mappers
 builder.Services.AddSingleton<IDynamoDbMapper, DynamoDbMapper>();
-
-// Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
-var dynamoDbSettings = new DynamoDbSettings();
-builder.Configuration.GetSection("DynamoDbSettings").Bind(dynamoDbSettings);
-builder.Services.AddSingleton(dynamoDbSettings);
 
 var app = builder.Build();
 

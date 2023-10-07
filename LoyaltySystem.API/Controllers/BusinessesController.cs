@@ -55,38 +55,80 @@ public class BusinessesController : ControllerBase
         return NoContent();
     }
 
-    // Permissions
-    [HttpPost]
-    [HttpPut]
-    [Route("{businessId:guid}/users")]
-    public async Task<bool> PutUserPermission(Guid businessId, [FromBody] List<Permission> permissions)
+    // Business Users
+    [HttpPost("{businessId:guid}/users")]
+    public async Task<IActionResult> CreateBusinessUserPermissions(Guid businessId, List<UserPermissions> newBusinessUserPermissions)
     {
-        var permissionList = new List<Permission>();
-            
-        foreach (var permission in permissions)
-        {
-            permissionList.Add
-            (
-                new Permission
-                {
-                    UserId = permission.UserId,
-                    BusinessId = businessId,
-                    Role = Enum.Parse<UserRole>(permission.Role.ToString())
-                }
-            );
-        }
-        await _businessService.UpdatePermissionsAsync(permissionList);
-        return true;
+        var permissionList = newBusinessUserPermissions.Select(permission => 
+            new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
+
+        var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(permissionList);
+        return CreatedAtAction(nameof(GetBusinessUsersPermission), new { businessId = businessId, userId = newBusinessUserPermissions[0].UserId }, createdBusinessUsers);
     }
-    
-    
+    [HttpGet("{businessId:guid}/users/{userId:guid}")]
+    public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId)
+    {
+        try
+        {
+            var businessPermissions = await _businessService.GetBusinessUsersPermissionsAsync(businessId, userId);
+            return Ok(businessPermissions);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
+    [HttpGet("{businessId:guid}/users")]
+    public async Task<IActionResult> GetBusinessPermissions(Guid businessId)
+    {
+        try
+        {
+            var businessPermissions = await _businessService.GetBusinessPermissionsAsync(businessId);
+            return Ok(businessPermissions);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
+    [HttpPut("{businessId:guid}/users")]
+    public async Task<IActionResult> UpdateBusinessUsersPermissions(Guid businessId, List<UserPermissions> updatedBusinessUserPermissions)
+    {
+        var permissionList = updatedBusinessUserPermissions.Select(permission =>
+            new BusinessUserPermissions(businessId, permission.UserId, permission.Role)).ToList();
+
+        var updatedBusinessUsers = await _businessService.UpdateBusinessUsersPermissionsAsync(permissionList);
+        
+        return Ok(updatedBusinessUsers); 
+    }
+
+    [HttpDelete("{businessId:guid}/users")]
+    public async Task<IActionResult> DeleteBusinessUsersPermissions(Guid businessId, List<Guid> userIdList)
+    {
+        await _businessService.DeleteBusinessUsersPermissionsAsync(businessId, userIdList);
+        return NoContent();
+    }
+
+
     // Campaigns
     [HttpPost("{businessId:guid}/campaigns")]
     public async Task<IActionResult> CreateCampaign(Guid businessId, [FromBody] Campaign newCampaign)
     {
         newCampaign.BusinessId = businessId;
         var createdCampaign = await _businessService.CreateCampaignAsync(newCampaign);
-        return CreatedAtAction(nameof(GetCampaignById), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
+        return CreatedAtAction(nameof(GetCampaign), new { businessId = createdCampaign.BusinessId, campaignId = createdCampaign.Id }, createdCampaign);
     }
     [HttpGet("{businessId:guid}/campaigns")]
     public async Task<IActionResult> GetAllCampaigns(Guid businessId)
@@ -107,7 +149,7 @@ public class BusinessesController : ControllerBase
         }
     }
     [HttpGet("{businessId:guid}/campaigns/{campaignId:guid}")]
-    public async Task<IActionResult> GetCampaignById(Guid businessId, Guid campaignId)
+    public async Task<IActionResult> GetCampaign(Guid businessId, Guid campaignId)
     {
         try
         {

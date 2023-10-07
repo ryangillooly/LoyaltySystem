@@ -20,16 +20,11 @@ namespace LoyaltySystem.Services
 
             if (emailExists)
                 throw new InvalidOperationException("Email already exists");
-
-            var permission = new Permission
-            {
-                UserId     = newBusiness.OwnerId,
-                BusinessId = newBusiness.Id,
-                Role       = UserRole.Owner
-            };
             
+            var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
+
             await _businessRepository.CreateBusinessAsync(newBusiness);
-            await _businessRepository.UpdatePermissionsAsync(new List<Permission>{permission});
+            await _businessRepository.UpdateBusinessUserPermissionsAsync(new List<BusinessUserPermissions> { permissions });
             
             return newBusiness;
         }
@@ -51,12 +46,35 @@ namespace LoyaltySystem.Services
         }
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
-        // Permissions
-        public async Task UpdatePermissionsAsync(List<Permission> permissions)
+        
+        // Business User Permissions
+        public async Task<List<BusinessUserPermissions>> CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
         {
-            await _businessRepository.UpdatePermissionsAsync(permissions);
+
+            await _businessRepository.CreateBusinessUserPermissionsAsync(newBusinessUserPermissions);
+            return newBusinessUserPermissions;
         }
-       
+        public async Task<List<BusinessUserPermissions>> UpdateBusinessUsersPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
+        {
+            await _businessRepository.UpdateBusinessUserPermissionsAsync(updatedBusinessUserPermissions);
+            return updatedBusinessUserPermissions;
+        }
+        public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
+        {
+            var businessPermissions = await _businessRepository.GetBusinessPermissionsAsync(businessId);
+            if (businessPermissions is null) throw new ResourceNotFoundException($"No Permissions found");
+            return businessPermissions;
+        }
+        public async Task<BusinessUserPermissions> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
+        {
+            var businessPermissions = await _businessRepository.GetBusinessUsersPermissionsAsync(businessId, userId);
+            if (businessPermissions is null) throw new ResourceNotFoundException($"No Permissions found");
+            return businessPermissions;
+        }
+
+        public async Task DeleteBusinessUsersPermissionsAsync(Guid businessId, List<Guid> userIdList) =>
+            await _businessRepository.DeleteUsersPermissionsAsync(businessId, userIdList);
+        
         // Campaigns
         public async Task<Campaign> CreateCampaignAsync(Campaign newCampaign) 
         {
@@ -66,25 +84,26 @@ namespace LoyaltySystem.Services
         public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
         {
             var campaigns = await _businessRepository.GetAllCampaignsAsync(businessId);
-            if (campaigns == null) throw new ResourceNotFoundException("No Campaigns found");
+            if (campaigns is null) throw new ResourceNotFoundException("No Campaigns found");
             return campaigns;
         }
         public async Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId)
         {
             var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
-            if (campaign == null) throw new ResourceNotFoundException("Campaign not found");
+            if (campaign is null) throw new ResourceNotFoundException("Campaign not found");
             return campaign;
         }
         public async Task<Campaign> UpdateCampaignAsync(Campaign updatedCampaign)
         {
             var currentRecord = await _businessRepository.GetCampaignAsync(updatedCampaign.BusinessId, updatedCampaign.Id);
-            if(currentRecord == null) throw new Exception("Record not found.");
+            if(currentRecord is null) throw new Exception("Record not found.");
             var mergedRecord = Campaign.Merge(currentRecord, updatedCampaign);
             
             await _businessRepository.UpdateCampaignAsync(mergedRecord);
             
             return mergedRecord;
         }
-        public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => await _businessRepository.DeleteCampaignAsync(businessId, campaignIds);
+        public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => 
+            await _businessRepository.DeleteCampaignAsync(businessId, campaignIds);
     }
 }

@@ -10,4 +10,5 @@ public interface ILoyaltyCardRepository
     Task<Redemption> RedeemRewardAsync(Redemption redemption);
     Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);
+    Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard);
 }

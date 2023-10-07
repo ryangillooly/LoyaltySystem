@@ -13,10 +13,10 @@ public class LoyaltyCardsController : ControllerBase
     public LoyaltyCardsController(ILoyaltyCardService loyaltyCardService) => _loyaltyCardService = loyaltyCardService;
     
     [HttpPost]
-    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] CreateLoyaltyCardDto dto)
+    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] Guid businessId)
     {
-        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, dto.BusinessId);
-        return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, userId}, createdLoyaltyCard);
+        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, businessId);
+        return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, createdLoyaltyCard.UserId}, createdLoyaltyCard);
     }
     
     [HttpDelete("{businessId:guid}")]
@@ -53,5 +53,14 @@ public class LoyaltyCardsController : ControllerBase
             // Handle other exceptions as needed
             return StatusCode(500, $"Internal server error - {ex}");
         }
+    }
+
+    [HttpPost("{businessId:guid}/stamp")]
+    public async Task<IActionResult> StampLoyaltyCard(Guid userId, Guid businessId)
+    {
+        var stampedLoyaltyCard = await _loyaltyCardService.StampLoyaltyCardAsync(userId, businessId);
+        if (stampedLoyaltyCard == null) return NotFound();
+
+        return Ok(stampedLoyaltyCard);
     }
 }

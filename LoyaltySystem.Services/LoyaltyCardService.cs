@@ -22,14 +22,12 @@ public class LoyaltyCardService : ILoyaltyCardService
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
 
     public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => await _loyaltyCardRepository.GetAllAsync();
-
     public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var loyaltyCard = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
         if(loyaltyCard is null) throw new ResourceNotFoundException("Loyalty card not found");
         return loyaltyCard;
     }
-    
     public async Task<LoyaltyCard> UpdateLoyaltyCardAsync(Guid userId, Guid businessId, LoyaltyStatus status)
     {
         var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
@@ -43,5 +41,18 @@ public class LoyaltyCardService : ILoyaltyCardService
         await _loyaltyCardRepository.UpdateLoyaltyCardAsync(mergedRecord);
             
         return mergedRecord;
+    }
+
+    public async Task<LoyaltyCard> StampLoyaltyCardAsync(Guid userId, Guid businessId)
+    {
+        var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+        if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
+
+        currentRecord.Points += 1;
+        currentRecord.DateLastStamped = DateTime.UtcNow;
+        
+        await _loyaltyCardRepository.StampLoyaltyCardAsync(currentRecord);
+            
+        return currentRecord;
     }
 }
