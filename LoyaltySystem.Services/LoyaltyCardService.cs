@@ -70,7 +70,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         // Validate that it's active
         if (!campaign!.IsActive)
             throw new CampaignNotActiveException(businessId, campaignId);
-
+ 
         await _businessRepository.RedeemLoyaltyCardRewardAsync();
         
         // Create a "Redeem" record in the DB
