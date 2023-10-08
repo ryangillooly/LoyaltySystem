@@ -1,5 +1,7 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Exceptions;
+using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -31,9 +33,20 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task<Business?> GetBusinessAsync(Guid businessId)
     {
-        var response = await _dynamoDbClient.GetBusinessAsync(businessId);
-       
-        if (response is null) return null;
+        var request = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+                { "SK", new AttributeValue { S = "Meta#BusinessInfo"  }}
+            }
+        };
+
+        var response = await _dynamoDbClient.GetItemAsync(request);
+        
+        if (response.Item.Count == 0 || !response.IsItemSet) 
+            throw new BusinessNotFoundException(businessId);
        
         return new Business
         {
@@ -76,9 +89,30 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId)
     {
-        var response = await _dynamoDbClient.GetBusinessPermissions(businessId);
+        var request = new QueryRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            IndexName = _dynamoDbSettings.BusinessUserListGsi,
+            KeyConditionExpression = "#PK = :PKValue AND begins_with(#SK, :SKValue)",  // Use placeholders
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                { "#PK", "BusinessUserList-PK" },   // Map to the correct attribute names
+                { "#SK", "BusinessUserList-SK" }
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":PKValue", new AttributeValue { S = $"{businessId}" }},
+                { ":SKValue", new AttributeValue { S = "Permission#User" }}
+            }
+        };
 
-        return response?.Items
+        var response = await _dynamoDbClient.QueryAsync(request);
+
+        if (response.Items == null || response.Count == 0)
+            throw new BusinessUsersNotFoundException(businessId);
+        
+        return response?
+            .Items
             .Select(permission => 
                 new BusinessUserPermissions(
                     Guid.Parse(permission["BusinessUserList-PK"].S), 
@@ -88,18 +122,47 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
     {
-        var response = await _dynamoDbClient.GetBusinessUsersPermissions(businessId, userId);
-
-        if (response is null || !response.IsItemSet) return null;
+        var request = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"User#{userId}" }},
+                { "SK", new AttributeValue { S = $"Permission#Business#{businessId}"   }}
+            }
+        };
         
-        return  new BusinessUserPermissions(
-    Guid.Parse(response.Item["BusinessUserList-PK"].S), 
-        Guid.Parse(response.Item["UserId"].S), 
-          Enum.Parse<UserRole>(response.Item["Role"].S)
-        );
+        var response = await _dynamoDbClient.GetItemAsync(request);
+
+        if (response.Item is null || !response.IsItemSet)
+            throw new BusinessUserPermissionNotFoundException(userId, businessId);
+
+        return  
+            new BusinessUserPermissions 
+            (
+      Guid.Parse(response.Item["BusinessUserList-PK"].S), 
+         Guid.Parse(response.Item["UserId"].S), 
+           Enum.Parse<UserRole>(response.Item["Role"].S)
+            );
     }
-    public async Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList) =>
-        await _dynamoDbClient.DeleteBusinessUsersPermissions(businessId, userIdList);
+
+    public async Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList)
+    {
+        foreach (var userId in userIdList)
+        {
+            var deleteRequest = new DeleteItemRequest
+            {
+                TableName = _dynamoDbSettings.TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", new AttributeValue { S = $"User#{userId}" } },
+                    { "SK", new AttributeValue { S = $"Permission#Business#{businessId}" } }
+                }
+            };
+
+            await _dynamoDbClient.DeleteItemAsync(deleteRequest); // Replace with batching
+        }
+    }
 
     
    // Campaigns
@@ -116,9 +179,21 @@ public class BusinessRepository : IBusinessRepository
    }
    public async Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId)
    {
-       var response = await _dynamoDbClient.GetAllCampaignsAsync(businessId);
-       
-       if (response is null) return null;
+       var request = new QueryRequest
+       {
+           TableName = _dynamoDbSettings.TableName,
+           KeyConditionExpression = "PK = :businessId AND begins_with(SK, :campaignPrefix)",
+           ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+           {
+               {":businessId",     new AttributeValue { S = $"Business#{businessId.ToString()}" }},
+               {":campaignPrefix", new AttributeValue { S = "Campaign#" }}
+           }
+       };
+
+       var response = await _dynamoDbClient.QueryAsync(request);
+
+       if (response.Items.Count is 0 || response.Items is null)
+           throw new NoCampaignsFoundException(businessId);
 
        var campaignList = new List<Campaign>();
 
@@ -134,13 +209,8 @@ public class BusinessRepository : IBusinessRepository
                IsActive   = item["IsActive"].BOOL
            };
 
-           var settings = new JsonSerializerSettings
-           {
-               MissingMemberHandling = MissingMemberHandling.Ignore
-           };
-           
-           var rewards = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S, settings);
-
+           var settings     = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
+           var rewards      = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S, settings);
            campaign.Rewards = rewards;
            
            campaignList.Add(campaign);
@@ -150,11 +220,22 @@ public class BusinessRepository : IBusinessRepository
    }
    public async Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId)
    {
-       var response = await _dynamoDbClient.GetCampaignAsync(businessId, campaignId);
+       var request = new GetItemRequest
+       {
+           TableName = _dynamoDbSettings.TableName,
+           Key = new Dictionary<string, AttributeValue>
+           {
+               { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+               { "SK", new AttributeValue { S = $"Campaign#{campaignId}" }}
+           }
+       };
+
+       var response = await _dynamoDbClient.GetItemAsync(request);
+
+       if (response.Item == null || !response.IsItemSet)
+           throw new CampaignNotFoundException(campaignId, businessId);
        
-       if (response is null) return null;
-       
-      return new Campaign
+       return new Campaign
        {
            Id         = Guid.Parse(response.Item["CampaignId"].S),
            BusinessId = Guid.Parse(response.Item["BusinessId"].S),
@@ -170,6 +251,52 @@ public class BusinessRepository : IBusinessRepository
        var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(updatedCampaign);
        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
    }
-   public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds) => await _dynamoDbClient.DeleteCampaignAsync(businessId, campaignIds);
+
+   public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds)
+   {
+       var batchRequests = new List<WriteRequest>();
+       foreach (var campaignId in campaignIds)
+       {
+           batchRequests.Add(new WriteRequest
+           {
+               DeleteRequest = new DeleteRequest
+               {
+                   Key = new Dictionary<string, AttributeValue>
+                   {
+                       { "PK", new AttributeValue { S = $"Business#{businessId}" } },
+                       { "SK", new AttributeValue { S = $"Campaign#{campaignId}" } }
+                   }
+               }
+           });
+       }
+
+       // Split requests into chunks of 25, which is the max for a single BatchWriteItem request
+       var chunkedBatchRequests = new List<List<WriteRequest>>();
+       for (var i = 0; i < batchRequests.Count; i += 25)
+       {
+           chunkedBatchRequests.Add(batchRequests.GetRange(i, Math.Min(25, batchRequests.Count - i)));
+       }
+
+       // Perform the BatchWriteItem for each chunk
+       foreach (var chunk in chunkedBatchRequests)
+       {
+           var batchWriteItemRequest = new BatchWriteItemRequest
+           {
+               RequestItems = new Dictionary<string, List<WriteRequest>>
+               {
+                   {_dynamoDbSettings.TableName, chunk}
+               }
+           };
+
+           try
+           {
+               await _dynamoDbClient.BatchWriteItemsAsync(batchWriteItemRequest);
+           }
+           catch (ConditionalCheckFailedException)
+           {
+               throw new Exception($"Failed to delete items with PK - Business#{businessId} due to condition check");
+           }
+       }
+   }
 
 }

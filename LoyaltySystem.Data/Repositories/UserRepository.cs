@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -34,11 +35,22 @@ public class UserRepository : IUserRepository
       await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
    }
    
-   public async Task<User?> GetUserAsync(Guid id)
+   public async Task<User?> GetUserAsync(Guid userId)
    {
-      var response = await _dynamoDbClient.GetUserAsync(id);
+      var request = new GetItemRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         Key = new Dictionary<string, AttributeValue>
+         {
+            { "PK", new AttributeValue { S = $"User#{userId}" }},
+            { "SK", new AttributeValue { S = "Meta#UserInfo"   }}
+         }
+      };
 
-      if (response is null) return null;
+      var response = await _dynamoDbClient.GetItemAsync(request);
+
+      if (response.Item is null || !response.IsItemSet) 
+         throw new UserNotFoundException(userId);
       
       var user = new User
       {

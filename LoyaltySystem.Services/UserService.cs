@@ -40,12 +40,11 @@ namespace LoyaltySystem.Services
         public async Task<User> UpdateUserAsync(User updatedUser)
         {
             var currentRecord = await _userRepository.GetUserAsync(updatedUser.Id);
-            if(currentRecord == null) throw new Exception("Record not found.");
-            var mergedRecord = User.Merge(currentRecord, updatedUser);
+            //var mergedRecord = User.Merge(currentRecord, updatedUser);
             
-            await _userRepository.UpdateUserAsync(mergedRecord);
+            await _userRepository.UpdateUserAsync(updatedUser);
             
-            return mergedRecord;
+            return updatedUser;
         }
     }
 }
