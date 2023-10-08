@@ -1,11 +1,9 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Exceptions;
 using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
-using LoyaltySystem.Data.Clients;
 using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
@@ -47,7 +45,7 @@ public class BusinessRepository : IBusinessRepository
         
         if (response.Item.Count == 0 || !response.IsItemSet) 
             throw new BusinessNotFoundException(businessId);
-       
+
         return new Business
         {
             Id           = Guid.Parse(response.Item["BusinessId"].S),

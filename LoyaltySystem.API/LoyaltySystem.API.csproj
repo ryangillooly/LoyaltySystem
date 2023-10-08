@@ -10,6 +10,7 @@
         <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.201.2" />
         <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.7" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.1" />
+        <PackageReference Include="Riok.Mapperly" Version="3.2.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     </ItemGroup>
 

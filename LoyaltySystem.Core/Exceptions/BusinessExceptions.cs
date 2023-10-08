@@ -48,4 +48,10 @@ public class BusinessExceptions
         public NoCampaignsFoundException(Guid businessId)
             : base(businessId, $"No Campaigns found for Business {businessId}") { }
     }
+    
+    public class CampaignNotActiveException : BusinessExceptionBase
+    {
+        public CampaignNotActiveException(Guid businessId, Guid campaignId)
+            : base(businessId, $"The Campaign {campaignId}") { }
+    }
 }
