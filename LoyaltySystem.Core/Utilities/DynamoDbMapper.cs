@@ -97,6 +97,26 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "StampDate",  new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" }}
         };
     }
+    
+    public Dictionary<string, AttributeValue> MapLoyaltyCardToRedeemItem(LoyaltyCard loyaltyCard, Guid campaignId, Guid rewardId)
+    {
+        var redeemId = Guid.NewGuid();
+        return 
+            new()
+            {
+                // Primary Key + Sort Key
+                { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
+                { "SK", new AttributeValue { S = $"Action#Redeem#Business#{loyaltyCard.BusinessId}#{redeemId}" }},
+
+                // Attributes
+                { "UserId",      new AttributeValue { S = $"{loyaltyCard.UserId}" }},
+                { "BusinessId",  new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+                { "CampaignId",  new AttributeValue { S = $"{campaignId}" }},
+                { "CardId",      new AttributeValue { S = $"{loyaltyCard.Id}" }},
+                { "RewardId",    new AttributeValue { S = $"{rewardId}" }},
+                { "EntityType",  new AttributeValue { S = "Redeem" }},
+                { "RedeemDate",  new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" }}
+            };
 
     public Dictionary<string, AttributeValue> MapBusinessToItem(Business business)
     {

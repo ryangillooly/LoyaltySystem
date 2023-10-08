@@ -145,4 +145,41 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
+    
+    public async Task RedeemLoyaltyCardRewardAsync(LoyaltyCard loyaltyCard, Guid rewardId)
+    {
+        
+        var transactWriteItems = new List<TransactWriteItem>
+        {
+            new ()
+            {
+                Put = new Put
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Item = stampRecord,
+                    ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            },
+            new ()
+            {
+                Update = new Update
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
+                        {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
+                    },
+                    UpdateExpression = "SET Points = :points, LastStampDate = :lastStampDate",
+                    ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                    {
+                        {":points",        new AttributeValue {N = loyaltyRecord["Points"].N}},
+                        {":lastStampDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
+                    }
+                }
+            }
+        };
+
+        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
+    }
 }

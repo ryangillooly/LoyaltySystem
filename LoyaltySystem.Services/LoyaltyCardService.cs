@@ -70,8 +70,14 @@ public class LoyaltyCardService : ILoyaltyCardService
         // Validate that it's active
         if (!campaign!.IsActive)
             throw new CampaignNotActiveException(businessId, campaignId);
- 
-        await _businessRepository.RedeemLoyaltyCardRewardAsync();
+
+        // If the card points are less than the reward point requirements, throw error
+        // if(loyaltyCard.Points < campaig)
+        
+        loyaltyCard.LastRedeemDate = DateTime.UtcNow;
+        
+        
+        await _businessRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, rewardId);
         
         // Create a "Redeem" record in the DB
         // Deduct the reward points from the points balance on the loyalty card

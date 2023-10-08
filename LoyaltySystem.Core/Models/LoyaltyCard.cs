@@ -22,6 +22,7 @@ public class LoyaltyCard
     public int Points { get; set; } = 1;
     public DateTime IssueDate { get; set; } = DateTime.UtcNow;
     public DateTime LastStampedDate { get; set; } = DateTime.UtcNow;
+    public DateTime? LastRedeemDate { get; set; }
     public DateTime? LastUpdatedDate { get; set; }
     public LoyaltyStatus Status { get; set; } = LoyaltyStatus.Active;
 
