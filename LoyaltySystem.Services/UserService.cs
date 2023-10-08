@@ -40,11 +40,11 @@ namespace LoyaltySystem.Services
         public async Task<User> UpdateUserAsync(User updatedUser)
         {
             var currentRecord = await _userRepository.GetUserAsync(updatedUser.Id);
-            //var mergedRecord = User.Merge(currentRecord, updatedUser);
+            var mergedRecord = User.Merge(currentRecord, updatedUser);
             
-            await _userRepository.UpdateUserAsync(updatedUser);
+            await _userRepository.UpdateUserAsync(mergedRecord);
             
-            return updatedUser;
+            return mergedRecord;
         }
     }
 }

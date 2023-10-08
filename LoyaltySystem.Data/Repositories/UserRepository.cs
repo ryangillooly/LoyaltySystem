@@ -32,7 +32,37 @@ public class UserRepository : IUserRepository
    public async Task UpdateUserAsync(User updatedUser)
    {
       var dynamoRecord = _dynamoDbMapper.MapUserToItem(updatedUser);
-      await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+      var updateRequest = new UpdateItemRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         Key = new Dictionary<string, AttributeValue>
+         {
+            {"PK", new AttributeValue { S = dynamoRecord["PK"].S }},
+            {"SK", new AttributeValue { S = dynamoRecord["SK"].S }}
+         },
+         UpdateExpression = @"
+            SET  
+              FirstName   = :firstName,
+              LastName    = :lastName, 
+              PhoneNumber = :phoneNumber, 
+              Email       = :email, 
+              #St         = :status
+         ",
+         ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+         {
+            {":status",      new AttributeValue { S = dynamoRecord["Status"].S }},
+            {":firstName",   new AttributeValue { S = dynamoRecord["FirstName"].S }},
+            {":lastName",    new AttributeValue { S = dynamoRecord["LastName"].S }},
+            {":phoneNumber", new AttributeValue { S = dynamoRecord["PhoneNumber"].S }},
+            {":email",       new AttributeValue { S = dynamoRecord["Email"].S }}
+         },
+         ExpressionAttributeNames = new Dictionary<string, string>
+         {
+            {"#St", "Status"}  // Mapping the alias #St to the actual attribute name "Status"
+         }
+      };
+      
+      await _dynamoDbClient.UpdateItemAsync(updateRequest);
    }
    
    public async Task<User?> GetUserAsync(Guid userId)

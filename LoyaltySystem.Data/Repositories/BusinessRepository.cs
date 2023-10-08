@@ -67,7 +67,43 @@ public class BusinessRepository : IBusinessRepository
     public async Task UpdateBusinessAsync(Business updatedBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
-        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                {"PK", new AttributeValue { S = dynamoRecord["PK"].S }},
+                {"SK", new AttributeValue { S = dynamoRecord["SK"].S }}
+            },
+            UpdateExpression = @"
+            SET  
+              #Name        = :name,
+              #Status      = :status,
+              #Location    = :location, 
+              Description  = :desc, 
+              Email        = :email, 
+              PhoneNumber  = :phoneNumber,
+              OpeningHours = :openingHours
+         ",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                {":status",       new AttributeValue { S = dynamoRecord["Status"].S }},
+                {":name",         new AttributeValue { S = dynamoRecord["Name"].S }},
+                {":openingHours", new AttributeValue { S = dynamoRecord["OpeningHours"].S }},
+                {":phoneNumber",  new AttributeValue { S = dynamoRecord["PhoneNumber"].S }},
+                {":email",        new AttributeValue { S = dynamoRecord["Email"].S }},
+                {":location",     new AttributeValue { S = dynamoRecord["Location"].S }},
+                {":desc",         new AttributeValue { S = dynamoRecord["Desc"].S }}
+            },
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                {"#Status",   "Status"},  // Mapping the alias #St to the actual attribute name "Status"
+                {"#Name",     "Name"},
+                {"#Location", "Location"}
+            }
+        };
+      
+        await _dynamoDbClient.UpdateItemAsync(updateRequest);
     }
     public async Task DeleteBusinessAsync(Guid businessId) => 
         await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
