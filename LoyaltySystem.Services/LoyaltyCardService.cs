@@ -77,9 +77,10 @@ public class LoyaltyCardService : ILoyaltyCardService
         loyaltyCard.LastRedeemDate = DateTime.UtcNow;
         
         
-        await _businessRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, rewardId);
+       // await _businessRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, rewardId);
         
         // Create a "Redeem" record in the DB
         // Deduct the reward points from the points balance on the loyalty card
+        return loyaltyCard;
     }
 }

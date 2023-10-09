@@ -145,7 +145,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
-    
+    /*
     public async Task RedeemLoyaltyCardRewardAsync(LoyaltyCard loyaltyCard, Guid rewardId)
     {
         
@@ -156,7 +156,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                 Put = new Put
                 {
                     TableName = _dynamoDbSettings.TableName,
-                    Item = stampRecord,
+                    Item = loyaltyCard,
                     ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
                 }
             },
@@ -182,4 +182,5 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
+    */
 }

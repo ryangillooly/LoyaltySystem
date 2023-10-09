@@ -19,7 +19,23 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add AWS Services
-builder.Services.AddAWSService<IAmazonDynamoDB>();
+if (builder.Environment.IsDevelopment())
+{
+    // When in development mode, use the local DynamoDB instance
+    builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
+    {
+        var config = new AmazonDynamoDBConfig
+        {
+            ServiceURL = "http://localhost:8000", // Default DynamoDB local URL
+            AuthenticationRegion = "eu-west-2" // DynamoDB local doesn't care about this, but it's required.
+        };
+        return new AmazonDynamoDBClient(config);
+    });
+}
+else
+{
+    builder.Services.AddAWSService<IAmazonDynamoDB>();
+}
 
 // Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
 var dynamoDbSettings = new DynamoDbSettings();
@@ -28,6 +44,7 @@ builder.Services.AddSingleton(dynamoDbSettings);
 
 // Add Clients
 builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();
+
 
 // Add Repositories
 builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
