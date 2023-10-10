@@ -25,7 +25,7 @@ public class LoyaltyCardsController : ControllerBase
         await _loyaltyCardService.DeleteLoyaltyCardAsync(userId, businessId);
         // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
         return NoContent();
-    }
+    } 
 
     [HttpPut("{businessId:guid}")]
     public async Task<IActionResult> UpdateLoyaltyCard(Guid userId, Guid businessId, [FromBody] UpdateLoyaltyCardDto dto)
