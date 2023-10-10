@@ -1,50 +1,24 @@
-using Amazon;
-using Amazon.DynamoDBv2;
+using LoyaltySystem.API.Extensions;
 using LoyaltySystem.Core.Interfaces;
-using LoyaltySystem.Core.Models;
-using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
-using LoyaltySystem.Data.Clients;
 using LoyaltySystem.Data.Repositories;
 using LoyaltySystem.Services;
 
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers()
-                .AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-                });
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add AWS Services
-if (builder.Environment.IsDevelopment())
-{
-    // When in development mode, use the local DynamoDB instance
-    builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
-    {
-        var config = new AmazonDynamoDBConfig
-        {
-            ServiceURL = "http://localhost:8000", // Default DynamoDB local URL
-            AuthenticationRegion = "eu-west-2" // DynamoDB local doesn't care about this, but it's required.
-        };
-        return new AmazonDynamoDBClient(config);
-    });
-}
-else
-{
-    builder.Services.AddAWSService<IAmazonDynamoDB>();
-}
-
-// Add DynamoDb Settings from AppSettings (Could move to class - AddDynamoSettings)
-var dynamoDbSettings = new DynamoDbSettings();
-builder.Configuration.GetSection("DynamoDbSettings").Bind(dynamoDbSettings);
-builder.Services.AddSingleton(dynamoDbSettings);
-
-// Add Clients
-builder.Services.AddScoped<IDynamoDbClient, DynamoDbClient>();
-
+// Add DynamoDb Services
+builder.AddDynamoDb();
 
 // Add Repositories
 builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();

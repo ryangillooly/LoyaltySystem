@@ -30,7 +30,7 @@ public class BusinessExceptions
             : base(businessId, $"No users were found for the Business {businessId}") { }
     }
 
-    public class BusinessUserPermissionNotFoundException : LoyaltyCardExceptionBase
+    public class BusinessUserPermissionNotFoundException : BusinessExceptionBase
     {
         public BusinessUserPermissionNotFoundException(Guid userId, Guid businessId)
             : base(userId, businessId, $"The permission for user {userId} to access business {businessId} was not found.") { }

@@ -1,6 +1,5 @@
-using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Exceptions;
+using static  LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
 using static  LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -64,23 +63,25 @@ public class LoyaltyCardService : ILoyaltyCardService
         // Validate that it's active
         if (loyaltyCard!.Status != LoyaltyStatus.Active) throw new InactiveCardException(userId, businessId);
 
-        // Get Loyalty Campaign
+        // Get Loyalty Campaign, and Rewards
         var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
 
         // Validate that it's active
-        if (!campaign!.IsActive)
-            throw new CampaignNotActiveException(businessId, campaignId);
+        if (!campaign!.IsActive) throw new CampaignNotActiveException(businessId, campaignId);
 
+        // Get specific reward from Campaign
+        var selectedReward = campaign.Rewards.First(reward => reward.Id == rewardId);
+        
         // If the card points are less than the reward point requirements, throw error
-        // if(loyaltyCard.Points < campaig)
+        if (loyaltyCard.Points < selectedReward.PointsRequired) throw new NotEnoughPointsException(userId, businessId, campaignId, rewardId, selectedReward);
         
+        // Update Loyalty Card Redeem Date + Points
         loyaltyCard.LastRedeemDate = DateTime.UtcNow;
+        loyaltyCard.Points        -= selectedReward.PointsRequired;
         
-        
-       // await _businessRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, rewardId);
-        
-        // Create a "Redeem" record in the DB
-        // Deduct the reward points from the points balance on the loyalty card
+       // Redeem Reward 
+       await _loyaltyCardRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, campaignId, rewardId);
+       
         return loyaltyCard;
     }
 }

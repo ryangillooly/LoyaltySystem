@@ -98,8 +98,7 @@ public class DynamoDbMapper : IDynamoDbMapper
         };
     }
 
-    public Dictionary<string, AttributeValue> MapLoyaltyCardToRedeemItem(LoyaltyCard loyaltyCard, Guid campaignId,
-        Guid rewardId)
+    public Dictionary<string, AttributeValue> MapLoyaltyCardToRedeemItem(LoyaltyCard loyaltyCard, Guid campaignId, Guid rewardId)
     {
         var redeemId = Guid.NewGuid();
         return
@@ -110,11 +109,11 @@ public class DynamoDbMapper : IDynamoDbMapper
                 { "SK", new AttributeValue { S = $"Action#Redeem#Business#{loyaltyCard.BusinessId}#{redeemId}" } },
 
                 // Attributes
-                { "UserId", new AttributeValue { S = $"{loyaltyCard.UserId}" } },
+                { "UserId",     new AttributeValue { S = $"{loyaltyCard.UserId}" } },
                 { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
                 { "CampaignId", new AttributeValue { S = $"{campaignId}" } },
-                { "CardId", new AttributeValue { S = $"{loyaltyCard.Id}" } },
-                { "RewardId", new AttributeValue { S = $"{rewardId}" } },
+                { "CardId",     new AttributeValue { S = $"{loyaltyCard.Id}" } },
+                { "RewardId",   new AttributeValue { S = $"{rewardId}" } },
                 { "EntityType", new AttributeValue { S = "Redeem" } },
                 { "RedeemDate", new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" } }
             };

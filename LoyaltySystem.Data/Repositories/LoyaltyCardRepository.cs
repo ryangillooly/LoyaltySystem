@@ -1,12 +1,9 @@
-using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Exceptions;
+using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
-using LoyaltySystem.Data.Clients;
-using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -145,9 +142,10 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
-    /*
-    public async Task RedeemLoyaltyCardRewardAsync(LoyaltyCard loyaltyCard, Guid rewardId)
+    public async Task RedeemLoyaltyCardRewardAsync(LoyaltyCard loyaltyCard, Guid campaignId, Guid rewardId)
     {
+        var redeemAction  = _dynamoDbMapper.MapLoyaltyCardToRedeemItem(loyaltyCard, campaignId, rewardId);
+        var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
         
         var transactWriteItems = new List<TransactWriteItem>
         {
@@ -156,7 +154,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                 Put = new Put
                 {
                     TableName = _dynamoDbSettings.TableName,
-                    Item = loyaltyCard,
+                    Item = redeemAction,
                     ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
                 }
             },
@@ -170,11 +168,11 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                         {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
                         {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
                     },
-                    UpdateExpression = "SET Points = :points, LastStampDate = :lastStampDate",
+                    UpdateExpression = "SET Points = :points, LastRedeemDate = :lastStampDate",
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
-                        {":points",        new AttributeValue {N = loyaltyRecord["Points"].N}},
-                        {":lastStampDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
+                        {":points",        new AttributeValue  { N = loyaltyRecord["Points"].N} },
+                        {":lastRedeemDate", new AttributeValue { S = loyaltyRecord["LastRedeemDate"].S} }
                     }
                 }
             }
@@ -182,5 +180,4 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
-    */
 }
