@@ -68,6 +68,6 @@ public class LoyaltyCardsController : ControllerBase
     public async Task<IActionResult> RedeemLoyaltyCardReward(Guid userId, Guid businessId, [FromBody] RedeemLoyaltyCardDto dto)
     {
         var redeemedReward = await _loyaltyCardService.RedeemLoyaltyCardRewardAsync(userId, businessId, dto.CampaignId, dto.RewardId);
-        return Ok();
+        return Ok(redeemedReward);
     }
 }

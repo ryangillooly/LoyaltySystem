@@ -75,6 +75,9 @@ public class DynamoDbMapper : IDynamoDbMapper
         if (loyaltyCard.LastUpdatedDate is not null)
             item.Add("LastUpdatedDate", new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" });
 
+        if(loyaltyCard.LastRedeemDate is not null)
+            item.Add("LastRedeemDate", new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" });
+        
         return item;
     }
 

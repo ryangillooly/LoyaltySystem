@@ -47,7 +47,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         if (response.Item.Count == 0 || !response.IsItemSet)
             throw new CardNotFoundException(userId, businessId);
         
-        return new LoyaltyCard(userId, businessId)
+        var loyaltyCard = new LoyaltyCard(userId, businessId)
         {
             Id              = Guid.Parse(response.Item["CardId"].S),
             Points          = Convert.ToInt32(response.Item["Points"].N),
@@ -55,6 +55,18 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
             LastStampedDate = Convert.ToDateTime(response.Item["LastStampDate"].S),
             Status          = Enum.Parse<LoyaltyStatus>(response.Item["Status"].S)
         };
+        
+        if(response.Item.ContainsKey("LastRedeemDate"))
+        {
+            loyaltyCard.LastRedeemDate = Convert.ToDateTime(response.Item["LastRedeemDate"].S);
+        }
+        
+        if(response.Item.ContainsKey("LastUpdatedDate"))
+        {
+            loyaltyCard.LastUpdatedDate = Convert.ToDateTime(response.Item["LastUpdatedDate"].S);
+        }
+        
+        return loyaltyCard;
     }
 
     public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
@@ -100,10 +112,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.DeleteItemAsync(deleteRequest);
     }
-
-
-
-
+    
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
@@ -168,10 +177,10 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                         {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
                         {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
                     },
-                    UpdateExpression = "SET Points = :points, LastRedeemDate = :lastStampDate",
+                    UpdateExpression = "SET Points = :points, LastRedeemDate = :lastRedeemDate",
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
-                        {":points",        new AttributeValue  { N = loyaltyRecord["Points"].N} },
+                        {":points",         new AttributeValue  { N = loyaltyRecord["Points"].N} },
                         {":lastRedeemDate", new AttributeValue { S = loyaltyRecord["LastRedeemDate"].S} }
                     }
                 }
