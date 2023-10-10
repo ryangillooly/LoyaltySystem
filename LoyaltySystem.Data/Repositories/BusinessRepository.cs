@@ -103,10 +103,61 @@ public class BusinessRepository : IBusinessRepository
       
         await _dynamoDbClient.UpdateItemAsync(updateRequest);
     }
-    public async Task DeleteBusinessAsync(Guid businessId) => 
-        await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
 
-    
+    // Need to delete all records which are user permissions to the business being deleted
+    // Can we delete the record from the GSI and that's it? Or do we need to query the GSI, then perform the delete?
+    public async Task DeleteBusinessAsync(Guid businessId)
+    {
+        var transactWriteItemList = new List<TransactWriteItem>();
+        
+        // Get all Users who have permissions to the Business
+        // TODO: Fix this. Throwing error "Query condition missed key schema element"
+        var getPermissionsRequest = new QueryRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            IndexName = _dynamoDbSettings.BusinessUserListGsi,
+            KeyConditionExpression = "#PK = :PKValue AND begins_with(#SK, :SKValue)",  // Use placeholders
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                { "#PK", "BusinessUserList-PK" },   // Map to the correct attribute names
+                { "#SK", "BusinessUserList-SK" }
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":PKValue", new AttributeValue { S = $"{businessId}" }},
+                { ":SKValue", new AttributeValue { S = "Permission#User" }}
+            }
+        };
+        
+        var getItemResponse = await _dynamoDbClient.QueryAsync(getPermissionsRequest);
+
+        // Loop each user, and add Delete request to TransactWriteItemList
+        foreach (var record in getItemResponse.Items)
+        {
+            var transactWriteItem = new TransactWriteItem
+            {
+                Delete = new Delete
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        {"PK", new AttributeValue {S = $"User#{record["UserId"].S}"}},
+                        {"SK", new AttributeValue {S = $"Permission#Business#{record["BusinessUserList-PK"].S}"}}
+                    }
+                }
+            };
+            
+            transactWriteItemList.Add(transactWriteItem);
+        }
+        
+        // Delete all User permissions to the Business being deleted
+        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItemList);
+       
+        // Deletes everything that has the PK - Business##<BusinessId>
+        await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");
+    }
+
+
     // Business User Permissions
     public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {

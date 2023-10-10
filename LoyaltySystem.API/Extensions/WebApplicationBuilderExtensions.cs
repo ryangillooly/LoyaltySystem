@@ -16,7 +16,7 @@ public static class WebApplicationBuilderExtensions
             {
                 var config = new AmazonDynamoDBConfig
                 {
-                    //ServiceURL = "http://localhost:8000", // Default DynamoDB local URL
+                    ServiceURL = "http://localhost:8000", // Default DynamoDB local URL
                     AuthenticationRegion = "eu-west-2" // DynamoDB local doesn't care about this, but it's required.
                 };
                 return new AmazonDynamoDBClient(config);
