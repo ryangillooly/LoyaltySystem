@@ -267,7 +267,6 @@ public class BusinessRepository : IBusinessRepository
            Enum.Parse<UserRole>(response.Item["Role"].S)
             );
     }
-
     public async Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList)
     {
         foreach (var userId in userIdList)
@@ -373,7 +372,6 @@ public class BusinessRepository : IBusinessRepository
        var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(updatedCampaign);
        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
    }
-
    public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds)
    {
        var batchRequests = new List<WriteRequest>();

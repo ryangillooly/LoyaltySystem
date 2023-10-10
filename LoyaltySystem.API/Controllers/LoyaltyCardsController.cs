@@ -65,9 +65,9 @@ public class LoyaltyCardsController : ControllerBase
     }
 
     [HttpPost("{businessId:guid}/redeem")]
-    public async Task<IActionResult> RedeemLoyaltyCardReward(Guid userId, Guid businessId, Guid campaignId, Guid rewardId)
+    public async Task<IActionResult> RedeemLoyaltyCardReward(Guid userId, Guid businessId, [FromBody] RedeemLoyaltyCardDto dto)
     {
-        var redeemedReward = await _loyaltyCardService.RedeemLoyaltyCardRewardAsync(userId, businessId, campaignId, rewardId);
+        var redeemedReward = await _loyaltyCardService.RedeemLoyaltyCardRewardAsync(userId, businessId, dto.CampaignId, dto.RewardId);
         return Ok();
     }
 }
