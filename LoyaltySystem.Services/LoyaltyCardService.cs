@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using static  LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
 using static  LoyaltySystem.Core.Exceptions.BusinessExceptions;

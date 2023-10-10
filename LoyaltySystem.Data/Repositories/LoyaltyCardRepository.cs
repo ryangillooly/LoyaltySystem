@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
+using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
@@ -19,6 +20,25 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
+
+        var getUserRequest = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"User#{newLoyaltyCard.UserId}" } },
+                { "SK", new AttributeValue { S = "Meta#UserInfo" } }
+            }
+        };
+        var user = _dynamoDbClient.GetItemAsync(getUserRequest);
+        
+        if (user.Result.Item is null || !user.Result.IsItemSet)
+            throw new UserNotFoundException(newLoyaltyCard.UserId);
+        
+        var userIsActive = user.Result.Item["Status"].S == "Active";
+
+        if (!userIsActive) throw new UserNotActiveException(newLoyaltyCard.UserId, Enum.Parse<UserStatus>(user.Result.Item["Status"].S));
+        
         var putRequest = new PutItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
