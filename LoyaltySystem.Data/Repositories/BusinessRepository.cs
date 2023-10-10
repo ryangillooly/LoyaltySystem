@@ -111,7 +111,6 @@ public class BusinessRepository : IBusinessRepository
         var transactWriteItemList = new List<TransactWriteItem>();
         
         // Get all Users who have permissions to the Business
-        // TODO: Fix this. Throwing error "Query condition missed key schema element"
         var getPermissionsRequest = new QueryRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -128,7 +127,6 @@ public class BusinessRepository : IBusinessRepository
                 { ":SKValue", new AttributeValue { S = "Permission#User" }}
             }
         };
-        
         var getItemResponse = await _dynamoDbClient.QueryAsync(getPermissionsRequest);
 
         // Loop each user, and add Delete request to TransactWriteItemList
@@ -150,8 +148,47 @@ public class BusinessRepository : IBusinessRepository
             transactWriteItemList.Add(transactWriteItem);
         }
         
+        // Get all Users who have LoyaltyCards with the Business
+        var getLoyaltyCardsRequest = new QueryRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            IndexName = _dynamoDbSettings.BusinessLoyaltyListGsi,
+            KeyConditionExpression = "#PK = :PKValue AND begins_with(#SK, :SKValue)",  // Use placeholders
+            ExpressionAttributeNames = new Dictionary<string, string>
+            {
+                { "#PK", "BusinessLoyaltyList-PK" },   // Map to the correct attribute names
+                { "#SK", "BusinessLoyaltyList-SK" }
+            },
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":PKValue", new AttributeValue { S = $"{businessId}" }},
+                { ":SKValue", new AttributeValue { S = "Card#User" }}
+            }
+        };
+        var getLoyaltyCardsResponse = await _dynamoDbClient.QueryAsync(getLoyaltyCardsRequest);
+
+        // Loop each user, and add Delete request to TransactWriteItemList
+        foreach (var record in getLoyaltyCardsResponse.Items)
+        {
+            var transactWriteItem = new TransactWriteItem
+            {
+                Delete = new Delete
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        {"PK", new AttributeValue {S = $"User#{record["UserId"].S}"}},
+                        {"SK", new AttributeValue {S = $"Card#Business#{record["BusinessLoyaltyList-PK"].S}"}}
+                    }
+                }
+            };
+            
+            transactWriteItemList.Add(transactWriteItem);
+        }
+        
         // Delete all User permissions to the Business being deleted
-        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItemList);
+        if(transactWriteItemList.Count > 0)
+            await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItemList);
        
         // Deletes everything that has the PK - Business##<BusinessId>
         await _dynamoDbClient.DeleteItemsWithPkAsync($"Business#{businessId}");

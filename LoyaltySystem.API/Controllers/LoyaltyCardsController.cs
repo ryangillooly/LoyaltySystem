@@ -13,10 +13,10 @@ public class LoyaltyCardsController : ControllerBase
     public LoyaltyCardsController(ILoyaltyCardService loyaltyCardService) => _loyaltyCardService = loyaltyCardService;
     
     [HttpPost]
-    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] Guid businessId)
+    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] CreateLoyaltyCardDto loyaltyCardDto)
     {
-        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, businessId);
-        return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, createdLoyaltyCard.UserId}, createdLoyaltyCard);
+        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, loyaltyCardDto.BusinessId);
+        return CreatedAtAction(nameof(GetLoyaltyCard), new { createdLoyaltyCard.UserId, createdLoyaltyCard.BusinessId }, createdLoyaltyCard);
     }
     
     [HttpDelete("{businessId:guid}")]

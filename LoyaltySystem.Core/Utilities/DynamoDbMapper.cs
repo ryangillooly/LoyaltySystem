@@ -69,7 +69,7 @@ public class DynamoDbMapper : IDynamoDbMapper
             { "Status", new AttributeValue { S = $"{loyaltyCard.Status}" } },
 
             { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#{loyaltyCard.Id}" } }
+            { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#User#{loyaltyCard.UserId}#{loyaltyCard.Id}" } }
         };
 
         if (loyaltyCard.LastUpdatedDate is not null)
