@@ -12,6 +12,9 @@ public class LoyaltyCardExceptions
         private Guid RewardId { get; }
         private Reward Reward { get; }
 
+        protected LoyaltyCardExceptionBase(Guid userId, string message)
+            : base(message) => (UserId) = (userId);
+        
         protected LoyaltyCardExceptionBase(Guid userId, Guid businessId, string message)
             : base(message) => (UserId, BusinessId) = (userId, businessId);
 
@@ -32,6 +35,12 @@ public class LoyaltyCardExceptions
     {
         public CardNotFoundException(Guid userId, Guid businessId)
             : base(userId, businessId, $"The loyalty card for user {userId}, for business {businessId}, was not found.") { }
+    }
+    
+    public class NoCardsFoundException : LoyaltyCardExceptionBase
+    {
+        public NoCardsFoundException(Guid userId)
+            : base(userId, $"No loyalty cards could be found for User {userId}") { }
     }
 
     public class NotEnoughPointsException : LoyaltyCardExceptionBase

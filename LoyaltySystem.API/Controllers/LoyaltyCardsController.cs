@@ -55,6 +55,24 @@ public class LoyaltyCardsController : ControllerBase
         }
     }
 
+    public async Task<IActionResult> GetLoyaltyCards(Guid userId)
+    {
+        try
+        {
+            var card = await _loyaltyCardService.GetLoyaltyCardsAsync(userId);
+            return Ok(card);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
     [HttpPost("{businessId:guid}/stamp")]
     public async Task<IActionResult> StampLoyaltyCard(Guid userId, Guid businessId)
     {

@@ -47,9 +47,50 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         };
         await _dynamoDbClient.PutItemAsync(putRequest);
     }
-    
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
-    public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => throw new NotImplementedException();
+    public async Task<IEnumerable<LoyaltyCard>> GetLoyaltyCardsAsync(Guid userId)
+    {
+        var queryRequest = new QueryRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            KeyConditionExpression = "PK = :PKValue AND begins_with(SK, :SKValue)",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                { ":PKValue", new AttributeValue { S = $"User#{userId}" } },
+                { ":SKValue", new AttributeValue { S = "Card" } }
+            }
+        };
+        var response = await _dynamoDbClient.QueryAsync(queryRequest);
+
+        if (response.Items.Count == 0 || response.Items is null)
+            throw new NoCardsFoundException(userId);
+
+        var loyaltyCardList = new List<LoyaltyCard>();
+        
+        foreach (var item in response.Items)
+        {
+            var loyaltyCard = new LoyaltyCard()
+            {
+                UserId = Guid.Parse(item["UserId"].S),
+                BusinessId = Guid.Parse(item["BusinessId"].S),
+                Id = Guid.Parse(item["CardId"].S),
+                Points = Convert.ToInt32(item["Points"].N),
+                IssueDate = Convert.ToDateTime(item["IssueDate"].S),
+                LastStampedDate = Convert.ToDateTime(item["LastStampDate"].S),
+                Status = Enum.Parse<LoyaltyStatus>(item["Status"].S)
+            };
+
+            if (item.ContainsKey("LastRedeemDate"))
+                loyaltyCard.LastRedeemDate = Convert.ToDateTime(item["LastRedeemDate"].S);
+        
+            if(item.ContainsKey("LastUpdatedDate"))
+                loyaltyCard.LastUpdatedDate = Convert.ToDateTime(item["LastUpdatedDate"].S);
+
+            loyaltyCardList.Add(loyaltyCard);
+        }
+
+        return loyaltyCardList;
+    }
     public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var getRequest = new GetItemRequest
@@ -88,7 +129,6 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         
         return loyaltyCard;
     }
-
     public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
     {
         var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
@@ -117,7 +157,6 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         await _dynamoDbClient.UpdateItemAsync(updateRequest);
         //await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
     }
-
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var deleteRequest = new DeleteItemRequest
@@ -132,7 +171,6 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.DeleteItemAsync(deleteRequest);
     }
-    
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
         var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
