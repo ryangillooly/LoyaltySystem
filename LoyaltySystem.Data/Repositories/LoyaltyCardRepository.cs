@@ -62,8 +62,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         };
         var response = await _dynamoDbClient.QueryAsync(queryRequest);
 
-        if (response.Items.Count == 0 || response.Items is null)
-            throw new NoCardsFoundException(userId);
+       // if (response.Items.Count == 0 || response.Items is null)
+        //    throw new NoCardsFoundException(userId);
 
         var loyaltyCardList = new List<LoyaltyCard>();
         
