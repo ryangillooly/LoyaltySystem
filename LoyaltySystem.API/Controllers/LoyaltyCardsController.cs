@@ -55,6 +55,7 @@ public class LoyaltyCardsController : ControllerBase
         }
     }
 
+    [HttpGet]
     public async Task<IActionResult> GetLoyaltyCards(Guid userId)
     {
         try
