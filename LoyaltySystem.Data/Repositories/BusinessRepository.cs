@@ -62,6 +62,59 @@ public class BusinessRepository : IBusinessRepository
             Status =  Enum.Parse<BusinessStatus>(response.Item["Status"].S)
         };
     }
+    
+    public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
+    {
+        var transactItemsList = new List<TransactGetItem>();
+        var businessList      = new List<Business>();
+
+        foreach (var businessId in businessIdList)
+        {
+            transactItemsList.Add
+            (
+                new TransactGetItem
+                {
+                    Get = new Get
+                    {
+                        TableName = _dynamoDbSettings.TableName,
+                        Key = new Dictionary<string, AttributeValue>
+                        {
+                            { "PK", new AttributeValue { S = $"Business#{businessId}" }},
+                            { "SK", new AttributeValue { S = "Meta#BusinessInfo"  }}
+                        }
+                    }
+                }
+            );
+        }
+        
+        var getBusinessListRequest = new TransactGetItemsRequest { TransactItems = transactItemsList };
+        var getItemsResponse = await _dynamoDbClient.TransactGetItemsAsync(getBusinessListRequest);
+
+        foreach (var response in getItemsResponse.Responses.Select(itemResponse => itemResponse.Item))
+        {
+            businessList.Add
+            (
+                new Business
+                {
+                    Id           = Guid.Parse(response["BusinessId"].S),
+                    OwnerId      = Guid.Parse(response["OwnerId"].S),
+                    Name         = response["Name"].S,
+                    Description  = response["Desc"]?.S,
+                    Location     = JsonConvert.DeserializeObject<Location>(response["Location"].S),
+                    OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(response["OpeningHours"].S),
+                    ContactInfo  = new ContactInfo
+                    {
+                        Email       = response["Email"].S,
+                        PhoneNumber = response["PhoneNumber"].S
+                    },
+                    Status = Enum.Parse<BusinessStatus>(response["Status"].S)
+                }
+            );
+        }
+
+        return businessList;
+    }
+    
     public async Task UpdateBusinessAsync(Business updatedBusiness)
     {
         var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
@@ -233,7 +286,7 @@ public class BusinessRepository : IBusinessRepository
         if (response.Items == null || response.Count == 0)
             throw new BusinessUsersNotFoundException(businessId);
         
-        return response?
+        return response
             .Items
             .Select(permission => 
                 new BusinessUserPermissions(

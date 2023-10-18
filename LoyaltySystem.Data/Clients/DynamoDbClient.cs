@@ -214,4 +214,16 @@ public class DynamoDbClient : IDynamoDbClient
     {
         return await _dynamoDb.BatchWriteItemAsync(request);
     }
+    
+    public async Task<TransactGetItemsResponse> TransactGetItemsAsync(TransactGetItemsRequest transactGetItemsRequest)
+    {
+        try
+        {
+            return await _dynamoDb.TransactGetItemsAsync(transactGetItemsRequest);
+        }
+        catch (Exception ex)  
+        {
+            throw new Exception("Failed to transact get items", ex);
+        }
+    }
 }

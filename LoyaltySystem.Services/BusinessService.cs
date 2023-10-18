@@ -44,6 +44,14 @@ namespace LoyaltySystem.Services
             if (business == null) throw new ResourceNotFoundException("Business not found");
             return business;
         }
+        
+        public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
+        {
+            var businesses = await _businessRepository.GetBusinessesAsync(businessIdList);
+            if (businesses == null) throw new ResourceNotFoundException("Business not found");
+            return businesses;
+        }
+        
         public async Task DeleteBusinessAsync(Guid businessId) => await _businessRepository.DeleteBusinessAsync(businessId);
         
         

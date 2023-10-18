@@ -7,7 +7,7 @@ namespace LoyaltySystem.Core.Interfaces;
 
 public interface ILoyaltyCardService
 {
-    Task<IEnumerable<LoyaltyCard>> GetLoyaltyCardsAsync(Guid userId);
+    Task<List<LoyaltyCardWithBusinessDetails>> GetLoyaltyCardsAsync(Guid userId);
     Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId);
     Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId);
     Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId);

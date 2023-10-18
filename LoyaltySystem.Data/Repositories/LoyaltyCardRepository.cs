@@ -19,8 +19,17 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
-        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
-
+        var getBusinessRequest = new GetItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                { "PK", new AttributeValue { S = $"Business#{newLoyaltyCard.BusinessId}" } },
+                { "SK", new AttributeValue { S = "Meta#BusinessInfo" } }
+            }
+        };
+        var business = _dynamoDbClient.GetItemAsync(getBusinessRequest);
+        
         var getUserRequest = new GetItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -32,12 +41,13 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         };
         var user = _dynamoDbClient.GetItemAsync(getUserRequest);
         
-        if (user.Result.Item is null || !user.Result.IsItemSet)
-            throw new UserNotFoundException(newLoyaltyCard.UserId);
+        if (user.Result.Item is null || !user.Result.IsItemSet) throw new UserNotFoundException(newLoyaltyCard.UserId);
         
         var userIsActive = user.Result.Item["Status"].S == "Active";
 
         if (!userIsActive) throw new UserNotActiveException(newLoyaltyCard.UserId, Enum.Parse<UserStatus>(user.Result.Item["Status"].S));
+        
+        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
         
         var putRequest = new PutItemRequest
         {

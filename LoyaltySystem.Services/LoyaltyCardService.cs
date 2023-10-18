@@ -24,8 +24,41 @@ public class LoyaltyCardService : ILoyaltyCardService
 
     public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => 
         await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
-    public async Task<IEnumerable<LoyaltyCard>> GetLoyaltyCardsAsync(Guid userId) => 
-        await _loyaltyCardRepository.GetLoyaltyCardsAsync(userId);
+
+    public async Task<List<LoyaltyCardWithBusinessDetails>> GetLoyaltyCardsAsync(Guid userId)
+    {
+        var loyaltyCards = await _loyaltyCardRepository.GetLoyaltyCardsAsync(userId);
+        var businesses            = await _businessRepository.GetBusinessesAsync(loyaltyCards.Select(r => r.BusinessId).ToList());
+        var cardsWithDetails = new List<LoyaltyCardWithBusinessDetails>();
+
+        foreach (var card in loyaltyCards)
+        {
+            var business = businesses.FirstOrDefault(b => b.Id == card.BusinessId);
+            if (business != null)
+            {
+                cardsWithDetails.Add
+                (
+                    new LoyaltyCardWithBusinessDetails 
+                    {
+                        Id              = card.Id,
+                        UserId          = card.UserId,
+                        BusinessId      = card.BusinessId,
+                        BusinessName    = business.Name,
+                        Points          = card.Points,
+                        IssueDate       = card.IssueDate,
+                        LastStampedDate = card.LastStampedDate,
+                        LastRedeemDate  = card.LastRedeemDate,
+                        LastUpdatedDate = card.LastUpdatedDate,
+                        Status          = card.Status
+                        
+                    }
+                );
+            }
+        }
+
+        return cardsWithDetails;
+    }
+
     public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId) =>
         await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
     

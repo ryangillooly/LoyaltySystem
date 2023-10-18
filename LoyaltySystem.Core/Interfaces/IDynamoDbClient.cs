@@ -20,5 +20,6 @@ public interface IDynamoDbClient
     Task<QueryResponse> QueryAsync(QueryRequest request);
     Task<ScanResponse> ScanAsync(ScanRequest request);
     Task<BatchWriteItemResponse> BatchWriteItemsAsync(BatchWriteItemRequest request);
+    Task<TransactGetItemsResponse> TransactGetItemsAsync(TransactGetItemsRequest transactGetItemsRequest);
 
 }

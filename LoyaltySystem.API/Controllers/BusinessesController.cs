@@ -20,6 +20,7 @@ public class BusinessesController : ControllerBase
         var createdBusiness = await _businessService.CreateBusinessAsync(newBusiness);
         return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }
+    
     [HttpPut("{businessId:guid}")]
     public async Task<IActionResult> UpdateBusiness(Guid businessId, [FromBody] Business business)
     {
@@ -29,13 +30,14 @@ public class BusinessesController : ControllerBase
 
         return Ok(updatedBusiness);
     }
+    
     [HttpGet("{businessId:guid}")]
     public async Task<IActionResult> GetBusiness(Guid businessId)
     {
         try
         {
-            var card = await _businessService.GetBusinessAsync(businessId);
-            return Ok(card);
+            var business = await _businessService.GetBusinessAsync(businessId);
+            return Ok(business);
         }
         catch(ResourceNotFoundException ex)
         {
@@ -47,6 +49,27 @@ public class BusinessesController : ControllerBase
             return StatusCode(500, $"Internal server error - {ex}");
         }
     }
+    
+    [HttpGet]
+    public async Task<IActionResult> GetBusinesses([FromBody] GetBusinessesDto dto)
+    {
+        try
+        {
+            var businesses = await _businessService.GetBusinessesAsync(dto.BusinessIdList);
+            return Ok(businesses);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
+    
     [HttpDelete("{businessId:guid}")]
     public async Task<IActionResult> DeleteBusiness(Guid businessId)
     {
@@ -65,6 +88,7 @@ public class BusinessesController : ControllerBase
         var createdBusinessUsers = await _businessService.CreateBusinessUserPermissionsAsync(permissionList);
         return CreatedAtAction(nameof(GetBusinessUsersPermission), new { businessId = businessId, userId = newBusinessUserPermissions[0].UserId }, createdBusinessUsers);
     }
+    
     [HttpGet("{businessId:guid}/users/{userId:guid}")]
     public async Task<IActionResult> GetBusinessUsersPermission(Guid businessId, Guid userId)
     {
