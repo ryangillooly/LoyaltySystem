@@ -16,12 +16,9 @@ namespace LoyaltySystem.Services
         public async Task<User> CreateAsync(User newUser)
         {
             var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
-
-            if (emailExists)
-                throw new InvalidOperationException("Email already exists");
+            if (emailExists) throw new InvalidOperationException("Email already exists");
 
             await _userRepository.CreateAsync(newUser);
-            // await _auditService.CreateAuditRecordAsync<User>(auditRecord); // Look to use Event Handlers for Auditing (event / delegates)
             
             return newUser;
         }

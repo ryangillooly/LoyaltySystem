@@ -29,7 +29,7 @@ public class Business
     public Location Location { get; set; } = new ();
     public ContactInfo ContactInfo { get; set; } = new ();
     public OpeningHours OpeningHours { get; set; } = new ();
-    public BusinessStatus Status { get; set; } = BusinessStatus.Active;
+    public BusinessStatus Status { get; set; } = BusinessStatus.Pending;
 
     public static Business Merge(Business current, Business updated) =>
         new ()

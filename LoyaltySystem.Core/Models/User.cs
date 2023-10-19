@@ -10,10 +10,9 @@ public class User
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public DateTime? DateOfBirth { get; set; }
-    public UserStatus Status { get; set; } = UserStatus.Active;
+    public UserStatus Status { get; set; } = UserStatus.Pending;
     
     public string GetFullName => $"{FirstName} {LastName}";
-    
     public static User Merge(User current, User updated) =>
         new ()
         {

@@ -1,6 +1,8 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Mappers;
 using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,8 +17,9 @@ public class BusinessesController : ControllerBase
 
     // Businesses
     [HttpPost]
-    public async Task<IActionResult> CreateBusiness([FromBody] Business newBusiness)
+    public async Task<IActionResult> CreateBusiness([FromBody] CreateBusinessDto dto)
     {
+        var newBusiness = new BusinessMapper().CreateBusinessDtoToUser(dto);
         var createdBusiness = await _businessService.CreateBusinessAsync(newBusiness);
         return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }

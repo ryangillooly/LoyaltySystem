@@ -1,7 +1,9 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Mappers;
 
 namespace LoyaltySystem.API.Controllers
 {
@@ -13,8 +15,9 @@ namespace LoyaltySystem.API.Controllers
         public UsersController(IUserService userService) => _userService = userService;
 
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] User newUser)
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
+            var newUser = new UserMapper().CreateUserDtoToUser(dto);
             var createdUser = await _userService.CreateAsync(newUser);
             return CreatedAtAction(nameof(GetUser), new { userId = createdUser.Id }, createdUser);
         }

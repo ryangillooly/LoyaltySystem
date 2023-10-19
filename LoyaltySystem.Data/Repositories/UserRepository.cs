@@ -92,7 +92,7 @@ public class UserRepository : IUserRepository
                         },
          FirstName   = response.Item["FirstName"].S,
          LastName    = response.Item["LastName"].S,
-         Status      =  Enum.Parse<UserStatus>(response.Item["Status"].S)
+         Status      = Enum.Parse<UserStatus>(response.Item["Status"].S)
       };
 
       if (response.Item.ContainsKey("DateOfBirth") && response.Item["DateOfBirth"].S != null)

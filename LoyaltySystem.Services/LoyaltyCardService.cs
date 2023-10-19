@@ -50,7 +50,6 @@ public class LoyaltyCardService : ILoyaltyCardService
                         LastRedeemDate  = card.LastRedeemDate,
                         LastUpdatedDate = card.LastUpdatedDate,
                         Status          = card.Status
-                        
                     }
                 );
             }

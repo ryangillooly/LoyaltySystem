@@ -10,9 +10,7 @@ public class EmailService : IEmailService
 
     public async Task<bool> IsEmailUnique(string email)
     {
-        if (!IsValid(email))
-            throw new ArgumentException("Invalid email format.");
-
+        if (!IsValid(email)) throw new ArgumentException("Invalid email format.");
         return await _emailRepository.DoesEmailExistAsync(email);
     }
 
