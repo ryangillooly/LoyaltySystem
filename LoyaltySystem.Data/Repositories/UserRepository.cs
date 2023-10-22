@@ -4,6 +4,7 @@ using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -105,4 +106,33 @@ public class UserRepository : IUserRepository
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
 
    public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"User#{userId}");
+
+   public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId)
+   {
+      var request = new QueryRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         KeyConditionExpression = "#PK = :PKValue AND begins_with(#SK, :SKValue)",  // Use placeholders
+         ExpressionAttributeNames = new Dictionary<string, string>
+         {
+            { "#PK", "PK" },   // Map to the correct attribute names
+            { "#SK", "SK" }
+         },
+         ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+         {
+            { ":PKValue", new AttributeValue { S = $"User#{userId}" }},
+            { ":SKValue", new AttributeValue { S = "Permission#Business" }}
+         }
+      };
+      
+      var response = await _dynamoDbClient.QueryAsync(request);
+
+      var businessUserPermissionsList = new List<BusinessUserPermissions>();
+      foreach (var item in response.Items)
+      {
+         businessUserPermissionsList.Add(new BusinessUserPermissions(Guid.Parse(item["BusinessId"].S), Guid.Parse(item["UserId"].S), Enum.Parse<UserRole>(item["Role"].S)));
+      }
+
+      return businessUserPermissionsList;
+   }
 }

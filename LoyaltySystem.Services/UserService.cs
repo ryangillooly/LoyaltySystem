@@ -43,5 +43,8 @@ namespace LoyaltySystem.Services
             
             return mergedRecord;
         }
+
+        public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId) =>
+            await _userRepository.GetUsersBusinessPermissions(userId);
     }
 }

@@ -61,5 +61,8 @@ namespace LoyaltySystem.API.Controllers
                 return StatusCode(500, $"Internal server error - {ex}");
             }
         }
+
+        [HttpGet("{userId:guid}/businesses")]
+        public async Task<IActionResult> GetBusinessPermissions(Guid userId) => Ok(await _userService.GetUsersBusinessPermissions(userId));
     }
 }

@@ -10,5 +10,5 @@ public interface IUserRepository
     Task CreateAsync(User entity);
     Task UpdateUserAsync(User updatedUser);
     Task DeleteUserAsync(Guid id);
-   
+    Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId);
 }
