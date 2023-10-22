@@ -8,7 +8,7 @@ using LoyaltySystem.Core.Mappers;
 namespace LoyaltySystem.API.Controllers
 {
     [ApiController]
-    [Route("api/users")]
+    [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;

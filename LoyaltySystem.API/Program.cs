@@ -1,8 +1,11 @@
+using System.Text;
 using LoyaltySystem.API.Extensions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Data.Repositories;
 using LoyaltySystem.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +31,27 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
+
+// JWT Authentication Setup
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    }
+);
 
 // Add DynamoDb Services
 builder.AddDynamoDb();
@@ -62,13 +86,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.UseRouting();  // UseRouting should be before CORS and Authorization
-
-app.UseCors("MyCORS");  // UseCors should be after UseRouting and before UseAuthorization
-
-app.UseAuthorization();  // UseAuthorization should be after UseCors
-
+app.UseRouting();  // UseRouting should be before CORS and Authentication
+app.UseCors("MyCORS");  // UseCors should be after UseRouting and before UseAuthentication
+app.UseAuthentication(); // Add this middleware
+app.UseAuthorization();  // UseAuthorization should be after UseAuthentication
 app.MapControllers();  // MapControllers should come after all other middlewares
-
 app.Run();  // To run the application

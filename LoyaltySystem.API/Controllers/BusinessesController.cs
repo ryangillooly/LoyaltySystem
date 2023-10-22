@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.API.Controllers;
 
 [ApiController]
-[Route("api/businesses")]
+[Route("api/[controller]")]
 public class BusinessesController : ControllerBase
 {
     private readonly IBusinessService _businessService;
