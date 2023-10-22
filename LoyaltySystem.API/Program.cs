@@ -1,6 +1,7 @@
 using System.Text;
 using LoyaltySystem.API.Extensions;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
 using LoyaltySystem.Data.Repositories;
 using LoyaltySystem.Services;
@@ -52,6 +53,10 @@ builder.Services.AddAuthentication(options =>
         };
     }
 );
+
+var emailSettings = new EmailSettings();
+builder.Configuration.GetSection("Email").Bind(emailSettings);
+builder.Services.AddSingleton(emailSettings);
 
 // Add DynamoDb Services
 builder.AddDynamoDb();

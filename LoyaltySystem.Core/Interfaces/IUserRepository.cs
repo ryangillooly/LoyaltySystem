@@ -7,8 +7,10 @@ public interface IUserRepository
 {
     Task<IEnumerable<User>> GetAllAsync();
     Task<User?> GetUserAsync(Guid userId);
-    Task CreateAsync(User entity);
+    Task CreateAsync(User entity, Guid token);
     Task UpdateUserAsync(User updatedUser);
     Task DeleteUserAsync(Guid id);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId);
+    Task VerifyEmailAsync(Guid token);
+    Task SendVerificationEmailAsync(string email, Guid token);
 }

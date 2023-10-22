@@ -12,4 +12,5 @@ public interface IUserService
     Task DeleteUserAsync(Guid userId);
     Task<User> UpdateUserAsync(User updatedUser);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid businessId);
+    Task VerifyEmailAsync(Guid token);
 }

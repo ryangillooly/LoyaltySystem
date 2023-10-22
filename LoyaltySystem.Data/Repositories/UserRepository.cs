@@ -13,21 +13,60 @@ public class UserRepository : IUserRepository
    private readonly IDynamoDbClient _dynamoDbClient;
    private readonly IDynamoDbMapper _dynamoDbMapper;
    private readonly DynamoDbSettings _dynamoDbSettings;
+   private readonly IEmailService _emailService;
+   private readonly EmailSettings _emailSettings;
    
 
-   public UserRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
-      (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
+   public UserRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
+      (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings, emailService, emailSettings);
 
-   public async Task CreateAsync(User newUser)
+   public async Task CreateAsync(User newUser, Guid token)
    {
       var dynamoRecord = _dynamoDbMapper.MapUserToItem(newUser);
-      var putRequest = new PutItemRequest
+      var transactWriteItems = new List<TransactWriteItem>
       {
-         TableName = _dynamoDbSettings.TableName,
-         Item = dynamoRecord,
-         ConditionExpression = "attribute_not_exists(PK)"
+         new ()
+         {
+            Put = new Put
+            {
+               TableName = _dynamoDbSettings.TableName,
+               Item = dynamoRecord,
+               ConditionExpression = "attribute_not_exists(PK)"
+            }
+         },
+         new ()
+         {
+            Put = new Put
+            {
+               TableName = _dynamoDbSettings.TableName,
+               Item = new Dictionary<string, AttributeValue>
+               {
+                  { "PK",         new AttributeValue {S = $"User#{newUser.Id}" }},
+                  { "SK",         new AttributeValue {S = $"{token}"}},
+                  { "EntityType", new AttributeValue {S = "Email Token"}},
+                  { "Status",     new AttributeValue {S = "Unverified"}},
+                  { "ExpiryDate", new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}"}}
+               },
+               ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+            }
+         }
       };
-      await _dynamoDbClient.PutItemAsync(putRequest);
+
+      
+      await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
+   }
+
+   public async Task SendVerificationEmailAsync(string email, Guid token)
+   {
+      var verificationLink = $"http://localhost:3000/verify-email/{token}";
+      var emailInfo = new EmailInfo
+      {
+         ToEmail   = email,
+         FromEmail = _emailSettings.From,
+         Subject   = "Loyalty System - Verification",
+         Body      = $"Please verify your account by going to the following URL - {verificationLink}"
+      };
+      await _emailService.SendEmail(emailInfo);
    }
    
    public async Task UpdateUserAsync(User updatedUser)
@@ -134,5 +173,10 @@ public class UserRepository : IUserRepository
       }
 
       return businessUserPermissionsList;
+   }
+
+   public async Task VerifyEmailAsync(Guid token)
+   {
+      
    }
 }
