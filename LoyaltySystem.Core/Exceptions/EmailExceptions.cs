@@ -1,3 +1,5 @@
+using LoyaltySystem.Core.Models;
+
 namespace LoyaltySystem.Core.Exceptions;
 
 public class EmailExceptions
@@ -7,13 +9,25 @@ public class EmailExceptions
         public Guid UserId { get; set; }
         public Guid Token { get; }
 
-        protected EmailExceptionBase(Guid businessId, string message)
-            : base(message) => (BusinessId) = (businessId);
+        protected EmailExceptionBase(Guid userId, Guid token, string message)
+            : base(message) => (UserId, Token) = (userId, token);
     }
     
-    public class BusinessNotFoundException : EmailExceptionBase
+    public class VerificationEmailExpiredException : EmailExceptionBase
     {
-        public BusinessNotFoundException(Guid businessId)
-            : base(businessId, $"The Business {businessId} was not found.") { }
+        public VerificationEmailExpiredException(Guid userId, Guid token)
+            : base(userId, token, $"The Verification Email {token} for user {userId} has expired") { }
+    }
+
+    public class NoVerificationEmailFoundException : EmailExceptionBase
+    {
+        public NoVerificationEmailFoundException(Guid userId, Guid token)
+            : base(userId, token, $"No Verification Email {token} was found for user {userId}") { }
+    }
+
+    public class VerificationEmailAlreadyVerifiedException : EmailExceptionBase
+    {
+        public VerificationEmailAlreadyVerifiedException(Guid userId, Guid token)
+            : base(userId, token, $"The Verification Email {token} for user {userId} has already been verified") { }
     }
 }

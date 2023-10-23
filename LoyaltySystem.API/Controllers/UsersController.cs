@@ -33,13 +33,12 @@ namespace LoyaltySystem.API.Controllers
             return Ok(updatedUser);
         }
 
-        [HttpPost("verify-email")]
-        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
+        [HttpPost("{userId:guid}/verify-email/{token:guid}")]
+        public async Task<IActionResult> VerifyEmail(Guid userId, Guid token)
         {
-            await _userService.VerifyEmailAsync(dto);
+            await _userService.VerifyEmailAsync(new VerifyEmailDto(userId, token));
             return Ok();
         }
-        
         
         [HttpDelete("{userId:guid}")]
         public async Task<IActionResult> DeleteUser(Guid userId)

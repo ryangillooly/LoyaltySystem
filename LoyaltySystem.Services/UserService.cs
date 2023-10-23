@@ -24,7 +24,7 @@ namespace LoyaltySystem.Services
             var token = Guid.NewGuid();
                 
             await _userRepository.CreateAsync(newUser, token);
-            await _userRepository.SendVerificationEmailAsync(newUser.ContactInfo.Email, token);
+            await _userRepository.SendVerificationEmailAsync(newUser.ContactInfo.Email, newUser.Id, token);
             
             return newUser;
         }

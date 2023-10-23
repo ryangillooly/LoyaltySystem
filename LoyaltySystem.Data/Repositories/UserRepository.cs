@@ -1,11 +1,11 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
+using static LoyaltySystem.Core.Exceptions.EmailExceptions;
 using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
-using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -42,24 +42,24 @@ public class UserRepository : IUserRepository
                TableName = _dynamoDbSettings.TableName,
                Item = new Dictionary<string, AttributeValue>
                {
-                  { "PK",         new AttributeValue {S = $"User#{newUser.Id}" }},
-                  { "SK",         new AttributeValue {S = $"Token#{token}"}},
-                  { "EntityType", new AttributeValue {S = "Email Token"}},
-                  { "Status",     new AttributeValue {S = "Unverified"}},
-                  { "ExpiryDate", new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}"}}
+                  { "PK",           new AttributeValue {S = $"User#{newUser.Id}" }},
+                  { "SK",           new AttributeValue {S = $"Token#{token}"}},
+                  { "EntityType",   new AttributeValue {S = "Email Token"}},
+                  { "Status",       new AttributeValue {S = "Unverified"}},
+                  { "ExpiryDate",   new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}"}},
+                  { "CreationDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
                },
                ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
             }
          }
       };
-
       
       await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
    }
 
-   public async Task SendVerificationEmailAsync(string email, Guid token)
+   public async Task SendVerificationEmailAsync(string email, Guid userId, Guid token)
    {
-      var verificationLink = $"http://localhost:3000/verify-email/{token}";
+      var verificationLink = $"http://localhost:3000/user/{userId}/verify-email/{token}";
       var emailInfo = new EmailInfo
       {
          ToEmail   = email,
@@ -186,9 +186,63 @@ public class UserRepository : IUserRepository
             {"SK", new AttributeValue {S = $"Token#{dto.Token}" }}
          }
       };
+      
+      var getResponse  = await _dynamoDbClient.GetItemAsync(getRequest);
+      var expiryDate   = DateTime.Parse(getResponse.Item["ExpiryDate"].S);
+      var status = getResponse.Item["Status"].S;
+      
+      if (getResponse.Item == null)     throw new NoVerificationEmailFoundException(dto.UserId, dto.Token);
+      if (status == "Verified")         throw new VerificationEmailAlreadyVerifiedException(dto.UserId, dto.Token);
+      if (DateTime.UtcNow > expiryDate) throw new VerificationEmailExpiredException(dto.UserId, dto.Token);
 
-      var response = await _dynamoDbClient.GetItemAsync(getRequest);
-      var expiryDate = DateTime.Parse(response.Item["ExpiryDate"].S);
-      if(DateTime.UtcNow < expiryDate) throw new 
+      var transactWriteList = new List<TransactWriteItem>
+      {
+         new ()
+         {
+            Update = new Update
+            {
+               TableName = _dynamoDbSettings.TableName,
+               Key = new Dictionary<string, AttributeValue>
+               {
+                  { "PK", new AttributeValue { S = $"User#{dto.UserId}" } },
+                  { "SK", new AttributeValue { S = $"Token#{dto.Token}" } }
+               },
+               ExpressionAttributeNames = new Dictionary<string, string>
+               {
+                  { "#VerifiedDate", "VerifiedDate" },
+                  { "#Status",       "Status" }
+               },
+               ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+               {
+                  {":VerifiedDate", new AttributeValue { S = $"{DateTime.UtcNow}" }},
+                  {":Status",       new AttributeValue { S = "Verified" }},
+               },
+               UpdateExpression = "SET #Status = :Status, #VerifiedDate = :VerifiedDate"
+            }
+         },
+         new ()
+         {
+            Update = new Update
+            {
+               TableName = _dynamoDbSettings.TableName,
+               Key = new Dictionary<string, AttributeValue>
+               {
+                  { "PK", new AttributeValue { S = $"User#{dto.UserId}" }},
+                  { "SK", new AttributeValue { S = $"Meta#UserInfo" }}
+               },
+               ExpressionAttributeNames = new Dictionary<string, string>
+               {
+                  { "#Status", "Status" }
+               },
+               ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+               {
+                  {":Status", new AttributeValue { S = $"{UserStatus.Active}"}}
+               },
+               UpdateExpression = "SET #Status = :Status"
+            }
+         }
+      };
+
+      await _dynamoDbClient.TransactWriteItemsAsync(transactWriteList);
    }
 }
