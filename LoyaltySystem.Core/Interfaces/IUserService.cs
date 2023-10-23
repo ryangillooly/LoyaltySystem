@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
@@ -12,5 +13,5 @@ public interface IUserService
     Task DeleteUserAsync(Guid userId);
     Task<User> UpdateUserAsync(User updatedUser);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid businessId);
-    Task VerifyEmailAsync(Guid token);
+    Task VerifyEmailAsync(VerifyEmailDto dto);
 }

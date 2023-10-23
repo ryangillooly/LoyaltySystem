@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Models;
 
 
@@ -11,6 +12,6 @@ public interface IUserRepository
     Task UpdateUserAsync(User updatedUser);
     Task DeleteUserAsync(Guid id);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId);
-    Task VerifyEmailAsync(Guid token);
+    Task VerifyEmailAsync(VerifyEmailDto dto);
     Task SendVerificationEmailAsync(string email, Guid token);
 }

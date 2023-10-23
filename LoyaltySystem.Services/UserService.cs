@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -52,9 +53,9 @@ namespace LoyaltySystem.Services
         public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId) =>
             await _userRepository.GetUsersBusinessPermissions(userId);
 
-        public async Task VerifyEmailAsync(Guid token)
+        public async Task VerifyEmailAsync(VerifyEmailDto dto)
         {
-            await _userRepository.VerifyEmailAsync(token);
+            await _userRepository.VerifyEmailAsync(dto);
         }
     }
 }

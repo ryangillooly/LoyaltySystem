@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
@@ -42,7 +43,7 @@ public class UserRepository : IUserRepository
                Item = new Dictionary<string, AttributeValue>
                {
                   { "PK",         new AttributeValue {S = $"User#{newUser.Id}" }},
-                  { "SK",         new AttributeValue {S = $"{token}"}},
+                  { "SK",         new AttributeValue {S = $"Token#{token}"}},
                   { "EntityType", new AttributeValue {S = "Email Token"}},
                   { "Status",     new AttributeValue {S = "Unverified"}},
                   { "ExpiryDate", new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}"}}
@@ -140,8 +141,7 @@ public class UserRepository : IUserRepository
       
       return user;
    }
-   
-   // Not Implemented
+
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
 
    public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"User#{userId}");
@@ -175,8 +175,20 @@ public class UserRepository : IUserRepository
       return businessUserPermissionsList;
    }
 
-   public async Task VerifyEmailAsync(Guid token)
+   public async Task VerifyEmailAsync(VerifyEmailDto dto)
    {
-      
+      var getRequest = new GetItemRequest
+      {
+         TableName = _dynamoDbSettings.TableName,
+         Key = new Dictionary<string, AttributeValue>
+         {
+            {"PK", new AttributeValue {S = $"User#{dto.UserId}" }},
+            {"SK", new AttributeValue {S = $"Token#{dto.Token}" }}
+         }
+      };
+
+      var response = await _dynamoDbClient.GetItemAsync(getRequest);
+      var expiryDate = DateTime.Parse(response.Item["ExpiryDate"].S);
+      if(DateTime.UtcNow < expiryDate) throw new 
    }
 }

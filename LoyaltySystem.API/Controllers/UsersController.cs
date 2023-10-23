@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Dtos;
+using LoyaltySystem.Core.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -33,9 +34,9 @@ namespace LoyaltySystem.API.Controllers
         }
 
         [HttpPost("verify-email")]
-        public async Task<IActionResult> VerifyEmail(Guid token)
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
         {
-            await _userService.VerifyEmailAsync(token);
+            await _userService.VerifyEmailAsync(dto);
             return Ok();
         }
         
