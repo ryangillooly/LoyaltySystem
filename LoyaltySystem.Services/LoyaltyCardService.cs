@@ -1,5 +1,7 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using static  LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
+using static  LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
 
@@ -8,9 +10,10 @@ namespace LoyaltySystem.Services;
 public class LoyaltyCardService : ILoyaltyCardService
 {
     private readonly ILoyaltyCardRepository _loyaltyCardRepository;
+    private readonly IBusinessRepository _businessRepository;
     
-    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository) => 
-        (_loyaltyCardRepository) = (loyaltyCardRepository);
+    public LoyaltyCardService(ILoyaltyCardRepository loyaltyCardRepository, IBusinessRepository businessRepository) => 
+        (_loyaltyCardRepository, _businessRepository) = (loyaltyCardRepository, businessRepository);
 
     public async Task<LoyaltyCard> CreateLoyaltyCardAsync(Guid userId, Guid businessId)
     {
@@ -19,24 +22,53 @@ public class LoyaltyCardService : ILoyaltyCardService
         return newLoyaltyCard;
     }
 
-    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
+    public async Task DeleteLoyaltyCardAsync(Guid userId, Guid businessId) => 
+        await _loyaltyCardRepository.DeleteLoyaltyCardAsync(userId, businessId);
 
-    public async Task<IEnumerable<LoyaltyCard>> GetAllAsync() => await _loyaltyCardRepository.GetAllAsync();
-    public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
+    public async Task<List<LoyaltyCardWithBusinessDetails>> GetLoyaltyCardsAsync(Guid userId)
     {
-        var loyaltyCard = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
-        if(loyaltyCard is null) throw new ResourceNotFoundException("Loyalty card not found");
-        return loyaltyCard;
+        var loyaltyCards = await _loyaltyCardRepository.GetLoyaltyCardsAsync(userId);
+        var businesses            = await _businessRepository.GetBusinessesAsync(loyaltyCards.Select(r => r.BusinessId).ToList());
+        var cardsWithDetails = new List<LoyaltyCardWithBusinessDetails>();
+
+        foreach (var card in loyaltyCards)
+        {
+            var business = businesses.FirstOrDefault(b => b.Id == card.BusinessId);
+            if (business != null)
+            {
+                cardsWithDetails.Add
+                (
+                    new LoyaltyCardWithBusinessDetails 
+                    {
+                        Id              = card.Id,
+                        UserId          = card.UserId,
+                        BusinessId      = card.BusinessId,
+                        BusinessName    = business.Name,
+                        Points          = card.Points,
+                        IssueDate       = card.IssueDate,
+                        LastStampedDate = card.LastStampedDate,
+                        LastRedeemDate  = card.LastRedeemDate,
+                        LastUpdatedDate = card.LastUpdatedDate,
+                        Status          = card.Status
+                    }
+                );
+            }
+        }
+
+        return cardsWithDetails;
     }
+
+    public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId) =>
+        await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+    
     public async Task<LoyaltyCard> UpdateLoyaltyCardAsync(Guid userId, Guid businessId, LoyaltyStatus status)
     {
         var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
-        if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
-        
+
         var updatedLoyaltyCard = currentRecord;
-        updatedLoyaltyCard.Status = status;
+        updatedLoyaltyCard!.Status = status;
         
-        var mergedRecord = LoyaltyCard.Merge(currentRecord, updatedLoyaltyCard);
+        var mergedRecord = LoyaltyCard.Merge(currentRecord!, updatedLoyaltyCard);
             
         await _loyaltyCardRepository.UpdateLoyaltyCardAsync(mergedRecord);
             
@@ -46,13 +78,44 @@ public class LoyaltyCardService : ILoyaltyCardService
     public async Task<LoyaltyCard> StampLoyaltyCardAsync(Guid userId, Guid businessId)
     {
         var currentRecord = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
-        if(currentRecord == null) throw new ResourceNotFoundException("Loyalty card not found");
+        
+        if (currentRecord!.Status != LoyaltyStatus.Active) throw new InactiveCardException(userId, businessId);
 
         currentRecord.Points += 1;
-        currentRecord.DateLastStamped = DateTime.UtcNow;
+        currentRecord.LastStampedDate = DateTime.UtcNow;
         
         await _loyaltyCardRepository.StampLoyaltyCardAsync(currentRecord);
             
         return currentRecord;
+    }
+
+    public async Task<LoyaltyCard> RedeemLoyaltyCardRewardAsync(Guid userId, Guid businessId, Guid campaignId, Guid rewardId)
+    {
+        // Get Loyalty Card
+        var loyaltyCard = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
+        
+        // Validate that it's active
+        if (loyaltyCard!.Status != LoyaltyStatus.Active) throw new InactiveCardException(userId, businessId);
+
+        // Get Loyalty Campaign, and Rewards
+        var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
+
+        // Validate that it's active
+        if (!campaign!.IsActive) throw new CampaignNotActiveException(businessId, campaignId);
+
+        // Get specific reward from Campaign
+        var selectedReward = campaign.Rewards.First(reward => reward.Id == rewardId);
+        
+        // If the card points are less than the reward point requirements, throw error
+        if (loyaltyCard.Points < selectedReward.PointsRequired) throw new NotEnoughPointsException(userId, businessId, campaignId, rewardId, selectedReward);
+        
+        // Update Loyalty Card Redeem Date + Points
+        loyaltyCard.LastRedeemDate = DateTime.UtcNow;
+        loyaltyCard.Points        -= selectedReward.PointsRequired;
+        
+       // Redeem Reward 
+       await _loyaltyCardRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, campaignId, rewardId);
+       
+        return loyaltyCard;
     }
 }

@@ -11,4 +11,12 @@
       <ProjectReference Include="..\LoyaltySystem.Core\LoyaltySystem.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.200.59" />
+      <PackageReference Include="Google.Apis.Auth" Version="1.62.1" />
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.12" />
+      <PackageReference Include="Riok.Mapperly" Version="3.2.0" />
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
+    </ItemGroup>
+
 </Project>

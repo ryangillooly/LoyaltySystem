@@ -8,6 +8,7 @@ public interface IBusinessRepository
     Task CreateBusinessAsync(Business entity);
     Task UpdateBusinessAsync(Business updatedBusinessAsync);
     Task<Business?> GetBusinessAsync(Guid businessId);
+    Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);
     Task DeleteBusinessAsync(Guid businessId);
     
     

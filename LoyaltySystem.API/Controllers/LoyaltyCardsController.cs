@@ -13,10 +13,10 @@ public class LoyaltyCardsController : ControllerBase
     public LoyaltyCardsController(ILoyaltyCardService loyaltyCardService) => _loyaltyCardService = loyaltyCardService;
     
     [HttpPost]
-    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] Guid businessId)
+    public async Task<IActionResult> CreateLoyaltyCard(Guid userId, [FromBody] CreateLoyaltyCardDto loyaltyCardDto)
     {
-        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, businessId);
-        return CreatedAtAction(nameof(GetLoyaltyCard), new {createdLoyaltyCard.BusinessId, createdLoyaltyCard.UserId}, createdLoyaltyCard);
+        var createdLoyaltyCard = await _loyaltyCardService.CreateLoyaltyCardAsync(userId, loyaltyCardDto.BusinessId);
+        return CreatedAtAction(nameof(GetLoyaltyCard), new { createdLoyaltyCard.UserId, createdLoyaltyCard.BusinessId }, createdLoyaltyCard);
     }
     
     [HttpDelete("{businessId:guid}")]
@@ -25,7 +25,7 @@ public class LoyaltyCardsController : ControllerBase
         await _loyaltyCardService.DeleteLoyaltyCardAsync(userId, businessId);
         // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
         return NoContent();
-    }
+    } 
 
     [HttpPut("{businessId:guid}")]
     public async Task<IActionResult> UpdateLoyaltyCard(Guid userId, Guid businessId, [FromBody] UpdateLoyaltyCardDto dto)
@@ -55,6 +55,25 @@ public class LoyaltyCardsController : ControllerBase
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetLoyaltyCards(Guid userId)
+    {
+        try
+        {
+            var card = await _loyaltyCardService.GetLoyaltyCardsAsync(userId);
+            return Ok(card);
+        }
+        catch(ResourceNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch(Exception ex)
+        {
+            // Handle other exceptions as needed
+            return StatusCode(500, $"Internal server error - {ex}");
+        }
+    }
+
     [HttpPost("{businessId:guid}/stamp")]
     public async Task<IActionResult> StampLoyaltyCard(Guid userId, Guid businessId)
     {
@@ -62,5 +81,12 @@ public class LoyaltyCardsController : ControllerBase
         if (stampedLoyaltyCard == null) return NotFound();
 
         return Ok(stampedLoyaltyCard);
+    }
+
+    [HttpPost("{businessId:guid}/redeem")]
+    public async Task<IActionResult> RedeemLoyaltyCardReward(Guid userId, Guid businessId, [FromBody] RedeemLoyaltyCardDto dto)
+    {
+        var redeemedReward = await _loyaltyCardService.RedeemLoyaltyCardRewardAsync(userId, businessId, dto.CampaignId, dto.RewardId);
+        return Ok(redeemedReward);
     }
 }

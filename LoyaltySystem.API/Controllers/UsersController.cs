@@ -1,20 +1,24 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Dtos;
+using LoyaltySystem.Core.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Mappers;
 
 namespace LoyaltySystem.API.Controllers
 {
     [ApiController]
-    [Route("api/users")]
+    [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
         public UsersController(IUserService userService) => _userService = userService;
 
         [HttpPost]
-        public async Task<IActionResult> CreateUser([FromBody] User newUser)
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
+            var newUser = new UserMapper().CreateUserDtoToUser(dto);
             var createdUser = await _userService.CreateAsync(newUser);
             return CreatedAtAction(nameof(GetUser), new { userId = createdUser.Id }, createdUser);
         }
@@ -27,6 +31,13 @@ namespace LoyaltySystem.API.Controllers
             if (updatedUser == null) return NotFound();
 
             return Ok(updatedUser);
+        }
+
+        [HttpPost("{userId:guid}/verify-email/{token:guid}")]
+        public async Task<IActionResult> VerifyEmail(Guid userId, Guid token)
+        {
+            await _userService.VerifyEmailAsync(new VerifyEmailDto(userId, token));
+            return Ok();
         }
         
         [HttpDelete("{userId:guid}")]
@@ -58,5 +69,8 @@ namespace LoyaltySystem.API.Controllers
                 return StatusCode(500, $"Internal server error - {ex}");
             }
         }
+
+        [HttpGet("{userId:guid}/businesses")]
+        public async Task<IActionResult> GetBusinessPermissions(Guid userId) => Ok(await _userService.GetUsersBusinessPermissions(userId));
     }
 }

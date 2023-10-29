@@ -10,6 +10,7 @@ public interface IBusinessService
     Task<Business> CreateBusinessAsync(Business newBusiness);
     Task<Business> UpdateBusinessAsync(Business updatedBusiness);
     Task DeleteBusinessAsync(Guid businessId);
+    Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);
     Task<Business> GetBusinessAsync(Guid businessId);
     
     
