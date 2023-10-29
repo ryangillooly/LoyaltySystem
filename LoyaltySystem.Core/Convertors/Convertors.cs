@@ -48,18 +48,16 @@ public static class Convertors
         return business;
     }
     
-    public static LoyaltyCard ConvertFromDynamoItemToLoyaltyCard(Dictionary<string, AttributeValue> item)
+    public static LoyaltyCard ConvertFromDynamoItemToLoyaltyCard(this Dictionary<string, AttributeValue> item)
     {
         var loyaltyCard = new LoyaltyCard
         {
-            Id              = Guid.Parse(item["LoyaltyCardId"].S),
+            Id              = Guid.Parse(item["CardId"].S),
             BusinessId      = Guid.Parse(item["BusinessId"].S),
             UserId          = Guid.Parse(item["UserId"].S),
-            Points          = int.Parse(item["Points"].S),
+            Points          = int.Parse(item["Points"].N),
             IssueDate       = DateTime.Parse(item["IssueDate"].S),
-            LastStampedDate = DateTime.Parse(item["LastStampedDate"].S),
-            LastRedeemDate  = DateTime.Parse(item["LastRedeemDate"].S),
-            LastUpdatedDate = DateTime.Parse(item["LastUpdatedDate"].S),
+            LastStampedDate = DateTime.Parse(item["LastStampDate"].S),
             Status          = Enum.Parse<LoyaltyStatus>(item["Status"].S)
         };
         

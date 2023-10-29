@@ -31,6 +31,12 @@ public class LoyaltyCardExceptions
             : base(userId, businessId, $"The loyalty card for user {userId}, for business {businessId}, is inactive and cannot be stamped.") { }
     }
     
+    public class LoyaltyCardAlreadyExistsException : LoyaltyCardExceptionBase
+    {
+        public LoyaltyCardAlreadyExistsException(Guid userId, Guid businessId)
+            : base(userId, businessId, $"The loyalty card for user {userId}, for business {businessId}, already exists and cannot be created") { }
+    }
+    
     public class CardNotFoundException : LoyaltyCardExceptionBase
     {
         public CardNotFoundException(Guid userId, Guid businessId)
