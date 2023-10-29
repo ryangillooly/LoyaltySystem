@@ -1,4 +1,3 @@
-using Newtonsoft.Json.Converters;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
@@ -8,7 +7,7 @@ namespace LoyaltySystem.Core;
 
 public static class Convertors
 {
-    public static User ConvertFromDynamoItemToUser(Dictionary<string, AttributeValue> item)
+    public static User ConvertFromDynamoItemToUser(this Dictionary<string, AttributeValue> item)
     {
         var user = new User
         {
@@ -29,7 +28,7 @@ public static class Convertors
         return user;
     }
     
-    public static Business ConvertFromDynamoItemToBusiness(Dictionary<string, AttributeValue> item)
+    public static Business ConvertFromDynamoItemToBusiness(this Dictionary<string, AttributeValue> item)
     {
         var business = new Business
         {
@@ -66,4 +65,16 @@ public static class Convertors
 
         return loyaltyCard;
     }
+    
+    public static Campaign ConvertFromDynamoItemToCampaign(this Dictionary<string, AttributeValue> item) =>
+        new ()
+        {
+            Id         = Guid.Parse(item["CampaignId"].S),
+            BusinessId = Guid.Parse(item["BusinessId"].S),
+            Name       = item["Name"].S,
+            Rewards    = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S), 
+            StartTime  = DateTime.Parse(item["StartTime"].S),
+            EndTime    = DateTime.Parse(item["EndTime"].S),
+            IsActive   = item["IsActive"].BOOL
+        };
 }

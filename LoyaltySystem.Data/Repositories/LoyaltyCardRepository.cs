@@ -1,11 +1,13 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
-using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
-using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using static LoyaltySystem.Data.Extensions.DynamoDbExtensions;
+using static LoyaltySystem.Core.Models.Constants;
+using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
+using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
+using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using static LoyaltySystem.Core.Convertors;
 
 namespace LoyaltySystem.Data.Repositories;
@@ -18,13 +20,6 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
     public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
-    
-    // Constants
-    private const string UserPrefix     = "User#";
-    private const string BusinessPrefix = "Business#";
-    private const string CardPrefix     = "Card#";
-    private const string MetaUser       = "Meta#UserInfo";
-    private const string MetaBusiness   = "Meta#BusinessInfo";
 
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
@@ -211,30 +206,15 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         {
             TransactItems = new List<TransactGetItem>
             {
-                BuildTransactGetItem(UserPrefix + userId, MetaUser),
-                BuildTransactGetItem(BusinessPrefix + businessId, MetaBusiness)
-            }
-        };
-    }
-    private TransactGetItem BuildTransactGetItem(string pkValue, string skValue)
-    {
-        return new TransactGetItem
-        {
-            Get = new Get
-            {
-                TableName = _dynamoDbSettings.TableName,
-                Key = new Dictionary<string, AttributeValue>
-                {
-                    { "PK", new AttributeValue { S = pkValue } },
-                    { "SK", new AttributeValue { S = skValue } }
-                }
+                BuildTransactGetItem(_dynamoDbSettings,UserPrefix     + userId, MetaUser),
+                BuildTransactGetItem(_dynamoDbSettings,BusinessPrefix + businessId, MetaBusiness)
             }
         };
     }
     private void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
     {
-        var user     = ConvertFromDynamoItemToUser(response.Responses.First().Item);
-        var business = ConvertFromDynamoItemToBusiness(response.Responses.Last().Item);
+        var user = response.Responses.First().Item.ConvertFromDynamoItemToUser();
+        var business = response.Responses.Last().Item.ConvertFromDynamoItemToLoyaltyCard();
 
         if (user     is null)       throw new UserNotFoundException(userId);
         if (business is null)       throw new BusinessNotFoundException(businessId);

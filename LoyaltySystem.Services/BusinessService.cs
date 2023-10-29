@@ -17,10 +17,7 @@ namespace LoyaltySystem.Services
         public async Task<Business> CreateBusinessAsync(Business newBusiness)
         {
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
-
-            if (emailExists)
-                throw new InvalidOperationException("Email already exists");
-            
+            if (emailExists) throw new InvalidOperationException($"Email {newBusiness.ContactInfo.Email} already exists");
             var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
 
             await _businessRepository.CreateBusinessAsync(newBusiness);
@@ -31,19 +28,15 @@ namespace LoyaltySystem.Services
         public async Task<Business> UpdateBusinessAsync(Business updatedBusiness)
         {
             var currentRecord = await _businessRepository.GetBusinessAsync(updatedBusiness.Id);
-            if(currentRecord == null) throw new Exception("Record not found.");
+            if (currentRecord == null) throw new Exception("Record not found.");
             var mergedRecord = Business.Merge(currentRecord, updatedBusiness);
             
             await _businessRepository.UpdateBusinessAsync(mergedRecord);
             
             return mergedRecord;
         }
-        public async Task<Business> GetBusinessAsync(Guid businessId)
-        {
-            var business = await _businessRepository.GetBusinessAsync(businessId);
-            if (business == null) throw new ResourceNotFoundException("Business not found");
-            return business;
-        }
+        public async Task<Business> GetBusinessAsync(Guid businessId) =>
+            await _businessRepository.GetBusinessAsync(businessId);
         
         public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
         {
