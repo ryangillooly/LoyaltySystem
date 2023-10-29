@@ -1,10 +1,15 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Exceptions;
 using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
+using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Core.Utilities;
+using LoyaltySystem.Data.Extensions;
+using static LoyaltySystem.Core.Convertors;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -17,46 +22,29 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
         (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
     
+    // Constants
+    private const string UserPrefix = "User#";
+    private const string BusinessPrefix = "Business#";
+    private const string CardPrefix = "Card#";
+    private const string MetaUser = "Meta#UserInfo";
+    private const string MetaBusiness = "Meta#BusinessInfo";
+
+    private static readonly Dictionary<string, Func<Dictionary<string, AttributeValue>, object>> Converters = new ()
+    {
+        {"User",     item => ConvertFromDynamoItemToUser(item)},
+        {"Business", item => ConvertFromDynamoItemToBusiness(item)}
+    };
+
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
-        var getBusinessRequest = new GetItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                { "PK", new AttributeValue { S = $"Business#{newLoyaltyCard.BusinessId}" } },
-                { "SK", new AttributeValue { S = "Meta#BusinessInfo" } }
-            }
-        };
-        var business = _dynamoDbClient.GetItemAsync(getBusinessRequest);
-        
-        var getUserRequest = new GetItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                { "PK", new AttributeValue { S = $"User#{newLoyaltyCard.UserId}" } },
-                { "SK", new AttributeValue { S = "Meta#UserInfo" } }
-            }
-        };
-        var user = _dynamoDbClient.GetItemAsync(getUserRequest);
-        
-        if (user.Result.Item is null || !user.Result.IsItemSet) throw new UserNotFoundException(newLoyaltyCard.UserId);
-        
-        var userIsActive = user.Result.Item["Status"].S == "Active";
-
-        if (!userIsActive) throw new UserNotActiveException(newLoyaltyCard.UserId, Enum.Parse<UserStatus>(user.Result.Item["Status"].S));
-        
-        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
-        
-        var putRequest = new PutItemRequest
-        {
-            TableName = _dynamoDbSettings.TableName,
-            Item = dynamoRecord,
-            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
-        };
-        await _dynamoDbClient.PutItemAsync(putRequest);
+        var transactGetRequest = BuildTransactGetItemsRequest(newLoyaltyCard.UserId, newLoyaltyCard.BusinessId);
+        var transactGetResponse = await _dynamoDbClient.TransactGetItemsAsync(transactGetRequest);
+        ValidateTransactGetResponse(transactGetResponse, newLoyaltyCard.UserId, newLoyaltyCard.BusinessId);
+        await InsertDynamoRecord(newLoyaltyCard);
     }
+
+
+    // TODO: Implement
     public async Task<Redemption> RedeemRewardAsync(Redemption redemption) => throw new NotImplementedException();
     public async Task<IEnumerable<LoyaltyCard>> GetLoyaltyCardsAsync(Guid userId)
     {
@@ -79,6 +67,9 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         
         foreach (var item in response.Items)
         {
+            var loyaltyCard = ConvertFromDynamoItemToLoyaltyCard(item);
+            
+            /*
             var loyaltyCard = new LoyaltyCard()
             {
                 UserId = Guid.Parse(item["UserId"].S),
@@ -90,12 +81,10 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                 Status = Enum.Parse<LoyaltyStatus>(item["Status"].S)
             };
 
-            if (item.ContainsKey("LastRedeemDate"))
-                loyaltyCard.LastRedeemDate = Convert.ToDateTime(item["LastRedeemDate"].S);
-        
-            if(item.ContainsKey("LastUpdatedDate"))
-                loyaltyCard.LastUpdatedDate = Convert.ToDateTime(item["LastUpdatedDate"].S);
-
+            if (item.TryGetValue("LastRedeemDate",  out var lastRedeemDate))  loyaltyCard.LastRedeemDate  = DateTime.Parse(lastRedeemDate.S);
+            if (item.TryGetValue("LastUpdatedDate", out var lastUpdatedDate)) loyaltyCard.LastUpdatedDate = DateTime.Parse(lastUpdatedDate.S);
+            */
+            
             loyaltyCardList.Add(loyaltyCard);
         }
 
@@ -257,4 +246,55 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
 
         await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
+    
+    
+    // Helpers
+    private async Task InsertDynamoRecord(LoyaltyCard newLoyaltyCard)
+    {
+        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
+        var putRequest = new PutItemRequest
+        {
+            TableName = _dynamoDbSettings.TableName,
+            Item = dynamoRecord,
+            ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+        };
+        await _dynamoDbClient.PutItemAsync(putRequest);
+    }
+    private TransactGetItemsRequest BuildTransactGetItemsRequest(Guid userId, Guid businessId)
+    {
+        return new TransactGetItemsRequest
+        {
+            TransactItems = new List<TransactGetItem>
+            {
+                BuildTransactGetItem(UserPrefix + userId, MetaUser),
+                BuildTransactGetItem(BusinessPrefix + businessId, MetaBusiness)
+            }
+        };
+    }
+    private TransactGetItem BuildTransactGetItem(string pkValue, string skValue)
+    {
+        return new TransactGetItem
+        {
+            Get = new Get
+            {
+                TableName = _dynamoDbSettings.TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", new AttributeValue { S = pkValue } },
+                    { "SK", new AttributeValue { S = skValue } }
+                }
+            }
+        };
+    }
+    private void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
+    {
+        var user     = ConvertFromDynamoItemToUser(response.Responses.First().Item);
+        var business = ConvertFromDynamoItemToBusiness(response.Responses.Last().Item);
+
+        if (user     is null)       throw new UserNotFoundException(userId);
+        if (business is null)       throw new BusinessNotFoundException(businessId);
+        if (user.IsNotActive())     throw new UserNotActiveException(userId, Enum.Parse<UserStatus>(user.Status.ToString()));
+        if (business.IsNotActive()) throw new BusinessNotActiveException(businessId, Enum.Parse<BusinessStatus>(business.Status.ToString()));
+    }
+
 }

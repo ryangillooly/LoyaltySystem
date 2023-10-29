@@ -52,4 +52,7 @@ public class Business
                 Longitude = updated.Location.Longitude == double.MinValue ? current.Location.Longitude : updated.Location.Longitude 
             }
         };
+    
+    public bool IsActive() => Status == BusinessStatus.Active;
+    public bool IsNotActive() => Status != BusinessStatus.Active;
 }

@@ -26,6 +26,9 @@ public class LoyaltyCard
     public DateTime? LastUpdatedDate { get; set; }
     public LoyaltyStatus Status { get; set; } = LoyaltyStatus.Active;
 
+    public bool IsActive() => Status == LoyaltyStatus.Active;
+    public bool IsNotActive() => Status != LoyaltyStatus.Active;
+    
     public static LoyaltyCard Merge(LoyaltyCard current, LoyaltyCard updated) =>
         new (current.UserId, current.BusinessId)
         {

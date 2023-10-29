@@ -186,7 +186,6 @@ public class UserRepository : IUserRepository
             {"SK", new AttributeValue {S = $"Token#{dto.Token}" }}
          }
       };
-      
       var getResponse  = await _dynamoDbClient.GetItemAsync(getRequest);
       var expiryDate   = DateTime.Parse(getResponse.Item["ExpiryDate"].S);
       var status = getResponse.Item["Status"].S;
@@ -228,7 +227,7 @@ public class UserRepository : IUserRepository
                Key = new Dictionary<string, AttributeValue>
                {
                   { "PK", new AttributeValue { S = $"User#{dto.UserId}" }},
-                  { "SK", new AttributeValue { S = $"Meta#UserInfo" }}
+                  { "SK", new AttributeValue { S = "Meta#UserInfo"      }}
                },
                ExpressionAttributeNames = new Dictionary<string, string>
                {
