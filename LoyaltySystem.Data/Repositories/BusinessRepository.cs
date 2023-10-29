@@ -32,7 +32,7 @@ public class BusinessRepository : IBusinessRepository
         };
         await _dynamoDbClient.PutItemAsync(putRequest);
     }
-    public async Task<Business?> GetBusinessAsync(Guid businessId)
+    public async Task<Business> GetBusinessAsync(Guid businessId)
     {
         var request = new GetItemRequest
         {
@@ -202,7 +202,7 @@ public class BusinessRepository : IBusinessRepository
            await _dynamoDbClient.UpdateRecordAsync(record, null);
         }
     }
-    public async Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId)
+    public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
     {
         var request = new QueryRequest
         {
@@ -235,7 +235,7 @@ public class BusinessRepository : IBusinessRepository
                     Enum.Parse<UserRole>(permission["Role"].S)))
             .ToList();
     }
-    public async Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
+    public async Task<BusinessUserPermissions> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId)
     {
         var request = new GetItemRequest
         {
@@ -317,7 +317,7 @@ public class BusinessRepository : IBusinessRepository
 
        return campaignList;
    }
-   public async Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId)
+   public async Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId)
    {
        var request = new GetItemRequest
        {
