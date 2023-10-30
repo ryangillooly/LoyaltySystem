@@ -206,8 +206,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         {
             TransactItems = new List<TransactGetItem>
             {
-                BuildTransactGetItem(_dynamoDbSettings,UserPrefix     + userId, MetaUser),
-                BuildTransactGetItem(_dynamoDbSettings,BusinessPrefix + businessId, MetaBusiness)
+                BuildTransactGetItem(_dynamoDbSettings,UserPrefix     + userId, MetaUserInfo),
+                BuildTransactGetItem(_dynamoDbSettings,BusinessPrefix + businessId, MetaBusinessInfo)
             }
         };
     }

@@ -51,7 +51,7 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
     {
-        var transactItemsList = businessIdList.Select(businessId => BuildTransactGetItem(_dynamoDbSettings, BusinessPrefix + businessId, MetaBusiness)).ToList();
+        var transactItemsList = businessIdList.Select(businessId => BuildTransactGetItem(_dynamoDbSettings, BusinessPrefix + businessId, MetaBusinessInfo)).ToList();
         var getBusinessListRequest = new TransactGetItemsRequest { TransactItems = transactItemsList };
         var getItemsResponse = await _dynamoDbClient.TransactGetItemsAsync(getBusinessListRequest);
         return getItemsResponse.Responses.Select(itemResponse => itemResponse.Item).Select(response => response.ConvertFromDynamoItemToBusiness()).ToList();
@@ -133,7 +133,7 @@ public class BusinessRepository : IBusinessRepository
                     Key = new Dictionary<string, AttributeValue>
                     {
                         {"PK", new AttributeValue {S = UserPrefix + record["UserId"].S}},
-                        {"SK", new AttributeValue {S = BusinessPermissionPrefix + record["BusinessUserList-PK"].S}}
+                        {"SK", new AttributeValue {S = PermissionBusinessPrefix + record["BusinessUserList-PK"].S}}
                     }
                 }
             };
@@ -171,7 +171,7 @@ public class BusinessRepository : IBusinessRepository
                     Key = new Dictionary<string, AttributeValue>
                     {
                         {"PK", new AttributeValue {S = UserPrefix + record["UserId"].S}},
-                        {"SK", new AttributeValue {S = LoyaltyCardPrefix + record["BusinessLoyaltyList-PK"].S}}
+                        {"SK", new AttributeValue {S = CardBusinessPrefix + record["BusinessLoyaltyList-PK"].S}}
                     }
                 }
             };
@@ -217,7 +217,7 @@ public class BusinessRepository : IBusinessRepository
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
                 { ":PKValue", new AttributeValue { S = $"{businessId}" }},
-                { ":SKValue", new AttributeValue { S = UserPermissionPrefix }}
+                { ":SKValue", new AttributeValue { S = PermissionUserPrefix }}
             }
         };
 
@@ -243,7 +243,7 @@ public class BusinessRepository : IBusinessRepository
             Key = new Dictionary<string, AttributeValue>
             {
                 { "PK", new AttributeValue { S = UserPrefix + userId}},
-                { "SK", new AttributeValue { S = BusinessPermissionPrefix + businessId }}
+                { "SK", new AttributeValue { S = PermissionBusinessPrefix + businessId }}
             }
         };
         var response = await _dynamoDbClient.GetItemAsync(request);
@@ -267,7 +267,7 @@ public class BusinessRepository : IBusinessRepository
                 Key = new Dictionary<string, AttributeValue>
                 {
                     { "PK", new AttributeValue { S = UserPrefix + userId }},
-                    { "SK", new AttributeValue { S = BusinessPermissionPrefix + businessId }}
+                    { "SK", new AttributeValue { S = PermissionBusinessPrefix + businessId }}
                 }
             };
 

@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using static LoyaltySystem.Core.Models.Constants;
 using Newtonsoft.Json;
 
 namespace LoyaltySystem.Core.Utilities;
@@ -13,8 +14,8 @@ public class DynamoDbMapper : IDynamoDbMapper
         var item = new Dictionary<string, AttributeValue>
         {
             // Primary Key + Sort Key
-            { "PK",          new AttributeValue { S = "User#" + user.Id } },
-            { "SK",          new AttributeValue { S = "Meta#UserInfo" } },
+            { "PK",          new AttributeValue { S = UserPrefix + user.Id } },
+            { "SK",          new AttributeValue { S = MetaUserInfo } },
             
             // Attributes
             { "UserId",      new AttributeValue { S = user.Id.ToString() } },
@@ -36,8 +37,8 @@ public class DynamoDbMapper : IDynamoDbMapper
         businessUserPermissions.Select(permission => new Dictionary<string, AttributeValue>
             {
                 // Primary Key + Sort Key
-                { "PK",                  new AttributeValue { S = $"User#{permission.UserId}" } },
-                { "SK",                  new AttributeValue { S = $"Permission#Business#{permission.BusinessId}" } },
+                { "PK",                  new AttributeValue { S = UserPrefix + permission.UserId }},
+                { "SK",                  new AttributeValue { S = PermissionBusinessPrefix + permission.BusinessId }},
                 
                 // Attributes
                 { "UserId",              new AttributeValue { S = $"{permission.UserId}" } },
@@ -46,7 +47,7 @@ public class DynamoDbMapper : IDynamoDbMapper
                 { "Role",                new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { "Timestamp",           new AttributeValue { S = $"{DateTime.UtcNow}" } },
                 { "BusinessUserList-PK", new AttributeValue { S = $"{permission.BusinessId}" } },
-                { "BusinessUserList-SK", new AttributeValue { S = $"Permission#User#{permission.UserId}" } }
+                { "BusinessUserList-SK", new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
             })
             .ToList();
 
@@ -55,21 +56,21 @@ public class DynamoDbMapper : IDynamoDbMapper
         var item = new Dictionary<string, AttributeValue>()
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" } },
-            { "SK", new AttributeValue { S = $"Card#Business#{loyaltyCard.BusinessId}" } },
+            { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+            { "SK", new AttributeValue { S = CardBusinessPrefix + loyaltyCard.BusinessId }},
 
             // Attributes
-            { "CardId", new AttributeValue { S = $"{loyaltyCard.Id}" } },
-            { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "UserId", new AttributeValue { S = $"{loyaltyCard.UserId}" } },
-            { "EntityType", new AttributeValue { S = loyaltyCard.GetType().Name } },
-            { "Points", new AttributeValue { N = $"{loyaltyCard.Points}" } },
-            { "IssueDate", new AttributeValue { S = $"{loyaltyCard.IssueDate}" } },
+            { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" } },
+            { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
+            { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" } },
+            { "EntityType",    new AttributeValue { S = loyaltyCard.GetType().Name } },
+            { "Points",        new AttributeValue { N = $"{loyaltyCard.Points}" } },
+            { "IssueDate",     new AttributeValue { S = $"{loyaltyCard.IssueDate}" } },
             { "LastStampDate", new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" } },
-            { "Status", new AttributeValue { S = $"{loyaltyCard.Status}" } },
+            { "Status",        new AttributeValue { S = $"{loyaltyCard.Status}" } },
 
             { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "BusinessLoyaltyList-SK", new AttributeValue { S = $"Card#User#{loyaltyCard.UserId}#{loyaltyCard.Id}" } }
+            { "BusinessLoyaltyList-SK", new AttributeValue { S = CardUserPrefix + loyaltyCard.UserId + "#" + loyaltyCard.Id }}
         };
 
         if (loyaltyCard.LastUpdatedDate is not null)
@@ -88,8 +89,8 @@ public class DynamoDbMapper : IDynamoDbMapper
         new()
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" }},
-            { "SK", new AttributeValue { S = $"Action#Stamp#Business#{loyaltyCard.BusinessId}#{stampId}" }},
+            { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+            { "SK", new AttributeValue { S = ActionStampBusinessPrefix + loyaltyCard.BusinessId + "#" + stampId }},
 
             // Attributes
             { "CardId",     new AttributeValue { S = $"{loyaltyCard.Id}" }},
@@ -108,8 +109,8 @@ public class DynamoDbMapper : IDynamoDbMapper
             new()
             {
                 // Primary Key + Sort Key
-                { "PK", new AttributeValue { S = $"User#{loyaltyCard.UserId}" } },
-                { "SK", new AttributeValue { S = $"Action#Redeem#Business#{loyaltyCard.BusinessId}#{redeemId}" } },
+                { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+                { "SK", new AttributeValue { S = ActionRedeemBusinessPrefix + loyaltyCard.BusinessId + "#" + redeemId }},
 
                 // Attributes
                 { "UserId",     new AttributeValue { S = $"{loyaltyCard.UserId}" } },
@@ -130,8 +131,8 @@ public class DynamoDbMapper : IDynamoDbMapper
         return new Dictionary<string, AttributeValue>
         {
             // Primary Key + Sort Key
-            { "PK",          new AttributeValue { S = "Business#" + business.Id }},
-            { "SK",          new AttributeValue { S = "Meta#BusinessInfo" }},
+            { "PK",          new AttributeValue { S = BusinessPrefix + business.Id }},
+            { "SK",          new AttributeValue { S = MetaBusinessInfo }},
          
             // Attributes
             { "BusinessId",   new AttributeValue { S = business.Id.ToString()} },
@@ -151,8 +152,8 @@ public class DynamoDbMapper : IDynamoDbMapper
         new ()
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = $"Business#{campaign.BusinessId}" }},
-            { "SK", new AttributeValue { S = $"Campaign#{campaign.Id}" }},
+            { "PK", new AttributeValue { S = BusinessPrefix + campaign.BusinessId }},
+            { "SK", new AttributeValue { S = CampaignPrefix + campaign.Id }},
 
             // Attributes
             { "BusinessId", new AttributeValue { S = $"{campaign.BusinessId}" }},
