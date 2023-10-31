@@ -93,10 +93,13 @@ public class DynamoDbMapperTests
            
             mappedItem["PK"].S.Should().Be(UserPrefix + permission.UserId);
             mappedItem["SK"].S.Should().Be(PermissionBusinessPrefix + permission.BusinessId);
+            
             mappedItem["UserId"].S.Should().Be(permission.UserId.ToString());
             mappedItem["BusinessId"].S.Should().Be(permission.BusinessId.ToString());
             mappedItem["EntityType"].S.Should().Be(EntityType.Permission.ToString());
             mappedItem["Role"].S.Should().Be(permission.Role.ToString());
+            mappedItem["Timestamp"].S.Should().StartWith(DateTime.UtcNow.ToString("dd/MM/yyyy hh:mm"));
+            
             mappedItem["BusinessUserList-PK"].S.Should().Be(permission.BusinessId.ToString());
             mappedItem["BusinessUserList-SK"].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
         }

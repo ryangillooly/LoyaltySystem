@@ -8,5 +8,5 @@ namespace LoyaltySystem.Core.Mappers;
 [Mapper]
 public partial class BusinessMapper
 {
-    public partial Business CreateBusinessDtoToUser(CreateBusinessDto dto);
+    public partial Business CreateBusinessFromCreateBusinessDto(CreateBusinessDto dto);
 }

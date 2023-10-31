@@ -18,7 +18,7 @@ namespace LoyaltySystem.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            var newUser = new UserMapper().CreateUserDtoToUser(dto);
+            var newUser = new UserMapper().CreateUserFromCreateUserDto(dto);
             var createdUser = await _userService.CreateAsync(newUser);
             return CreatedAtAction(nameof(GetUser), new { userId = createdUser.Id }, createdUser);
         }
