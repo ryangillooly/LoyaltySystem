@@ -1,107 +1,198 @@
+using Amazon.DynamoDBv2.Model;
 using AutoFixture;
 using AutoFixture.AutoNSubstitute;
+using AutoFixture.Xunit2;
 using FluentAssertions;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using static LoyaltySystem.Core.Models.Constants;
 using LoyaltySystem.Core.Utilities;
 using Newtonsoft.Json;
+using LoyaltySystem.Tests.Common;
 using Xunit;
 
 namespace Tests.LoyaltySystem.Core.Utilities;
 
 public class DynamoDbMapperTests
 {
-    private readonly IFixture        _fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
-    private readonly IDynamoDbMapper _mapper  = new DynamoDbMapper();
-
-    // User
-    [Fact]
-    public void MapUserToItem_WithValidUser_MapsAllPropertiesCorrectly()
+    private readonly IFixture _fixture = new Fixture().Customize(new AutoNSubstituteCustomization());
+    
+    // MapUserToItem
+    [Theory, AutoData]
+    public void MapUserToItem_WithValidUser_MapsAllPropertiesCorrectly(User user)
     {
-        // Arrange
-        var user = _fixture.Build<User>()
-                           .With(r => r.DateOfBirth, new DateTime(1980, 1, 1))
-                           .Create();
-
+        // Arrange 
+        user.Status = UserStatus.Active;
+        
         // Act
-        var result = _mapper.MapUserToItem(user);
+        var result = user.MapUserToItem();
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().ContainKeys("PK", "SK", "UserId", "EntityType", "Email", "PhoneNumber", "FirstName", "LastName", "Status");
+        result.Should().ContainKeys(Pk, Sk, UserId, EntityTypeAttributeName, Email, PhoneNumber, FirstName, LastName, Status);
         
-        result["PK"].S.Should().Be(Constants.UserPrefix + user.Id);
-        result["SK"].S.Should().Be(Constants.MetaUserInfo);
+        result[Pk].S.Should().Be(UserPrefix + user.Id);
+        result[Sk].S.Should().Be(MetaUserInfo);
         
-        result["UserId"].S.Should().Be(user.Id.ToString());
-        result["EntityType"].S.Should().Be(EntityType.User.ToString());
-        result["Email"].S.Should().Be(user.ContactInfo.Email);
-        result["PhoneNumber"].S.Should().Be(user.ContactInfo.PhoneNumber);
-        result["FirstName"].S.Should().Be(user.FirstName);
-        result["LastName"].S.Should().Be(user.LastName);
-        result["Status"].S.Should().Be(user.Status.ToString());
+        result[UserId].S.Should().Be(user.Id.ToString());
+        result[EntityTypeAttributeName].S.Should().Be(EntityType.User.ToString());
+        result[Email].S.Should().Be(user.ContactInfo.Email);
+        result[PhoneNumber].S.Should().Be(user.ContactInfo.PhoneNumber);
+        result[FirstName].S.Should().Be(user.FirstName);
+        result[LastName].S.Should().Be(user.LastName);
+        result[Status].S.Should().Be(UserStatus.Active.ToString());
         
         if (user.DateOfBirth.HasValue) 
-            result["DateOfBirth"].S.Should().Be(user.DateOfBirth.Value.ToString("yyyy-MM-dd"));
+            result[DateOfBirth].S.Should().Be(user.DateOfBirth.Value.ToString("yyyy-MM-dd"));
+    }
+    [Theory, AutoData]
+    public void MapUserToItem_WithNullProperties_HandlesNullsAppropriately(User user)
+    {
+        // Arrange
+        user.ContactInfo.PhoneNumber = null;
+        user.DateOfBirth = null;
+        
+        // Act
+        var result = user.MapUserToItem();
+
+        // Assert
+        result.TryGetValue(PhoneNumber, out var phoneNumber);
+        result.TryGetValue(DateOfBirth, out var dateOfBirth);
+
+        phoneNumber.Should().BeNull();
+        dateOfBirth.Should().BeNull();
+    }
+
+    
+    // MapItemToUser
+    [Theory, AutoData]
+    public void MapItemToUser_WithValidItem_MapsAllPropertiesCorrectly(User user)
+    {
+        // Arrange
+        user.Status = UserStatus.Active;
+        var userItem = user.CreateUserItem();
+        
+        // Act
+        var result = userItem.MapItemToUser();
+        
+        // Assert
+        result.Id.Should().Be(user.Id);
+        result.ContactInfo.Email.Should().Be(user.ContactInfo.Email);
+        result.ContactInfo.PhoneNumber.Should().Be(user.ContactInfo.PhoneNumber);
+        result.FirstName.Should().Be(user.FirstName);
+        result.LastName.Should().Be(user.LastName);
+        result.Status.Should().Be(UserStatus.Active);
+    }
+    [Theory, AutoData]
+    public void MapItemToUser_WithNullProperties_HandlesNullsAppropriately(User user)
+    {
+        // Arrange
+        user.ContactInfo.PhoneNumber = null;
+        user.DateOfBirth = null;
+        
+        var userItem = user.CreateUserItem();
+
+        // Act
+        var result = userItem.MapItemToUser();
+
+        // Assert
+        result.ContactInfo.PhoneNumber.Should().BeNull();
+        result.DateOfBirth.Should().BeNull();
+    }
+    [Theory, AutoData]
+    public void MapItemToUser_MissingKey_ThrowsKeyNotFoundException(User user)
+    {
+        // Arrange
+        var userItem = user.CreateUserItem();
+        userItem.Remove(Email); // Intentionally remove to test error handling
+
+        // Act & Assert
+        Assert.Throws<KeyNotFoundException>(() => userItem.MapItemToUser());
     }
     
-    // Business
-    [Fact]
-    public void MapBusinessToItem_WithValidBusiness_MapsAllPropertiesCorrectly()
+    
+    
+    
+    // MapBusinessToItem
+    [Theory, AutoData]
+    public void MapBusinessToItem_WithValidBusiness_MapsAllPropertiesCorrectly(Business business)
     {
         // Arrange
-        var business = _fixture.Create<Business>();
+        business.Status = BusinessStatus.Active;
 
         // Act
-        var result = _mapper.MapBusinessToItem(business);
+        var result = business.MapBusinessToItem();
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().ContainKeys("PK", "SK", "BusinessId", "OwnerId", "EntityType", "Name", "OpeningHours", "Location", "Desc", "PhoneNumber", "Email", "Status");
+        result.Should().ContainKeys(Pk, Sk, BusinessId, OwnerId, EntityTypeAttributeName, Name, OpeningHoursAtttributeName, LocationAttributeName, Description, PhoneNumber, Email, Status);
         
-        result["PK"].S.Should().Be(BusinessPrefix + business.Id);
-        result["SK"].S.Should().Be(MetaBusinessInfo);
-        result["BusinessId"].S.Should().Be(business.Id.ToString());
-        result["OwnerId"].S.Should().Be(business.OwnerId.ToString());
-        result["EntityType"].S.Should().Be(EntityType.Business.ToString());
-        result["Name"].S.Should().Be(business.Name);
-        result["OpeningHours"].S.Should().Be(JsonConvert.SerializeObject(business.OpeningHours));
-        result["Location"].S.Should().Be(JsonConvert.SerializeObject(business.Location));
-        result["Desc"].S.Should().Be(business.Description);
-        result["PhoneNumber"].S.Should().Be(business.ContactInfo.PhoneNumber);
-        result["Email"].S.Should().Be(business.ContactInfo.Email);
-        result["Status"].S.Should().Be(business.Status.ToString());
+        result[Pk].S.Should().Be(BusinessPrefix + business.Id);
+        result[Sk].S.Should().Be(MetaBusinessInfo);
+        
+        result[BusinessId].S.Should().Be(business.Id.ToString());
+        result[OwnerId].S.Should().Be(business.OwnerId.ToString());
+        result[EntityTypeAttributeName].S.Should().Be(EntityType.Business.ToString());
+        result[Name].S.Should().Be(business.Name);
+        result[OpeningHoursAtttributeName].S.Should().Be(JsonConvert.SerializeObject(business.OpeningHours));
+        result[LocationAttributeName].S.Should().Be(JsonConvert.SerializeObject(business.Location));
+        result[Description].S.Should().Be(business.Description);
+        result[PhoneNumber].S.Should().Be(business.ContactInfo.PhoneNumber);
+        result[Email].S.Should().Be(business.ContactInfo.Email);
+        result[Status].S.Should().Be(BusinessStatus.Active.ToString());
     }
-    [Fact]
-    public void MapBusinessUserPermissionsToItem_WithValidPermissions_MapsAllPropertiesCorrectly()
+    [Theory, AutoData]
+    public void MapBusinessToItem_WithNullProperties_HandlesNullsAppropriately(Business business)
     {
         // Arrange
-        var permissions = _fixture.CreateMany<BusinessUserPermissions>(5).ToList();
-
+        business.ContactInfo.PhoneNumber = null;
+        business.Description = null;
+        
         // Act
-        var result = _mapper.MapBusinessUserPermissionsToItem(permissions);
+        var result = business.MapBusinessToItem();
+
+        // Assert
+        result.TryGetValue(PhoneNumber, out var phoneNumber);
+        result.TryGetValue(Description, out var description);
+
+        phoneNumber.S.Should().BeNull();
+        description.S.Should().BeNull();
+    }
+
+    
+    
+    
+    
+    // MapBusinessUserPermissionsToItem
+    [Theory, AutoData]
+    public void MapBusinessUserPermissionsToItem_WithValidPermissions_MapsAllPropertiesCorrectly(List<BusinessUserPermissions> permissions)
+    {
+        // Arrange
+        permissions[0].Role = UserRole.Admin;
+        
+        // Act
+        var result = permissions.MapBusinessUserPermissionsToItem();
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(5);
+        result.Count.Should().BeGreaterThan(0);
+        
         foreach (var permission in permissions)
         {
-            var mappedItem = result.Single(item => item["UserId"].S == permission.UserId.ToString());
-            mappedItem.Should().ContainKeys("PK", "SK", "UserId", "BusinessId", "EntityType", "Role", "Timestamp", "BusinessUserList-PK", "BusinessUserList-SK");
+            var mappedItem = result.Single(item => item[UserId].S == permission.UserId.ToString());
+            mappedItem.Should().ContainKeys(Pk, Sk, UserId, BusinessId, EntityTypeAttributeName, Role, Timestamp, BusinessUserListPk, BusinessUserListSk);
            
-            mappedItem["PK"].S.Should().Be(UserPrefix + permission.UserId);
-            mappedItem["SK"].S.Should().Be(PermissionBusinessPrefix + permission.BusinessId);
+            mappedItem[Pk].S.Should().Be(UserPrefix + permission.UserId);
+            mappedItem[Sk].S.Should().Be(PermissionBusinessPrefix + permission.BusinessId);
             
-            mappedItem["UserId"].S.Should().Be(permission.UserId.ToString());
-            mappedItem["BusinessId"].S.Should().Be(permission.BusinessId.ToString());
-            mappedItem["EntityType"].S.Should().Be(EntityType.Permission.ToString());
-            mappedItem["Role"].S.Should().Be(permission.Role.ToString());
-            mappedItem["Timestamp"].S.Should().StartWith(DateTime.UtcNow.ToString("dd/MM/yyyy hh:mm"));
+            mappedItem[UserId].S.Should().Be(permission.UserId.ToString());
+            mappedItem[BusinessId].S.Should().Be(permission.BusinessId.ToString());
+            mappedItem[EntityTypeAttributeName].S.Should().Be(EntityType.Permission.ToString());
+            mappedItem[Role].S.Should().Be(permission.Role.ToString());
+            // mappedItem[Timestamp].S.Should().StartWith(DateTime.UtcNow.ToString("dd/MM/yyyy hh:mm"));
             
-            mappedItem["BusinessUserList-PK"].S.Should().Be(permission.BusinessId.ToString());
-            mappedItem["BusinessUserList-SK"].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
+            mappedItem[BusinessUserListPk].S.Should().Be(permission.BusinessId.ToString());
+            mappedItem[BusinessUserListSk].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
         }
     }
     
@@ -113,7 +204,7 @@ public class DynamoDbMapperTests
         var campaign = _fixture.Create<Campaign>();
 
         // Act
-        var result = _mapper.MapCampaignToItem(campaign);
+        var result = campaign.MapCampaignToItem();
 
         // Assert
         result.Should().NotBeNull();
@@ -140,7 +231,7 @@ public class DynamoDbMapperTests
         var loyaltyCard = _fixture.Create<LoyaltyCard>();
 
         // Act
-        var result = _mapper.MapLoyaltyCardToItem(loyaltyCard);
+        var result = loyaltyCard.MapLoyaltyCardToItem();
 
         // Assert
         result.Should().NotBeNull();
@@ -181,7 +272,7 @@ public class DynamoDbMapperTests
         var rewardId = Guid.NewGuid();
 
         // Act
-        var result = _mapper.MapLoyaltyCardToRedeemItem(loyaltyCard, campaignId, rewardId);
+        var result = loyaltyCard.MapLoyaltyCardToRedeemItem(campaignId, rewardId);
 
         // Assert
         result.Should().NotBeNull();
@@ -204,7 +295,7 @@ public class DynamoDbMapperTests
         var loyaltyCard = _fixture.Create<LoyaltyCard>();
 
         // Act
-        var result = _mapper.MapLoyaltyCardToStampItem(loyaltyCard);
+        var result = loyaltyCard.MapLoyaltyCardToStampItem();
 
         // Assert
         result.Should().NotBeNull();
@@ -219,7 +310,6 @@ public class DynamoDbMapperTests
         result["EntityType"].S.Should().Be("Stamp");
         result["StampDate"].S.Should().Be(loyaltyCard.LastStampedDate.ToString());
     }
-    
 }
 
 

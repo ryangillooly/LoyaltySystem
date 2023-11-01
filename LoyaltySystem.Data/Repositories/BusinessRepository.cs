@@ -4,6 +4,7 @@ using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Core.Utilities;
 using Newtonsoft.Json;
 using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using static LoyaltySystem.Data.Extensions.DynamoDbExtensions;
@@ -14,16 +15,15 @@ namespace LoyaltySystem.Data.Repositories;
 public class BusinessRepository : IBusinessRepository
 {
     private readonly IDynamoDbClient _dynamoDbClient;
-    private readonly IDynamoDbMapper _dynamoDbMapper;
     private readonly DynamoDbSettings _dynamoDbSettings;
 
-    public BusinessRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
-        (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
+    public BusinessRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings) =>
+        (_dynamoDbClient, _dynamoDbSettings) = (dynamoDbClient, dynamoDbSettings);
     
     // Businesses
     public async Task CreateBusinessAsync(Business newBusiness)
     {
-        var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(newBusiness);
+        var dynamoRecord = newBusiness.MapBusinessToItem();
         var putRequest = new PutItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -47,18 +47,18 @@ public class BusinessRepository : IBusinessRepository
         var response = await _dynamoDbClient.GetItemAsync(request);
         if (response.Item.Count == 0 || !response.IsItemSet) throw new BusinessNotFoundException(businessId);
 
-        return response.Item.ConvertFromDynamoItemToBusiness();
+        return response.Item.MapItemToBusiness();
     }
     public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
     {
         var transactItemsList = businessIdList.Select(businessId => BuildTransactGetItem(_dynamoDbSettings, BusinessPrefix + businessId, MetaBusinessInfo)).ToList();
         var getBusinessListRequest = new TransactGetItemsRequest { TransactItems = transactItemsList };
         var getItemsResponse = await _dynamoDbClient.TransactGetItemsAsync(getBusinessListRequest);
-        return getItemsResponse.Responses.Select(itemResponse => itemResponse.Item).Select(response => response.ConvertFromDynamoItemToBusiness()).ToList();
+        return getItemsResponse.Responses.Select(itemResponse => itemResponse.Item).Select(response => response.MapItemToBusiness()).ToList();
     }
     public async Task UpdateBusinessAsync(Business updatedBusiness)
     {
-        var dynamoRecord = _dynamoDbMapper.MapBusinessToItem(updatedBusiness);
+        var dynamoRecord = updatedBusiness.MapBusinessToItem();
         var updateRequest = new UpdateItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -191,12 +191,12 @@ public class BusinessRepository : IBusinessRepository
     // Business User Permissions
     public async Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
     {
-        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(newBusinessUserPermissions);
+        var dynamoRecords = newBusinessUserPermissions.MapBusinessUserPermissionsToItem();
         await _dynamoDbClient.TransactWriteRecordsAsync(dynamoRecords);
     }
     public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
     {
-        var dynamoRecords = _dynamoDbMapper.MapBusinessUserPermissionsToItem(updatedBusinessUserPermissions);
+        var dynamoRecords = updatedBusinessUserPermissions.MapBusinessUserPermissionsToItem();
         foreach (var record in dynamoRecords)
         {
            await _dynamoDbClient.UpdateRecordAsync(record, null);
@@ -279,7 +279,7 @@ public class BusinessRepository : IBusinessRepository
    // Campaigns
    public async Task CreateCampaignAsync(Campaign newCampaign)
    {
-       var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(newCampaign);
+       var dynamoRecord = newCampaign.MapCampaignToItem();
        var putRequest = new PutItemRequest
        {
            TableName = _dynamoDbSettings.TableName,
@@ -307,7 +307,7 @@ public class BusinessRepository : IBusinessRepository
 
        foreach (var item in response.Items)
        {
-           var campaign     = item.ConvertFromDynamoItemToCampaign();
+           var campaign     = item.MapItemToCampaign();
            var settings     = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
            var rewards      = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S, settings);
            campaign.Rewards = rewards;
@@ -331,11 +331,11 @@ public class BusinessRepository : IBusinessRepository
        var response = await _dynamoDbClient.GetItemAsync(request);
        if (response.Item == null || !response.IsItemSet) throw new CampaignNotFoundException(campaignId, businessId);
 
-       return response.Item.ConvertFromDynamoItemToCampaign();
+       return response.Item.MapItemToCampaign();
    }
    public async Task UpdateCampaignAsync(Campaign updatedCampaign)
    {
-       var dynamoRecord = _dynamoDbMapper.MapCampaignToItem(updatedCampaign);
+       var dynamoRecord = updatedCampaign.MapCampaignToItem();
        await _dynamoDbClient.UpdateRecordAsync(dynamoRecord, null);
    }
    public async Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds)

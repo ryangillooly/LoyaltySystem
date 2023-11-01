@@ -3,23 +3,22 @@ using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Core.Utilities;
 using static LoyaltySystem.Data.Extensions.DynamoDbExtensions;
 using static LoyaltySystem.Core.Models.Constants;
 using static LoyaltySystem.Core.Exceptions.LoyaltyCardExceptions;
 using static LoyaltySystem.Core.Exceptions.BusinessExceptions;
 using static LoyaltySystem.Core.Exceptions.UserExceptions;
-using static LoyaltySystem.Core.Convertors;
 
 namespace LoyaltySystem.Data.Repositories;
 
 public class LoyaltyCardRepository : ILoyaltyCardRepository
 {
     private readonly IDynamoDbClient _dynamoDbClient;
-    private readonly IDynamoDbMapper _dynamoDbMapper;
     private readonly DynamoDbSettings _dynamoDbSettings;
 
-    public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings) =>
-        (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings);
+    public LoyaltyCardRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings) =>
+        (_dynamoDbClient, _dynamoDbSettings) = (dynamoDbClient, dynamoDbSettings);
 
     public async Task CreateLoyaltyCardAsync(LoyaltyCard newLoyaltyCard)
     {
@@ -45,7 +44,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         if (response.Items.Count == 0) throw new NoCardsFoundException(userId);
 
         
-        return response.Items.Select(item => item.ConvertFromDynamoItemToLoyaltyCard()).ToList();
+        return response.Items.Select(item => item.MapItemToLoyaltyCard()).ToList();
     }
     public async Task<LoyaltyCard?> GetLoyaltyCardAsync(Guid userId, Guid businessId)
     {
@@ -62,11 +61,11 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
         var response = await _dynamoDbClient.GetItemAsync(getRequest);
         if (response.Item.Count == 0 || !response.IsItemSet) throw new CardNotFoundException(userId, businessId);
 
-        return response.Item.ConvertFromDynamoItemToLoyaltyCard();
+        return response.Item.MapItemToLoyaltyCard();
     }
     public async Task UpdateLoyaltyCardAsync(LoyaltyCard updatedLoyaltyCard)
     {
-        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(updatedLoyaltyCard);
+        var dynamoRecord = updatedLoyaltyCard.MapLoyaltyCardToItem();
         var updateRequest = new UpdateItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -105,8 +104,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     }
     public async Task StampLoyaltyCardAsync(LoyaltyCard loyaltyCard)
     {
-        var stampRecord   =  _dynamoDbMapper.MapLoyaltyCardToStampItem(loyaltyCard);
-        var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
+        var stampRecord   = loyaltyCard.MapLoyaltyCardToStampItem();
+        var loyaltyRecord = loyaltyCard.MapLoyaltyCardToItem();
 
         var transactWriteItems = new List<TransactWriteItem>
         {
@@ -143,8 +142,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     }
     public async Task RedeemLoyaltyCardRewardAsync(LoyaltyCard loyaltyCard, Guid campaignId, Guid rewardId)
     {
-        var redeemAction  = _dynamoDbMapper.MapLoyaltyCardToRedeemItem(loyaltyCard, campaignId, rewardId);
-        var loyaltyRecord = _dynamoDbMapper.MapLoyaltyCardToItem(loyaltyCard);
+        var redeemAction  = loyaltyCard.MapLoyaltyCardToRedeemItem(campaignId, rewardId);
+        var loyaltyRecord = loyaltyCard.MapLoyaltyCardToItem();
         
         var transactWriteItems = new List<TransactWriteItem>
         {
@@ -184,7 +183,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     // Helpers
     private async Task InsertLoyaltyCardRecord(LoyaltyCard newLoyaltyCard)
     {
-        var dynamoRecord = _dynamoDbMapper.MapLoyaltyCardToItem(newLoyaltyCard);
+        var dynamoRecord = newLoyaltyCard.MapLoyaltyCardToItem();
         var putRequest = new PutItemRequest
         {
             TableName = _dynamoDbSettings.TableName,
@@ -213,8 +212,8 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     }
     private void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
     {
-        var user = response.Responses.First().Item.ConvertFromDynamoItemToUser();
-        var business = response.Responses.Last().Item.ConvertFromDynamoItemToLoyaltyCard();
+        var user = response.Responses.First().Item.MapItemToUser();
+        var business = response.Responses.Last().Item.MapItemToLoyaltyCard();
 
         if (user     is null)       throw new UserNotFoundException(userId);
         if (business is null)       throw new BusinessNotFoundException(businessId);

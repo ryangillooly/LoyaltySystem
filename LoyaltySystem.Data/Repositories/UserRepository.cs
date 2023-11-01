@@ -6,24 +6,24 @@ using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using LoyaltySystem.Core.Utilities;
 
 namespace LoyaltySystem.Data.Repositories;
 
 public class UserRepository : IUserRepository
 {
    private readonly IDynamoDbClient _dynamoDbClient;
-   private readonly IDynamoDbMapper _dynamoDbMapper;
    private readonly DynamoDbSettings _dynamoDbSettings;
    private readonly IEmailService _emailService;
    private readonly EmailSettings _emailSettings;
    
 
-   public UserRepository(IDynamoDbClient dynamoDbClient, IDynamoDbMapper dynamoDbMapper, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
-      (_dynamoDbClient, _dynamoDbMapper, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbMapper, dynamoDbSettings, emailService, emailSettings);
+   public UserRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
+      (_dynamoDbClient, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbSettings, emailService, emailSettings);
 
    public async Task CreateAsync(User newUser, Guid token)
    {
-      var dynamoRecord = _dynamoDbMapper.MapUserToItem(newUser);
+      var dynamoRecord = newUser.MapUserToItem();
       var transactWriteItems = new List<TransactWriteItem>
       {
          new ()
@@ -72,7 +72,7 @@ public class UserRepository : IUserRepository
    
    public async Task UpdateUserAsync(User updatedUser)
    {
-      var dynamoRecord = _dynamoDbMapper.MapUserToItem(updatedUser);
+      var dynamoRecord = updatedUser.MapUserToItem();
       var updateRequest = new UpdateItemRequest
       {
          TableName = _dynamoDbSettings.TableName,

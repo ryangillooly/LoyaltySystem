@@ -75,9 +75,6 @@ builder.Services.AddScoped<ILoyaltyCardService, LoyaltyCardService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Add Mappers
-builder.Services.AddSingleton<IDynamoDbMapper, DynamoDbMapper>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
