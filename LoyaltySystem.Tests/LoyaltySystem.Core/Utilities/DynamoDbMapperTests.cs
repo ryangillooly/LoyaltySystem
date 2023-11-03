@@ -221,12 +221,8 @@ public static class DynamoDbMapperTests
     {
         // MapBusinessUserPermissionsToItem
         [Theory, AutoData]
-        public void MapBusinessUserPermissionsToItem_WithValidPermissions_MapsAllPropertiesCorrectly(
-            List<BusinessUserPermissions> permissions)
+        public void MapBusinessUserPermissionsToItem_WithValidPermissions_MapsAllPropertiesCorrectly(List<BusinessUserPermissions> permissions)
         {
-            // Arrange
-            permissions[0].Role = UserRole.Admin;
-
             // Act
             var result = permissions.MapBusinessUserPermissionsToItem();
 
@@ -237,8 +233,7 @@ public static class DynamoDbMapperTests
             foreach (var permission in permissions)
             {
                 var mappedItem = result.Single(item => item[UserId].S == permission.UserId.ToString());
-                mappedItem.Should().ContainKeys(Pk, Sk, UserId, BusinessId, EntityTypeAttributeName, Role, Timestamp,
-                    BusinessUserListPk, BusinessUserListSk);
+                mappedItem.Should().ContainKeys(Pk, Sk, UserId, BusinessId, EntityTypeAttributeName, Role, Timestamp, BusinessUserListPk, BusinessUserListSk);
 
                 mappedItem[Pk].S.Should().Be(UserPrefix + permission.UserId);
                 mappedItem[Sk].S.Should().Be(PermissionBusinessPrefix + permission.BusinessId);
@@ -247,12 +242,43 @@ public static class DynamoDbMapperTests
                 mappedItem[BusinessId].S.Should().Be(permission.BusinessId.ToString());
                 mappedItem[EntityTypeAttributeName].S.Should().Be(EntityType.Permission.ToString());
                 mappedItem[Role].S.Should().Be(permission.Role.ToString());
-                // mappedItem[Timestamp].S.Should().StartWith(DateTime.UtcNow.ToString("dd/MM/yyyy hh:mm"));
-
                 mappedItem[BusinessUserListPk].S.Should().Be(permission.BusinessId.ToString());
                 mappedItem[BusinessUserListSk].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
             }
         }
+        
+        // MapItemToBusinessUserPermissions
+        [Theory, AutoData]
+        public void MapItemToBusinessUserPermissions_WithValidItem_MapsAllPropertiesCorrectly(List<BusinessUserPermissions> permissions)
+        {
+            // Arrange
+            permissions.Select(p => p.Role = UserRole.Admin);
+            var permissionItems = permissions.CreateBusinessUserPermissions();
+
+            // Act
+            var permissionsList = permissionItems.MapItemToBusinessUserPermissions();
+
+            for (var i = 0; i < permissionItems.Count; i++)
+            {
+                // Assert
+                /*
+                permissionItems[0].BusinessId.Should().Be()
+                
+                result.Id.Should().Be(business.Id);
+                result.OwnerId.Should().Be(business.OwnerId);
+                result.Name.Should().Be(business.Name);
+                result.Description.Should().Be(business.Description);
+                result.ContactInfo.Email.Should().Be(business.ContactInfo.Email);
+                result.ContactInfo.PhoneNumber.Should().Be(business.ContactInfo.PhoneNumber);
+                result.Location.Longitude.Should().Be(business.Location.Longitude);
+                result.Location.Latitude.Should().Be(business.Location.Latitude);
+                result.Location.Address.Should().Be(business.Location.Address);
+                result.OpeningHours.Hours.Should().BeEquivalentTo(business.OpeningHours.Hours);
+                result.Status.Should().Be(BusinessStatus.Active);
+                */
+            }
+        }
+
     }
     public class CampaignMapping
     {

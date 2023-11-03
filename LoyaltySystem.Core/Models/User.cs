@@ -1,8 +1,11 @@
+using LoyaltySystem.Core.Convertors;
 using LoyaltySystem.Core.Enums;
-using Microsoft.AspNetCore.Mvc;
+using static LoyaltySystem.Core.Models.Constants;
+using Newtonsoft.Json;
 
 namespace LoyaltySystem.Core.Models;
 
+[JsonConverter(typeof(UserConverter))]
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -28,4 +31,19 @@ public class User
                 Email       = string.IsNullOrEmpty(updated.ContactInfo.Email) ? current.ContactInfo.Email : updated.ContactInfo.Email
             }
         };
+
+    public UserDynamoRecord ToDynamoRecord() => new ()
+        {
+            PK          = UserPrefix + Id,
+            SK          = MetaUserInfo,
+            UserId      = Id.ToString(),
+            Email       = ContactInfo.Email,
+            PhoneNumber = ContactInfo.PhoneNumber ?? null,
+            DateOfBirth = DateOfBirth?.ToString("yyyy-MM-dd") ?? null,
+            FirstName   = FirstName,
+            LastName    = LastName,
+            Status      = Status.ToString(),
+            EntityType  = GetType().Name
+        };
+
 }

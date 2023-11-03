@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using Newtonsoft.Json;
 using static LoyaltySystem.Core.Models.Constants;
@@ -60,4 +61,22 @@ public static class TestDataFactory
 
         return item;
     }
+
+    public static List<Dictionary<string, AttributeValue>> CreateBusinessUserPermissions(this List<BusinessUserPermissions> permissions) =>
+        permissions.Select(permission => new Dictionary<string, AttributeValue>
+            {
+                // Primary Key + Sort Key
+                { Pk, new AttributeValue { S = UserPrefix + permission.UserId }},
+                { Sk, new AttributeValue { S = PermissionBusinessPrefix + permission.BusinessId }},
+                
+                // Attributes
+                { UserId,                  new AttributeValue { S = $"{permission.UserId}" } },
+                { BusinessId,              new AttributeValue { S = $"{permission.BusinessId}" } },
+                { EntityTypeAttributeName, new AttributeValue { S = $"{EntityType.Permission}" } },
+                { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
+                { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
+                { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },
+                { BusinessUserListSk,      new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
+            })
+            .ToList();
 }

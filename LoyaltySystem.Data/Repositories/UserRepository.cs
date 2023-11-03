@@ -1,12 +1,15 @@
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using static LoyaltySystem.Core.Exceptions.EmailExceptions;
 using static LoyaltySystem.Core.Exceptions.UserExceptions;
+using static LoyaltySystem.Core.Models.Constants;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
+using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
@@ -24,6 +27,8 @@ public class UserRepository : IUserRepository
    public async Task CreateAsync(User newUser, Guid token)
    {
       var dynamoRecord = newUser.MapUserToItem();
+      var userJson = JsonConvert.SerializeObject(newUser.ToDynamoRecord());
+      
       var transactWriteItems = new List<TransactWriteItem>
       {
          new ()
@@ -31,7 +36,7 @@ public class UserRepository : IUserRepository
             Put = new Put
             {
                TableName = _dynamoDbSettings.TableName,
-               Item = dynamoRecord,
+               Item = Document.FromJson(userJson).ToAttributeMap(),
                ConditionExpression = "attribute_not_exists(PK)"
             }
          },
@@ -113,16 +118,16 @@ public class UserRepository : IUserRepository
          TableName = _dynamoDbSettings.TableName,
          Key = new Dictionary<string, AttributeValue>
          {
-            { "PK", new AttributeValue { S = $"User#{userId}" }},
-            { "SK", new AttributeValue { S = "Meta#UserInfo"   }}
+            { Pk, new AttributeValue { S = UserPrefix + userId }},
+            { Sk, new AttributeValue { S = MetaUserInfo }}
          }
       };
 
       var response = await _dynamoDbClient.GetItemAsync(request);
 
-      if (response.Item is null || !response.IsItemSet) 
-         throw new UserNotFoundException(userId);
+      if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
       
+      /*
       var user = new User
       {
          Id          = Guid.Parse(response.Item["UserId"].S),
@@ -138,8 +143,11 @@ public class UserRepository : IUserRepository
 
       if (response.Item.ContainsKey("DateOfBirth") && response.Item["DateOfBirth"].S != null)
          user.DateOfBirth = DateTime.Parse(response.Item["DateOfBirth"].S);
-      
-      return user;
+      */
+
+      var json = Document.FromAttributeMap(response.Item).ToJson();
+      var userDynamoRecord = JsonConvert.DeserializeObject<User>(json);
+      return userDynamoRecord;
    }
 
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();

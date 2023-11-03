@@ -127,6 +127,27 @@ public static class DynamoDbMapper
                 { BusinessUserListSk,      new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
             })
             .ToList();
+    public static List<BusinessUserPermissions> MapItemToBusinessUserPermissions(this List<Dictionary<string, AttributeValue>> items)
+    {
+        var businessUserPermissionsList = new List<BusinessUserPermissions>();
+        
+        foreach (var item in items)
+        {
+            item.ValidateBusinessUserPermissions();
+
+            businessUserPermissionsList.Add
+            (
+                new BusinessUserPermissions
+                (
+                    Guid.Parse(item[BusinessId].S), 
+                    Guid.Parse(item[UserId].S), 
+                    Enum.Parse<UserRole>(item[Role].S)
+                )
+            );
+        }
+
+        return businessUserPermissionsList;
+    }
     
     
     // Business Campaigns
@@ -209,7 +230,6 @@ public static class DynamoDbMapper
 
         return loyaltyCard;
     }
-
     public static Dictionary<string, AttributeValue> MapLoyaltyCardToStampItem(this LoyaltyCard loyaltyCard)
     {
         var stampId = Guid.NewGuid();

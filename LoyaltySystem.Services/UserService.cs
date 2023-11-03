@@ -34,7 +34,7 @@ namespace LoyaltySystem.Services
         public async Task<User> GetUserAsync(Guid userId)
         {
             var user = await _userRepository.GetUserAsync(userId);
-            if(user is null) throw new ResourceNotFoundException("User not found");
+            if (user is null) throw new ResourceNotFoundException("User not found");
             return user;
         }
 
