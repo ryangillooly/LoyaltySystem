@@ -5,7 +5,7 @@ public class Campaign
     public Guid Id { get; set; }    = Guid.NewGuid();
     public Guid BusinessId { get; set; } = Guid.Empty;
     public string Name { get; set; }     = string.Empty;
-    public List<Reward> Rewards { get; set; } = new ();
+    public List<Reward>? Rewards { get; set; } = new ();
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public bool IsActive { get; set; } = true;

@@ -19,7 +19,7 @@ public class BusinessesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateBusiness([FromBody] CreateBusinessDto dto)
     {
-        var newBusiness = new BusinessMapper().CreateBusinessDtoToUser(dto);
+        var newBusiness = new BusinessMapper().CreateBusinessFromCreateBusinessDto(dto);
         var createdBusiness = await _businessService.CreateBusinessAsync(newBusiness);
         return CreatedAtAction(nameof(GetBusiness), new { businessId = createdBusiness.Id }, createdBusiness);
     }

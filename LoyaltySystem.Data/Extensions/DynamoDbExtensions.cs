@@ -1,5 +1,6 @@
 using System.Collections;
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Data.Extensions;
 
@@ -37,4 +38,19 @@ public static class DynamoDbExtensions
         return result;
     }
 
+    public static TransactGetItem BuildTransactGetItem(DynamoDbSettings dynamoDbSettings, string pkValue, string skValue)
+    {
+        return new TransactGetItem
+        {
+            Get = new Get
+            {
+                TableName = dynamoDbSettings.TableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "PK", new AttributeValue { S = pkValue } },
+                    { "SK", new AttributeValue { S = skValue } }
+                }
+            }
+        };
+    }
 }

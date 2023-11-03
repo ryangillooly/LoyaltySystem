@@ -7,5 +7,5 @@ namespace LoyaltySystem.Core.Mappers;
 [Mapper]
 public partial class UserMapper
 {
-    public partial User CreateUserDtoToUser(CreateUserDto dto);
+    public partial User CreateUserFromCreateUserDto(CreateUserDto dto);
 }
