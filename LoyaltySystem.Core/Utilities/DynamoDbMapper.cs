@@ -65,40 +65,45 @@ public static class DynamoDbMapper
         var openingHoursJson = JsonConvert.SerializeObject(business.OpeningHours);
         var locationJson     = JsonConvert.SerializeObject(business.Location);
         
-        return new Dictionary<string, AttributeValue>
+        var item = new Dictionary<string, AttributeValue>
         {
             // Primary Key + Sort Key
-            { "PK",          new AttributeValue { S = BusinessPrefix + business.Id }},
-            { "SK",          new AttributeValue { S = MetaBusinessInfo }},
+            { Pk, new AttributeValue { S = BusinessPrefix + business.Id }},
+            { Sk, new AttributeValue { S = MetaBusinessInfo }},
          
             // Attributes
-            { "BusinessId",   new AttributeValue { S = business.Id.ToString()} },
-            { "OwnerId",      new AttributeValue { S = business.OwnerId.ToString() }},
-            { "EntityType",   new AttributeValue { S = business.GetType().Name} },
-            { "Name",         new AttributeValue { S = business.Name }},
-            { "OpeningHours", new AttributeValue { S = openingHoursJson }},
-            { "Location",     new AttributeValue { S = locationJson }},
-            { "Desc",         new AttributeValue { S = business.Description }},
-            { "PhoneNumber",  new AttributeValue { S = business.ContactInfo.PhoneNumber }},
-            { "Email",        new AttributeValue { S = business.ContactInfo.Email }},
-            { "Status",       new AttributeValue { S = business.Status.ToString() }},
+            { BusinessId,                 new AttributeValue { S = business.Id.ToString()} },
+            { OwnerId,                    new AttributeValue { S = business.OwnerId.ToString() }},
+            { EntityTypeAttributeName,    new AttributeValue { S = business.GetType().Name} },
+            { Name,                       new AttributeValue { S = business.Name }},
+            { OpeningHoursAtttributeName, new AttributeValue { S = openingHoursJson }},
+            { LocationAttributeName,      new AttributeValue { S = locationJson }},
+            { Email,                      new AttributeValue { S = business.ContactInfo.Email }},
+            { Status,                     new AttributeValue { S = business.Status.ToString() }},
         };
+
+        if (!string.IsNullOrWhiteSpace(business.Description))             item[Description] = new AttributeValue { S = business.Description };
+        if (!string.IsNullOrWhiteSpace(business.ContactInfo.PhoneNumber)) item[PhoneNumber] = new AttributeValue { S = business.ContactInfo.PhoneNumber };
+
+        return item;
     }
     public static Business MapItemToBusiness(this Dictionary<string, AttributeValue> item)
     {
+        item.ValidateBusiness();
+        
         var business = new Business
         {
-            Id           = Guid.Parse(item["BusinessId"].S),
-            OwnerId      = Guid.Parse(item["OwnerId"].S),
-            Name         = item["Name"].S,
-            Location     = JsonConvert.DeserializeObject<Location>(item["Location"].S)         ?? throw new NullReferenceException(),
-            OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(item["OpeningHours"].S) ?? throw new NullReferenceException(),
-            ContactInfo  = new ContactInfo { Email = item["EntityType"].S },
-            Status       = Enum.Parse<BusinessStatus>(item["Status"].S),
+            Id           = Guid.Parse(item[BusinessId].S),
+            OwnerId      = Guid.Parse(item[OwnerId].S),
+            Name         = item[Name].S,
+            Location     = JsonConvert.DeserializeObject<Location>(item[LocationAttributeName].S)          ?? throw new NullReferenceException(),
+            OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(item[OpeningHoursAtttributeName].S) ?? throw new NullReferenceException(),
+            ContactInfo  = new ContactInfo { Email = item[Email].S },
+            Status       = Enum.Parse<BusinessStatus>(item[Status].S),
         };
         
-        if (item.TryGetValue("Desc",        out var description)) business.Description = description.S;
-        if (item.TryGetValue("PhoneNumber", out var phoneNumber)) business.ContactInfo.PhoneNumber = phoneNumber.S;
+        if (item.TryGetValue(Description, out var description)) business.Description = description.S;
+        if (item.TryGetValue(PhoneNumber, out var phoneNumber)) business.ContactInfo.PhoneNumber = phoneNumber.S;
         
         return business;
     }
@@ -109,17 +114,17 @@ public static class DynamoDbMapper
         businessUserPermissions.Select(permission => new Dictionary<string, AttributeValue>
             {
                 // Primary Key + Sort Key
-                { "PK",                  new AttributeValue { S = UserPrefix + permission.UserId }},
-                { "SK",                  new AttributeValue { S = PermissionBusinessPrefix + permission.BusinessId }},
+                { Pk, new AttributeValue { S = UserPrefix + permission.UserId }},
+                { Sk, new AttributeValue { S = PermissionBusinessPrefix + permission.BusinessId }},
                 
                 // Attributes
-                { "UserId",              new AttributeValue { S = $"{permission.UserId}" } },
-                { "BusinessId",          new AttributeValue { S = $"{permission.BusinessId}" } },
-                { "EntityType",          new AttributeValue { S = $"{EntityType.Permission}" } },
-                { "Role",                new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
-                { "Timestamp",           new AttributeValue { S = $"{DateTime.UtcNow}" } },
-                { "BusinessUserList-PK", new AttributeValue { S = $"{permission.BusinessId}" } },
-                { "BusinessUserList-SK", new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
+                { UserId,                  new AttributeValue { S = $"{permission.UserId}" } },
+                { BusinessId,              new AttributeValue { S = $"{permission.BusinessId}" } },
+                { EntityTypeAttributeName, new AttributeValue { S = $"{EntityType.Permission}" } },
+                { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
+                { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
+                { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },
+                { BusinessUserListSk,      new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
             })
             .ToList();
     
@@ -129,29 +134,29 @@ public static class DynamoDbMapper
         new ()
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = BusinessPrefix + campaign.BusinessId }},
-            { "SK", new AttributeValue { S = CampaignPrefix + campaign.Id }},
+            { Pk, new AttributeValue { S = BusinessPrefix + campaign.BusinessId }},
+            { Sk, new AttributeValue { S = CampaignPrefix + campaign.Id }},
 
             // Attributes
-            { "BusinessId", new AttributeValue { S = $"{campaign.BusinessId}" }},
-            { "EntityType", new AttributeValue { S = campaign.GetType().Name }},
-            { "Name",       new AttributeValue { S = $"{campaign.Name}" }},
-            { "CampaignId", new AttributeValue { S = $"{campaign.Id}" }},
-            { "Rewards",    new AttributeValue { S = $"{JsonConvert.SerializeObject(campaign.Rewards)}" }},
-            { "StartTime",  new AttributeValue { S = $"{campaign.StartTime}" }},
-            { "EndTime",    new AttributeValue { S = $"{campaign.EndTime}" }},
-            { "IsActive",   new AttributeValue { BOOL = campaign.IsActive }},
+            { BusinessId,              new AttributeValue { S = $"{campaign.BusinessId}" }},
+            { EntityTypeAttributeName, new AttributeValue { S = campaign.GetType().Name }},
+            { Name,       new AttributeValue { S = $"{campaign.Name}" }},
+            { CampaignId, new AttributeValue { S = $"{campaign.Id}" }},
+            { Rewards,    new AttributeValue { S = $"{JsonConvert.SerializeObject(campaign.Rewards)}" }},
+            { StartTime,  new AttributeValue { S = $"{campaign.StartTime}" }},
+            { EndTime,    new AttributeValue { S = $"{campaign.EndTime}" }},
+            { IsActive,   new AttributeValue { BOOL = campaign.IsActive }},
         };
     public static Campaign MapItemToCampaign(this Dictionary<string, AttributeValue> item) =>
         new ()
         {
-            Id         = Guid.Parse(item["CampaignId"].S),
-            BusinessId = Guid.Parse(item["BusinessId"].S),
-            Name       = item["Name"].S,
-            Rewards    = JsonConvert.DeserializeObject<List<Reward>>(item["Rewards"].S), 
-            StartTime  = DateTime.Parse(item["StartTime"].S),
-            EndTime    = DateTime.Parse(item["EndTime"].S),
-            IsActive   = item["IsActive"].BOOL
+            Id         = Guid.Parse(item[CampaignId].S),
+            BusinessId = Guid.Parse(item[BusinessId].S),
+            Name       = item[Name].S,
+            Rewards    = JsonConvert.DeserializeObject<List<Reward>>(item[Rewards].S), 
+            StartTime  = DateTime.Parse(item[StartTime].S),
+            EndTime    = DateTime.Parse(item[EndTime].S),
+            IsActive   = item[IsActive].BOOL
         };
     
     
@@ -161,28 +166,28 @@ public static class DynamoDbMapper
         var item = new Dictionary<string, AttributeValue>()
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
-            { "SK", new AttributeValue { S = CardBusinessPrefix + loyaltyCard.BusinessId }},
+            { Pk, new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+            { Sk, new AttributeValue { S = CardBusinessPrefix + loyaltyCard.BusinessId }},
 
             // Attributes
-            { "CardId",        new AttributeValue { S = $"{loyaltyCard.Id}" } },
-            { "BusinessId",    new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "UserId",        new AttributeValue { S = $"{loyaltyCard.UserId}" } },
-            { "EntityType",    new AttributeValue { S = loyaltyCard.GetType().Name } },
-            { "Points",        new AttributeValue { N = $"{loyaltyCard.Points}" } },
-            { "IssueDate",     new AttributeValue { S = $"{loyaltyCard.IssueDate}" } },
-            { "LastStampDate", new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" } },
-            { "Status",        new AttributeValue { S = $"{loyaltyCard.Status}" } },
+            { CardId,                  new AttributeValue { S = $"{loyaltyCard.Id}" } },
+            { BusinessId,              new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
+            { UserId,                  new AttributeValue { S = $"{loyaltyCard.UserId}" } },
+            { EntityTypeAttributeName, new AttributeValue { S = loyaltyCard.GetType().Name } },
+            { Points,                  new AttributeValue { N = $"{loyaltyCard.Points}" } },
+            { IssueDate,               new AttributeValue { S = $"{loyaltyCard.IssueDate}" } },
+            { LastStampDate,           new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" } },
+            { Status,                  new AttributeValue { S = $"{loyaltyCard.Status}" } },
 
-            { "BusinessLoyaltyList-PK", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-            { "BusinessLoyaltyList-SK", new AttributeValue { S = CardUserPrefix + loyaltyCard.UserId + "#" + loyaltyCard.Id }}
+            { BusinessLoyaltyListPk, new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
+            { BusinessLoyaltyListSk, new AttributeValue { S = CardUserPrefix + loyaltyCard.UserId + "#" + loyaltyCard.Id }}
         };
 
         if (loyaltyCard.LastUpdatedDate is not null)
-            item.Add("LastUpdatedDate", new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" });
+            item.Add(LastUpdatedDate, new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" });
 
         if(loyaltyCard.LastRedeemDate is not null)
-            item.Add("LastRedeemDate", new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" });
+            item.Add(LastRedeemDate, new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" });
         
         return item;
     }
@@ -190,17 +195,17 @@ public static class DynamoDbMapper
     {
         var loyaltyCard = new LoyaltyCard
         {
-            Id              = Guid.Parse(item["CardId"].S),
-            BusinessId      = Guid.Parse(item["BusinessId"].S),
-            UserId          = Guid.Parse(item["UserId"].S),
-            Points          = int.Parse(item["Points"].N),
-            IssueDate       = DateTime.Parse(item["IssueDate"].S),
-            LastStampedDate = DateTime.Parse(item["LastStampDate"].S),
-            Status          = Enum.Parse<LoyaltyStatus>(item["Status"].S)
+            Id              = Guid.Parse(item[CardId].S),
+            BusinessId      = Guid.Parse(item[BusinessId].S),
+            UserId          = Guid.Parse(item[UserId].S),
+            Points          = int.Parse(item[Points].N),
+            IssueDate       = DateTime.Parse(item[IssueDate].S),
+            LastStampedDate = DateTime.Parse(item[LastStampDate].S),
+            Status          = Enum.Parse<LoyaltyStatus>(item[Status].S)
         };
         
-        if (item.TryGetValue("LastRedeemDate",  out var lastRedeemDate)) loyaltyCard.LastRedeemDate = Convert.ToDateTime(lastRedeemDate.S);
-        if (item.TryGetValue("LastUpdatedDate", out var lastUpdatedDate)) loyaltyCard.LastUpdatedDate = Convert.ToDateTime(lastUpdatedDate.S);
+        if (item.TryGetValue(LastRedeemDate,  out var lastRedeemDate))  loyaltyCard.LastRedeemDate  = Convert.ToDateTime(lastRedeemDate.S);
+        if (item.TryGetValue(LastUpdatedDate, out var lastUpdatedDate)) loyaltyCard.LastUpdatedDate = Convert.ToDateTime(lastUpdatedDate.S);
 
         return loyaltyCard;
     }
@@ -208,40 +213,38 @@ public static class DynamoDbMapper
     public static Dictionary<string, AttributeValue> MapLoyaltyCardToStampItem(this LoyaltyCard loyaltyCard)
     {
         var stampId = Guid.NewGuid();
-        return 
-        new()
+        return new Dictionary<string, AttributeValue>
         {
             // Primary Key + Sort Key
-            { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
-            { "SK", new AttributeValue { S = ActionStampBusinessPrefix + loyaltyCard.BusinessId + "#" + stampId }},
+            { Pk, new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+            { Sk, new AttributeValue { S = ActionStampBusinessPrefix + loyaltyCard.BusinessId + "#" + stampId }},
 
             // Attributes
-            { "CardId",     new AttributeValue { S = $"{loyaltyCard.Id}" }},
-            { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
-            { "UserId",     new AttributeValue { S = $"{loyaltyCard.UserId}" }},
-            { "StampId",    new AttributeValue { S = $"{stampId}" }},
-            { "EntityType", new AttributeValue { S = "Stamp" }},
-            { "StampDate",  new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" }}
+            { CardId,     new AttributeValue { S = $"{loyaltyCard.Id}" }},
+            { BusinessId, new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
+            { UserId,     new AttributeValue { S = $"{loyaltyCard.UserId}" }},
+            { StampId,    new AttributeValue { S = $"{stampId}" }},
+            { EntityTypeAttributeName, new AttributeValue { S = "Stamp" }},
+            { StampDate,  new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" }}
         };
     }
     public static Dictionary<string, AttributeValue> MapLoyaltyCardToRedeemItem(this LoyaltyCard loyaltyCard, Guid campaignId, Guid rewardId)
     {
         var redeemId = Guid.NewGuid();
-        return
-            new()
+        return new Dictionary<string, AttributeValue>
             {
                 // Primary Key + Sort Key
-                { "PK", new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
-                { "SK", new AttributeValue { S = ActionRedeemBusinessPrefix + loyaltyCard.BusinessId + "#" + redeemId }},
+                { Pk, new AttributeValue { S = UserPrefix + loyaltyCard.UserId }},
+                { Sk, new AttributeValue { S = ActionRedeemBusinessPrefix + loyaltyCard.BusinessId + "#" + redeemId }},
 
                 // Attributes
-                { "UserId",     new AttributeValue { S = $"{loyaltyCard.UserId}" } },
-                { "BusinessId", new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
-                { "CampaignId", new AttributeValue { S = $"{campaignId}" } },
-                { "CardId",     new AttributeValue { S = $"{loyaltyCard.Id}" } },
-                { "RewardId",   new AttributeValue { S = $"{rewardId}" } },
-                { "EntityType", new AttributeValue { S = "Redeem" } },
-                { "RedeemDate", new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" } }
+                { UserId,                  new AttributeValue { S = $"{loyaltyCard.UserId}" } },
+                { BusinessId,              new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
+                { CampaignId,              new AttributeValue { S = $"{campaignId}" } },
+                { CardId,                  new AttributeValue { S = $"{loyaltyCard.Id}" } },
+                { RewardId,                new AttributeValue { S = $"{rewardId}" } },
+                { EntityTypeAttributeName, new AttributeValue { S = "Redeem" } },
+                { RedeemDate,              new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" } }
             };
     }
 

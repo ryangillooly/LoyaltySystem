@@ -14,4 +14,15 @@ public static class DynamoDbValidator
         if (!item.ContainsKey(Status))    throw new KeyNotFoundException($"{Status} is required for mapping.");
         if (!item.ContainsKey(Email))     throw new KeyNotFoundException($"{Email} is required for mapping.");
     }
+    
+    public static void ValidateBusiness(this Dictionary<string, AttributeValue> item)
+    {
+        if (!item.ContainsKey(BusinessId))                 throw new KeyNotFoundException($"{BusinessId} is required for mapping.");
+        if (!item.ContainsKey(OwnerId))                    throw new KeyNotFoundException($"{OwnerId} is required for mapping.");
+        if (!item.ContainsKey(Name))                       throw new KeyNotFoundException($"{Name} is required for mapping.");
+        if (!item.ContainsKey(Status))                     throw new KeyNotFoundException($"{Status} is required for mapping.");
+        if (!item.ContainsKey(Email))                      throw new KeyNotFoundException($"{Email} is required for mapping.");
+        if (!item.ContainsKey(OpeningHoursAtttributeName)) throw new KeyNotFoundException($"{OpeningHoursAtttributeName} is required for mapping.");
+        if (!item.ContainsKey(LocationAttributeName))      throw new KeyNotFoundException($"{LocationAttributeName} is required for mapping.");
+    }
 }
