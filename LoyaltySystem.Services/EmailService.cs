@@ -20,7 +20,7 @@ public class EmailService : IEmailService
     }
 
     public bool IsValid(string email) => email.IsValidEmail();
-    public async Task SendEmail(EmailInfo model)
+    public async Task SendEmailAsync(EmailInfo model)
     {
         var client = new AmazonSimpleEmailServiceClient(RegionEndpoint.EUWest1); // Change the region if necessary
 
@@ -46,7 +46,6 @@ public class EmailService : IEmailService
             Console.WriteLine("Error sending email: " + ex.Message);
         }
     }
-
     public string GenerateSecureToken(int length = 32)
     {
         // Because a Base64 character represents 6 bits, and a byte is 8 bits,

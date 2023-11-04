@@ -16,11 +16,12 @@ public class EmailTokenConvertor : JsonConverter
         var item = JObject.Load(reader);
         return new EmailToken
         {
-            Id           = Guid.Parse(item["TokenId"].Value<string>()),
-            UserId       = Guid.Parse(item["UserId"].Value<string>()),
-            Status       = Enum.Parse<EmailTokenStatus>(item["Status"].Value<string>()),
-            CreationDate = DateTime.Parse(item["CreationDate"].Value<string>()),
-            ExpiryDate   = DateTime.Parse(item["ExpiryDate"].Value<string>())
+            Id           = Guid.Parse(item[TokenId].Value<string>()),
+            UserId       = Guid.Parse(item[UserId].Value<string>()),
+            Email        = item[Email].Value<string>(),
+            Status       = Enum.Parse<EmailTokenStatus>(item[Status].Value<string>()),
+            CreationDate = DateTime.Parse(item[CreationDate].Value<string>()),
+            ExpiryDate   = DateTime.Parse(item[ExpiryDate].Value<string>())
         };
     }
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)

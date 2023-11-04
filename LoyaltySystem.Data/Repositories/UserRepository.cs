@@ -20,7 +20,6 @@ public class UserRepository : IUserRepository
    private readonly IEmailService _emailService;
    private readonly EmailSettings _emailSettings;
    
-
    public UserRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
       (_dynamoDbClient, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbSettings, emailService, emailSettings);
 
@@ -50,20 +49,6 @@ public class UserRepository : IUserRepository
       
       await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
    }
-
-   public async Task SendVerificationEmailAsync(string email, Guid userId, Guid token)
-   {
-      var verificationLink = $"http://localhost:3000/user/{userId}/verify-email/{token}";
-      var emailInfo = new EmailInfo
-      {
-         ToEmail   = email,
-         FromEmail = _emailSettings.From,
-         Subject   = "Loyalty System - Verification",
-         Body      = $"Please verify your account by going to the following URL - {verificationLink}"
-      };
-      await _emailService.SendEmail(emailInfo);
-   }
-   
    public async Task UpdateUserAsync(User updatedUser)
    {
       var dynamoRecord = updatedUser.MapUserToItem();
@@ -72,8 +57,8 @@ public class UserRepository : IUserRepository
          TableName = _dynamoDbSettings.TableName,
          Key = new Dictionary<string, AttributeValue>
          {
-            {"PK", new AttributeValue { S = dynamoRecord["PK"].S }},
-            {"SK", new AttributeValue { S = dynamoRecord["SK"].S }}
+            { Pk, new AttributeValue { S = dynamoRecord[Pk].S }},
+            { Sk, new AttributeValue { S = dynamoRecord[Sk].S }}
          },
          UpdateExpression = @"
             SET  
@@ -85,21 +70,20 @@ public class UserRepository : IUserRepository
          ",
          ExpressionAttributeValues = new Dictionary<string, AttributeValue>
          {
-            {":status",      new AttributeValue { S = dynamoRecord["Status"].S }},
-            {":firstName",   new AttributeValue { S = dynamoRecord["FirstName"].S }},
-            {":lastName",    new AttributeValue { S = dynamoRecord["LastName"].S }},
-            {":phoneNumber", new AttributeValue { S = dynamoRecord["PhoneNumber"].S }},
-            {":email",       new AttributeValue { S = dynamoRecord["Email"].S }}
+            {":status",      new AttributeValue { S = dynamoRecord[Status].S }},
+            {":firstName",   new AttributeValue { S = dynamoRecord[FirstName].S }},
+            {":lastName",    new AttributeValue { S = dynamoRecord[LastName].S }},
+            {":phoneNumber", new AttributeValue { S = dynamoRecord[PhoneNumber].S }},
+            {":email",       new AttributeValue { S = dynamoRecord[Email].S }}
          },
          ExpressionAttributeNames = new Dictionary<string, string>
          {
-            {"#St", "Status"}  // Mapping the alias #St to the actual attribute name "Status"
+            {"#St", Status}  // Mapping the alias #St to the actual attribute name "Status"
          }
       };
       
       await _dynamoDbClient.UpdateItemAsync(updateRequest);
    }
-   
    public async Task<User?> GetUserAsync(Guid userId)
    {
       var request = new GetItemRequest
@@ -118,11 +102,8 @@ public class UserRepository : IUserRepository
       
       return response.FromDynamoItem<User>();
    }
-
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
-
-   public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync($"User#{userId}");
-
+   public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync(UserPrefix + userId);
    public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId)
    {
       var request = new QueryRequest
@@ -131,13 +112,13 @@ public class UserRepository : IUserRepository
          KeyConditionExpression = "#PK = :PKValue AND begins_with(#SK, :SKValue)",  // Use placeholders
          ExpressionAttributeNames = new Dictionary<string, string>
          {
-            { "#PK", "PK" },   // Map to the correct attribute names
-            { "#SK", "SK" }
+            { "#PK", Pk },   // Map to the correct attribute names
+            { "#SK", Sk }
          },
          ExpressionAttributeValues = new Dictionary<string, AttributeValue>
          {
-            { ":PKValue", new AttributeValue { S = $"User#{userId}" }},
-            { ":SKValue", new AttributeValue { S = "Permission#Business" }}
+            { ":PKValue", new AttributeValue { S = UserPrefix + userId }},
+            { ":SKValue", new AttributeValue { S = PermissionBusinessPrefix }}
          }
       };
       
@@ -146,12 +127,31 @@ public class UserRepository : IUserRepository
       var businessUserPermissionsList = new List<BusinessUserPermissions>();
       foreach (var item in response.Items)
       {
-         businessUserPermissionsList.Add(new BusinessUserPermissions(Guid.Parse(item["BusinessId"].S), Guid.Parse(item["UserId"].S), Enum.Parse<UserRole>(item["Role"].S)));
+         businessUserPermissionsList.Add
+         (
+            new BusinessUserPermissions
+            (
+               Guid.Parse(item[BusinessId].S), 
+               Guid.Parse(item[UserId].S), 
+               Enum.Parse<UserRole>(item[Role].S)
+            )
+         );
       }
 
       return businessUserPermissionsList;
    }
-
+   public async Task SendVerificationEmailAsync(EmailToken token)
+   {
+      var verificationLink = $"http://localhost:3000/user/{token.UserId}/verify-email/{token.Id}";
+      var emailInfo = new EmailInfo
+      {
+         ToEmail   = token.Email,
+         FromEmail = _emailSettings.From,
+         Subject   = "Loyalty System - Verification",
+         Body      = $"Please verify your account by going to the following URL - {verificationLink}"
+      };
+      await _emailService.SendEmailAsync(emailInfo);
+   }
    public async Task VerifyEmailAsync(VerifyEmailDto dto)
    {
       var getRequest = new GetItemRequest
@@ -159,17 +159,17 @@ public class UserRepository : IUserRepository
          TableName = _dynamoDbSettings.TableName,
          Key = new Dictionary<string, AttributeValue>
          {
-            {"PK", new AttributeValue {S = $"User#{dto.UserId}" }},
-            {"SK", new AttributeValue {S = $"Token#{dto.Token}" }}
+            { Pk, new AttributeValue { S = UserPrefix  + dto.UserId }},
+            { Sk, new AttributeValue { S = TokenPrefix + dto.Token  }}
          }
       };
       var getResponse  = await _dynamoDbClient.GetItemAsync(getRequest);
-      var expiryDate   = DateTime.Parse(getResponse.Item["ExpiryDate"].S);
-      var status = getResponse.Item["Status"].S;
+      var expiryDate   = DateTime.Parse(getResponse.Item[ExpiryDate].S);
+      var status = getResponse.Item[Status].S;
       
-      if (getResponse.Item == null)     throw new NoVerificationEmailFoundException(dto.UserId, dto.Token);
-      if (status == "Verified")         throw new VerificationEmailAlreadyVerifiedException(dto.UserId, dto.Token);
-      if (DateTime.UtcNow > expiryDate) throw new VerificationEmailExpiredException(dto.UserId, dto.Token);
+      if (getResponse.Item == null)                        throw new NoVerificationEmailFoundException(dto.UserId, dto.Token);
+      if (status == EmailTokenStatus.Verified.ToString())  throw new VerificationEmailAlreadyVerifiedException(dto.UserId, dto.Token);
+      if (DateTime.UtcNow > expiryDate)                    throw new VerificationEmailExpiredException(dto.UserId, dto.Token);
 
       var transactWriteList = new List<TransactWriteItem>
       {
@@ -180,18 +180,18 @@ public class UserRepository : IUserRepository
                TableName = _dynamoDbSettings.TableName,
                Key = new Dictionary<string, AttributeValue>
                {
-                  { "PK", new AttributeValue { S = $"User#{dto.UserId}" } },
-                  { "SK", new AttributeValue { S = $"Token#{dto.Token}" } }
+                  { Pk, new AttributeValue { S = UserPrefix  + dto.UserId }},
+                  { Sk, new AttributeValue { S = TokenPrefix + dto.Token  }}
                },
                ExpressionAttributeNames = new Dictionary<string, string>
                {
-                  { "#VerifiedDate", "VerifiedDate" },
-                  { "#Status",       "Status" }
+                  { "#VerifiedDate", VerifiedDate },
+                  { "#Status",       Status }
                },
                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                {
                   {":VerifiedDate", new AttributeValue { S = $"{DateTime.UtcNow}" }},
-                  {":Status",       new AttributeValue { S = "Verified" }},
+                  {":Status",       new AttributeValue { S = $"{EmailTokenStatus.Verified}" }},
                },
                UpdateExpression = "SET #Status = :Status, #VerifiedDate = :VerifiedDate"
             }
@@ -203,12 +203,12 @@ public class UserRepository : IUserRepository
                TableName = _dynamoDbSettings.TableName,
                Key = new Dictionary<string, AttributeValue>
                {
-                  { "PK", new AttributeValue { S = $"User#{dto.UserId}" }},
-                  { "SK", new AttributeValue { S = "Meta#UserInfo"      }}
+                  { Pk, new AttributeValue { S = UserPrefix + dto.UserId }},
+                  { Sk, new AttributeValue { S = MetaUserInfo }}
                },
                ExpressionAttributeNames = new Dictionary<string, string>
                {
-                  { "#Status", "Status" }
+                  { "#Status", Status }
                },
                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                {

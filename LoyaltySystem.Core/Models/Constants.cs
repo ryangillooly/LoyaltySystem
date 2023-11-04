@@ -36,7 +36,8 @@ public static class Constants
     public const string LastUpdatedDate            = "LastUpdatedDate";
     public const string LastRedeemDate             = "LastRedeemDate";
     public const string Timestamp                  = "Timestamp";
-    public const string EmailTokenAttName          = "Email Token";
+    public const string VerifiedDate               = "VerifiedDate";
+    public const string EmailTokenAttName          = "EmailToken";
     public const string ExpiryDate                 = "ExpiryDate";
     public const string CreationDate               = "CreationDate";
     public const string BusinessUserListPk         = "BusinessUserList-PK";
