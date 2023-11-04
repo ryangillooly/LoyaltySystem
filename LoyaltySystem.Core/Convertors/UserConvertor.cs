@@ -15,7 +15,6 @@ public class UserConverter : JsonConverter
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
         var item = JObject.Load(reader);
-        
         var user = new User
         {
             Id          = Guid.Parse(item["UserId"].Value<string>()),
@@ -39,14 +38,14 @@ public class UserConverter : JsonConverter
         {
             var obj = new JObject
             {
-                { "PK", UserPrefix + userValue.Id },
-                { "SK", MetaUserInfo },
-                { "UserId", userValue.Id.ToString() },
-                { "Email", userValue.ContactInfo.Email },
-                { "FirstName", userValue.FirstName },
-                { "LastName", userValue.LastName },
-                { "Status", userValue.Status.ToString() },
-                { "EntityType", userValue.GetType().Name }
+                { Pk,                UserPrefix + userValue.Id },
+                { Sk,                MetaUserInfo },
+                { UserId,            userValue.Id.ToString() },
+                { Email,             userValue.ContactInfo.Email },
+                { FirstName,         userValue.FirstName },
+                { LastName,          userValue.LastName },
+                { Status,            userValue.Status.ToString() },
+                { EntityTypeAttName, userValue.GetType().Name }
             };
 
             // Optional properties are only added if they are not null or empty.

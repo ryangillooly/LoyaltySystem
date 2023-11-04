@@ -1,4 +1,5 @@
 using LoyaltySystem.Core.DTOs;
+using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 
 
@@ -8,7 +9,7 @@ public interface IUserRepository
 {
     Task<IEnumerable<User>> GetAllAsync();
     Task<User?> GetUserAsync(Guid userId);
-    Task CreateAsync(User entity, Guid token);
+    Task CreateAsync(User entity, EmailToken emailToken);
     Task UpdateUserAsync(User updatedUser);
     Task DeleteUserAsync(Guid id);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId);

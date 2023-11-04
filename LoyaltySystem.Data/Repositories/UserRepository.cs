@@ -24,7 +24,7 @@ public class UserRepository : IUserRepository
    public UserRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
       (_dynamoDbClient, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbSettings, emailService, emailSettings);
 
-   public async Task CreateAsync(User newUser, Guid token)
+   public async Task CreateAsync(User newUser, EmailToken emailToken)
    {
       var transactWriteItems = new List<TransactWriteItem>
       {
@@ -42,15 +42,7 @@ public class UserRepository : IUserRepository
             Put = new Put
             {
                TableName = _dynamoDbSettings.TableName,
-               Item = new Dictionary<string, AttributeValue>
-               {
-                  { Pk,                new AttributeValue {S = UserPrefix + newUser.Id }},
-                  { Sk,                new AttributeValue {S = TokenPrefix + token }},
-                  { EntityTypeAttName, new AttributeValue {S = EmailTokenAttName }},
-                  { Status,            new AttributeValue {S = $"{EmailTokenStatus.Unverified}" }},
-                  { ExpiryDate,        new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}" }},
-                  { CreationDate,      new AttributeValue {S = $"{DateTime.UtcNow}" }}
-               },
+               Item = emailToken.ToDynamoItem(),
                ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
             }
          }

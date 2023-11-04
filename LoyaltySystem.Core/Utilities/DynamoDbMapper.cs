@@ -5,6 +5,7 @@ using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using static LoyaltySystem.Core.Models.Constants;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using EntityType = LoyaltySystem.Core.Enums.EntityType;
 
 namespace LoyaltySystem.Core.Utilities;
@@ -16,6 +17,12 @@ public static class DynamoDbMapper
     {
         var json = JsonConvert.SerializeObject(item);
         return Document.FromJson(json).ToAttributeMap();
+    }
+    
+    public static T? FromDynamoItem<T>(this Dictionary<string, AttributeValue> item)
+    {
+        var json = Document.FromAttributeMap(item).ToJson();
+        return JsonConvert.DeserializeObject<T>(json);
     }
     
     // Users

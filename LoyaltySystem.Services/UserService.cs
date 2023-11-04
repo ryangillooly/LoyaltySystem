@@ -22,8 +22,8 @@ namespace LoyaltySystem.Services
             var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
             if (emailExists) throw new InvalidOperationException("Email already exists");
 
-            var token = Guid.NewGuid();
-                
+            var token = new EmailToken(newUser.Id);
+            
             await _userRepository.CreateAsync(newUser, token);
             //await _userRepository.SendVerificationEmailAsync(newUser.ContactInfo.Email, newUser.Id, token);
             
