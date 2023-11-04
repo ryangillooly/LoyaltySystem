@@ -1,7 +1,11 @@
+using System.Reflection.Metadata;
+using Amazon.DynamoDBv2.Model;
+using Amazon.DynamoDBv2.DocumentModel;
 using LoyaltySystem.Core.Convertors;
 using LoyaltySystem.Core.Enums;
 using static LoyaltySystem.Core.Models.Constants;
 using Newtonsoft.Json;
+using Document = Amazon.DynamoDBv2.DocumentModel.Document;
 
 namespace LoyaltySystem.Core.Models;
 
@@ -17,6 +21,7 @@ public class User
     public bool IsActive() => Status == UserStatus.Active;
     public bool IsNotActive() => Status != UserStatus.Active;
     public string GetFullName => $"{FirstName} {LastName}";
+    
     public static User Merge(User current, User updated) =>
         new ()
         {
@@ -31,19 +36,4 @@ public class User
                 Email       = string.IsNullOrEmpty(updated.ContactInfo.Email) ? current.ContactInfo.Email : updated.ContactInfo.Email
             }
         };
-
-    public UserDynamoRecord ToDynamoRecord() => new ()
-        {
-            PK          = UserPrefix + Id,
-            SK          = MetaUserInfo,
-            UserId      = Id.ToString(),
-            Email       = ContactInfo.Email,
-            PhoneNumber = ContactInfo.PhoneNumber ?? null,
-            DateOfBirth = DateOfBirth?.ToString("yyyy-MM-dd") ?? null,
-            FirstName   = FirstName,
-            LastName    = LastName,
-            Status      = Status.ToString(),
-            EntityType  = GetType().Name
-        };
-
 }

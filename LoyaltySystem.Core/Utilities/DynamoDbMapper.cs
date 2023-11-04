@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Interfaces;
@@ -10,6 +11,13 @@ namespace LoyaltySystem.Core.Utilities;
 
 public static class DynamoDbMapper 
 {
+    // TODO: Tidy up this class
+    public static Dictionary<string, AttributeValue> ToDynamoItem<T>(this T item)
+    {
+        var json = JsonConvert.SerializeObject(item);
+        return Document.FromJson(json).ToAttributeMap();
+    }
+    
     // Users
     public static Dictionary<string, AttributeValue> MapUserToItem(this User user)
     {
@@ -25,7 +33,7 @@ public static class DynamoDbMapper
             { FirstName,                new AttributeValue { S = user.FirstName } },
             { LastName,                 new AttributeValue { S = user.LastName } },
             { Status,                   new AttributeValue { S = user.Status.ToString() } },
-            { EntityTypeAttributeName,  new AttributeValue { S = user.GetType().Name } }
+            { EntityTypeAttName,  new AttributeValue { S = user.GetType().Name } }
         };
 
         if (!string.IsNullOrWhiteSpace(user.ContactInfo.PhoneNumber))
@@ -74,9 +82,9 @@ public static class DynamoDbMapper
             // Attributes
             { BusinessId,                 new AttributeValue { S = business.Id.ToString()} },
             { OwnerId,                    new AttributeValue { S = business.OwnerId.ToString() }},
-            { EntityTypeAttributeName,    new AttributeValue { S = business.GetType().Name} },
+            { EntityTypeAttName,    new AttributeValue { S = business.GetType().Name} },
             { Name,                       new AttributeValue { S = business.Name }},
-            { OpeningHoursAtttributeName, new AttributeValue { S = openingHoursJson }},
+            { OpeningHoursAttName, new AttributeValue { S = openingHoursJson }},
             { LocationAttributeName,      new AttributeValue { S = locationJson }},
             { Email,                      new AttributeValue { S = business.ContactInfo.Email }},
             { Status,                     new AttributeValue { S = business.Status.ToString() }},
@@ -97,7 +105,7 @@ public static class DynamoDbMapper
             OwnerId      = Guid.Parse(item[OwnerId].S),
             Name         = item[Name].S,
             Location     = JsonConvert.DeserializeObject<Location>(item[LocationAttributeName].S)          ?? throw new NullReferenceException(),
-            OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(item[OpeningHoursAtttributeName].S) ?? throw new NullReferenceException(),
+            OpeningHours = JsonConvert.DeserializeObject<OpeningHours>(item[OpeningHoursAttName].S) ?? throw new NullReferenceException(),
             ContactInfo  = new ContactInfo { Email = item[Email].S },
             Status       = Enum.Parse<BusinessStatus>(item[Status].S),
         };
@@ -120,7 +128,7 @@ public static class DynamoDbMapper
                 // Attributes
                 { UserId,                  new AttributeValue { S = $"{permission.UserId}" } },
                 { BusinessId,              new AttributeValue { S = $"{permission.BusinessId}" } },
-                { EntityTypeAttributeName, new AttributeValue { S = $"{EntityType.Permission}" } },
+                { EntityTypeAttName, new AttributeValue { S = $"{EntityType.Permission}" } },
                 { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
                 { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },
@@ -160,7 +168,7 @@ public static class DynamoDbMapper
 
             // Attributes
             { BusinessId,              new AttributeValue { S = $"{campaign.BusinessId}" }},
-            { EntityTypeAttributeName, new AttributeValue { S = campaign.GetType().Name }},
+            { EntityTypeAttName, new AttributeValue { S = campaign.GetType().Name }},
             { Name,       new AttributeValue { S = $"{campaign.Name}" }},
             { CampaignId, new AttributeValue { S = $"{campaign.Id}" }},
             { Rewards,    new AttributeValue { S = $"{JsonConvert.SerializeObject(campaign.Rewards)}" }},
@@ -194,7 +202,7 @@ public static class DynamoDbMapper
             { CardId,                  new AttributeValue { S = $"{loyaltyCard.Id}" } },
             { BusinessId,              new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
             { UserId,                  new AttributeValue { S = $"{loyaltyCard.UserId}" } },
-            { EntityTypeAttributeName, new AttributeValue { S = loyaltyCard.GetType().Name } },
+            { EntityTypeAttName, new AttributeValue { S = loyaltyCard.GetType().Name } },
             { Points,                  new AttributeValue { N = $"{loyaltyCard.Points}" } },
             { IssueDate,               new AttributeValue { S = $"{loyaltyCard.IssueDate}" } },
             { LastStampDate,           new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" } },
@@ -244,7 +252,7 @@ public static class DynamoDbMapper
             { BusinessId, new AttributeValue { S = $"{loyaltyCard.BusinessId}" }},
             { UserId,     new AttributeValue { S = $"{loyaltyCard.UserId}" }},
             { StampId,    new AttributeValue { S = $"{stampId}" }},
-            { EntityTypeAttributeName, new AttributeValue { S = "Stamp" }},
+            { EntityTypeAttName, new AttributeValue { S = "Stamp" }},
             { StampDate,  new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" }}
         };
     }
@@ -263,7 +271,7 @@ public static class DynamoDbMapper
                 { CampaignId,              new AttributeValue { S = $"{campaignId}" } },
                 { CardId,                  new AttributeValue { S = $"{loyaltyCard.Id}" } },
                 { RewardId,                new AttributeValue { S = $"{rewardId}" } },
-                { EntityTypeAttributeName, new AttributeValue { S = "Redeem" } },
+                { EntityTypeAttName, new AttributeValue { S = "Redeem" } },
                 { RedeemDate,              new AttributeValue { S = $"{loyaltyCard.LastRedeemDate}" } }
             };
     }

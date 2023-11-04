@@ -22,7 +22,7 @@ public static class TestDataFactory
             { FirstName, new AttributeValue { S = user.FirstName } },
             { LastName, new AttributeValue { S = user.LastName } },
             { Status, new AttributeValue { S = user.Status.ToString() } },
-            { EntityTypeAttributeName, new AttributeValue { S = user.GetType().Name } }
+            { EntityTypeAttName, new AttributeValue { S = user.GetType().Name } }
         };
         
         if (!string.IsNullOrWhiteSpace(user.ContactInfo.PhoneNumber))
@@ -48,9 +48,9 @@ public static class TestDataFactory
             // Attributes
             { BusinessId,                 new AttributeValue { S = business.Id.ToString()} },
             { OwnerId,                    new AttributeValue { S = business.OwnerId.ToString() }},
-            { EntityTypeAttributeName,    new AttributeValue { S = business.GetType().Name} },
+            { EntityTypeAttName,    new AttributeValue { S = business.GetType().Name} },
             { Name,                       new AttributeValue { S = business.Name }},
-            { OpeningHoursAtttributeName, new AttributeValue { S = openingHoursJson }},
+            { OpeningHoursAttName, new AttributeValue { S = openingHoursJson }},
             { LocationAttributeName,      new AttributeValue { S = locationJson }},
             { Email,                      new AttributeValue { S = business.ContactInfo.Email }},
             { Status,                     new AttributeValue { S = business.Status.ToString() }},
@@ -72,7 +72,7 @@ public static class TestDataFactory
                 // Attributes
                 { UserId,                  new AttributeValue { S = $"{permission.UserId}" } },
                 { BusinessId,              new AttributeValue { S = $"{permission.BusinessId}" } },
-                { EntityTypeAttributeName, new AttributeValue { S = $"{EntityType.Permission}" } },
+                { EntityTypeAttName, new AttributeValue { S = $"{EntityType.Permission}" } },
                 { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
                 { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },

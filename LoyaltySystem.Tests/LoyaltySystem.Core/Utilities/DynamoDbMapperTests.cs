@@ -27,14 +27,14 @@ public static class DynamoDbMapperTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().ContainKeys(Pk, Sk, UserId, EntityTypeAttributeName, Email, PhoneNumber, FirstName,
+            result.Should().ContainKeys(Pk, Sk, UserId, EntityTypeAttName, Email, PhoneNumber, FirstName,
                 LastName, Status);
 
             result[Pk].S.Should().Be(UserPrefix + user.Id);
             result[Sk].S.Should().Be(MetaUserInfo);
 
             result[UserId].S.Should().Be(user.Id.ToString());
-            result[EntityTypeAttributeName].S.Should().Be(EntityType.User.ToString());
+            result[EntityTypeAttName].S.Should().Be(EntityType.User.ToString());
             result[Email].S.Should().Be(user.ContactInfo.Email);
             result[PhoneNumber].S.Should().Be(user.ContactInfo.PhoneNumber);
             result[FirstName].S.Should().Be(user.FirstName);
@@ -126,17 +126,17 @@ public static class DynamoDbMapperTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().ContainKeys(Pk, Sk, BusinessId, OwnerId, EntityTypeAttributeName, Name,
-                OpeningHoursAtttributeName, LocationAttributeName, Description, PhoneNumber, Email, Status);
+            result.Should().ContainKeys(Pk, Sk, BusinessId, OwnerId, EntityTypeAttName, Name,
+                OpeningHoursAttName, LocationAttributeName, Description, PhoneNumber, Email, Status);
 
             result[Pk].S.Should().Be(BusinessPrefix + business.Id);
             result[Sk].S.Should().Be(MetaBusinessInfo);
 
             result[BusinessId].S.Should().Be(business.Id.ToString());
             result[OwnerId].S.Should().Be(business.OwnerId.ToString());
-            result[EntityTypeAttributeName].S.Should().Be(EntityType.Business.ToString());
+            result[EntityTypeAttName].S.Should().Be(EntityType.Business.ToString());
             result[Name].S.Should().Be(business.Name);
-            result[OpeningHoursAtttributeName].S.Should().Be(JsonConvert.SerializeObject(business.OpeningHours));
+            result[OpeningHoursAttName].S.Should().Be(JsonConvert.SerializeObject(business.OpeningHours));
             result[LocationAttributeName].S.Should().Be(JsonConvert.SerializeObject(business.Location));
             result[Description].S.Should().Be(business.Description);
             result[PhoneNumber].S.Should().Be(business.ContactInfo.PhoneNumber);
@@ -233,14 +233,14 @@ public static class DynamoDbMapperTests
             foreach (var permission in permissions)
             {
                 var mappedItem = result.Single(item => item[UserId].S == permission.UserId.ToString());
-                mappedItem.Should().ContainKeys(Pk, Sk, UserId, BusinessId, EntityTypeAttributeName, Role, Timestamp, BusinessUserListPk, BusinessUserListSk);
+                mappedItem.Should().ContainKeys(Pk, Sk, UserId, BusinessId, EntityTypeAttName, Role, Timestamp, BusinessUserListPk, BusinessUserListSk);
 
                 mappedItem[Pk].S.Should().Be(UserPrefix + permission.UserId);
                 mappedItem[Sk].S.Should().Be(PermissionBusinessPrefix + permission.BusinessId);
 
                 mappedItem[UserId].S.Should().Be(permission.UserId.ToString());
                 mappedItem[BusinessId].S.Should().Be(permission.BusinessId.ToString());
-                mappedItem[EntityTypeAttributeName].S.Should().Be(EntityType.Permission.ToString());
+                mappedItem[EntityTypeAttName].S.Should().Be(EntityType.Permission.ToString());
                 mappedItem[Role].S.Should().Be(permission.Role.ToString());
                 mappedItem[BusinessUserListPk].S.Should().Be(permission.BusinessId.ToString());
                 mappedItem[BusinessUserListSk].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
@@ -324,7 +324,7 @@ public static class DynamoDbMapperTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().ContainKeys(Pk, Sk, CardId, BusinessId, UserId, EntityTypeAttributeName, Points, IssueDate, LastStampDate, Status, BusinessLoyaltyListPk, BusinessLoyaltyListSk);
+            result.Should().ContainKeys(Pk, Sk, CardId, BusinessId, UserId, EntityTypeAttName, Points, IssueDate, LastStampDate, Status, BusinessLoyaltyListPk, BusinessLoyaltyListSk);
 
             result[Pk].S.Should().Be(Constants.UserPrefix + loyaltyCard.UserId);
             result[Sk].S.Should().Be(Constants.CardBusinessPrefix + loyaltyCard.BusinessId);
@@ -332,7 +332,7 @@ public static class DynamoDbMapperTests
             result[CardId].S.Should().Be(loyaltyCard.Id.ToString());
             result[BusinessId].S.Should().Be(loyaltyCard.BusinessId.ToString());
             result[UserId].S.Should().Be(loyaltyCard.UserId.ToString());
-            result[EntityTypeAttributeName].S.Should().Be(EntityType.LoyaltyCard.ToString());
+            result[EntityTypeAttName].S.Should().Be(EntityType.LoyaltyCard.ToString());
             result[Points].N.Should().Be(loyaltyCard.Points.ToString());
             result[IssueDate].S.Should().Be(loyaltyCard.IssueDate.ToString());
             result[LastStampDate].S.Should().Be(loyaltyCard.LastStampedDate.ToString());

@@ -26,9 +26,6 @@ public class UserRepository : IUserRepository
 
    public async Task CreateAsync(User newUser, Guid token)
    {
-      var dynamoRecord = newUser.MapUserToItem();
-      var userJson = JsonConvert.SerializeObject(newUser.ToDynamoRecord());
-      
       var transactWriteItems = new List<TransactWriteItem>
       {
          new ()
@@ -36,7 +33,7 @@ public class UserRepository : IUserRepository
             Put = new Put
             {
                TableName = _dynamoDbSettings.TableName,
-               Item = Document.FromJson(userJson).ToAttributeMap(),
+               Item = newUser.ToDynamoItem(),
                ConditionExpression = "attribute_not_exists(PK)"
             }
          },
@@ -47,12 +44,12 @@ public class UserRepository : IUserRepository
                TableName = _dynamoDbSettings.TableName,
                Item = new Dictionary<string, AttributeValue>
                {
-                  { "PK",           new AttributeValue {S = $"User#{newUser.Id}" }},
-                  { "SK",           new AttributeValue {S = $"Token#{token}"}},
-                  { "EntityType",   new AttributeValue {S = "Email Token"}},
-                  { "Status",       new AttributeValue {S = "Unverified"}},
-                  { "ExpiryDate",   new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}"}},
-                  { "CreationDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
+                  { Pk,                new AttributeValue {S = UserPrefix + newUser.Id }},
+                  { Sk,                new AttributeValue {S = TokenPrefix + token }},
+                  { EntityTypeAttName, new AttributeValue {S = EmailTokenAttName }},
+                  { Status,            new AttributeValue {S = $"{EmailTokenStatus.Unverified}" }},
+                  { ExpiryDate,        new AttributeValue {S = $"{DateTime.UtcNow.AddHours(24)}" }},
+                  { CreationDate,      new AttributeValue {S = $"{DateTime.UtcNow}" }}
                },
                ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
             }
@@ -125,25 +122,7 @@ public class UserRepository : IUserRepository
 
       var response = await _dynamoDbClient.GetItemAsync(request);
 
-      if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
-      
-      /*
-      var user = new User
-      {
-         Id          = Guid.Parse(response.Item["UserId"].S),
-         ContactInfo = new ContactInfo
-                        {
-                           Email       = response.Item["Email"].S, 
-                           PhoneNumber = response.Item["PhoneNumber"].S
-                        },
-         FirstName   = response.Item["FirstName"].S,
-         LastName    = response.Item["LastName"].S,
-         Status      = Enum.Parse<UserStatus>(response.Item["Status"].S)
-      };
-
-      if (response.Item.ContainsKey("DateOfBirth") && response.Item["DateOfBirth"].S != null)
-         user.DateOfBirth = DateTime.Parse(response.Item["DateOfBirth"].S);
-      */
+      // if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
 
       var json = Document.FromAttributeMap(response.Item).ToJson();
       var userDynamoRecord = JsonConvert.DeserializeObject<User>(json);

@@ -1,6 +1,7 @@
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
+using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Settings;
@@ -34,7 +35,7 @@ namespace LoyaltySystem.Services
         public async Task<User> GetUserAsync(Guid userId)
         {
             var user = await _userRepository.GetUserAsync(userId);
-            if (user is null) throw new ResourceNotFoundException("User not found");
+            if (user is null) throw new UserExceptions.UserNotFoundException(userId);
             return user;
         }
 

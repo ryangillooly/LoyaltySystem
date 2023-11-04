@@ -3,12 +3,14 @@ using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static LoyaltySystem.Core.Models.Constants;
 
 namespace LoyaltySystem.Core.Convertors;
 
 public class UserConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType) => objectType == typeof(User);
+    public override bool CanWrite => true;
 
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
@@ -16,10 +18,10 @@ public class UserConverter : JsonConverter
         
         var user = new User
         {
-            Id = item["UserId"]?.Value<string>() != null ? Guid.Parse(item["UserId"].Value<string>()) : Guid.NewGuid(),
-            FirstName = item["FirstName"]?.Value<string>(),
-            LastName = item["LastName"]?.Value<string>(),
-            Status = item["Status"]?.Value<string>() != null ? Enum.Parse<UserStatus>(item["Status"].Value<string>()) : UserStatus.Pending,
+            Id          = Guid.Parse(item["UserId"].Value<string>()),
+            FirstName   = item["FirstName"]?.Value<string>(),
+            LastName    = item["LastName"]?.Value<string>(),
+            Status      = Enum.Parse<UserStatus>(item["Status"].Value<string>()),
             ContactInfo = new ContactInfo { Email = item["Email"]?.Value<string>() }
         };
 
@@ -31,9 +33,36 @@ public class UserConverter : JsonConverter
         
         return user;
     }
+    public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+    {
+        if (value is User userValue)
+        {
+            var obj = new JObject
+            {
+                { "PK", UserPrefix + userValue.Id },
+                { "SK", MetaUserInfo },
+                { "UserId", userValue.Id.ToString() },
+                { "Email", userValue.ContactInfo.Email },
+                { "FirstName", userValue.FirstName },
+                { "LastName", userValue.LastName },
+                { "Status", userValue.Status.ToString() },
+                { "EntityType", userValue.GetType().Name }
+            };
 
-    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer) =>
-        throw new NotImplementedException("Unnecessary because CanWrite is false. The type will skip the converter.");
+            // Optional properties are only added if they are not null or empty.
+            if (!string.IsNullOrWhiteSpace(userValue.ContactInfo.PhoneNumber))
+                obj.Add("PhoneNumber", userValue.ContactInfo.PhoneNumber);
 
-    public override bool CanWrite => false;
+            if (userValue.DateOfBirth.HasValue)
+                obj.Add("DateOfBirth", userValue.DateOfBirth.Value.ToString("yyyy-MM-dd"));
+
+            // Serialize the JObject to the writer
+            obj.WriteTo(writer);
+        }
+        else
+        {
+            throw new JsonSerializationException("Expected User object value");
+        }
+    }
+
 }
