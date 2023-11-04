@@ -114,7 +114,7 @@ public class UserRepository : IUserRepository
 
       var response = await _dynamoDbClient.GetItemAsync(request);
 
-      // if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
+      if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
 
       var json = Document.FromAttributeMap(response.Item).ToJson();
       var userDynamoRecord = JsonConvert.DeserializeObject<User>(json);
