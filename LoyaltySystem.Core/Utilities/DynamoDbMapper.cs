@@ -19,10 +19,25 @@ public static class DynamoDbMapper
         return Document.FromJson(json).ToAttributeMap();
     }
     
-    public static T? FromDynamoItem<T>(this Dictionary<string, AttributeValue> item)
+    public static T? FromDynamoItem<T>(this GetItemResponse response)
     {
-        var json = Document.FromAttributeMap(item).ToJson();
+        var json = Document.FromAttributeMap(response.Item).ToJson();
         return JsonConvert.DeserializeObject<T>(json);
+    }
+    
+    public static List<T> FromDynamoItems<T>(this QueryResponse response)
+    {
+        var items = new List<T>();
+
+        foreach (var item in response.Items)
+        {
+            var json       = Document.FromAttributeMap(item).ToJson();
+            var deserializedItem = JsonConvert.DeserializeObject<T>(json);
+            
+            if (deserializedItem != null) items.Add(deserializedItem);
+        }
+
+        return items;
     }
     
     // Users
