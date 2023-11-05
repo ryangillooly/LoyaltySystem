@@ -140,18 +140,6 @@ public class UserRepository : IUserRepository
 
       return businessUserPermissionsList;
    }
-   public async Task SendVerificationEmailAsync(EmailToken token)
-   {
-      var verificationLink = $"http://localhost:3000/user/{token.UserId}/verify-email/{token.Id}";
-      var emailInfo = new EmailInfo
-      {
-         ToEmail   = token.Email,
-         FromEmail = _emailSettings.From,
-         Subject   = "Loyalty System - Verification",
-         Body      = $"Please verify your account by going to the following URL - {verificationLink}"
-      };
-      await _emailService.SendEmailAsync(emailInfo);
-   }
    public async Task VerifyEmailAsync(VerifyEmailDto dto)
    {
       var getRequest = new GetItemRequest

@@ -5,7 +5,7 @@ namespace LoyaltySystem.Core.Interfaces;
 public interface IBusinessRepository
 {
     // Business
-    Task CreateBusinessAsync(Business entity);
+    Task CreateBusinessAsync(Business entity, EmailToken emailToken);
     Task UpdateBusinessAsync(Business updatedBusinessAsync);
     Task<Business> GetBusinessAsync(Guid businessId);
     Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);

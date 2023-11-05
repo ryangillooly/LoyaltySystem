@@ -24,6 +24,7 @@ public class EmailTokenConvertor : JsonConverter
             ExpiryDate   = DateTime.Parse(item[ExpiryDate].Value<string>())
         };
     }
+    // TODO: How do i change the email Token convertor to accept a Business or User? The Token should be sent for a new user, but also a new business. The User token wouldn't contain a businessId, however the business token would
     public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
     {
         if (value is EmailToken emailToken)

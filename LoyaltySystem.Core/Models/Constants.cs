@@ -44,7 +44,7 @@ public static class Constants
     public const string BusinessUserListSk         = "BusinessUserList-SK";
     public const string BusinessLoyaltyListPk      = "BusinessLoyaltyList-PK";
     public const string BusinessLoyaltyListSk      = "BusinessLoyaltyList-SK";
-    
+    public const string WebAddress                 = "http://localhost:3000";
     
     public const string UserPrefix                 = "User#";
     public const string BusinessPrefix             = "Business#";

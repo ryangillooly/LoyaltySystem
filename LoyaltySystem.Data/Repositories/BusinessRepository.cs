@@ -21,16 +21,31 @@ public class BusinessRepository : IBusinessRepository
         (_dynamoDbClient, _dynamoDbSettings) = (dynamoDbClient, dynamoDbSettings);
     
     // Businesses
-    public async Task CreateBusinessAsync(Business newBusiness)
+    public async Task CreateBusinessAsync(Business newBusiness, EmailToken emailToken)
     {
-        var dynamoRecord = newBusiness.MapBusinessToItem();
-        var putRequest = new PutItemRequest
+        var transactWriteItems = new List<TransactWriteItem>
         {
-            TableName = _dynamoDbSettings.TableName,
-            Item = dynamoRecord,
-            ConditionExpression = "attribute_not_exists(PK)"
+            new ()
+            {
+                Put = new Put
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Item = newBusiness.ToDynamoItem(),
+                    ConditionExpression = "attribute_not_exists(PK)"
+                }
+            },
+            new ()
+            {
+                Put = new Put
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Item = emailToken.ToDynamoItem(),
+                    ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            }
         };
-        await _dynamoDbClient.PutItemAsync(putRequest);
+      
+        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
     public async Task<Business> GetBusinessAsync(Guid businessId)
     {

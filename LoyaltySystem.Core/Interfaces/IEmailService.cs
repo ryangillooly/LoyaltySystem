@@ -6,6 +6,6 @@ public interface IEmailService
 {
     Task<bool> IsEmailUnique(string email);
     bool IsValid(string email);
-    Task SendEmailAsync(EmailInfo model);
+    Task SendVerificationEmailAsync(EmailToken token);
     string GenerateSecureToken(int size = 32);
 }

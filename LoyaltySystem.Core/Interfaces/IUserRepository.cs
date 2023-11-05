@@ -14,5 +14,4 @@ public interface IUserRepository
     Task DeleteUserAsync(Guid id);
     Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId);
     Task VerifyEmailAsync(VerifyEmailDto dto);
-    Task SendVerificationEmailAsync(EmailToken token);
 }

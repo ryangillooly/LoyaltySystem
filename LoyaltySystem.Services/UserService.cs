@@ -17,12 +17,12 @@ public class UserService : IUserService
     public async Task<User> CreateAsync(User newUser)
     {
         var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
-        if (emailExists) throw new InvalidOperationException("Email already exists");
+        if (emailExists) throw new InvalidOperationException($"Email {newUser.ContactInfo.Email} already exists");
 
         var token = new EmailToken(newUser.Id, newUser.ContactInfo.Email);
         
         await _userRepository.CreateAsync(newUser, token);
-        await _userRepository.SendVerificationEmailAsync(token);
+        await _emailService.SendVerificationEmailAsync(token);
         
         return newUser;
     }

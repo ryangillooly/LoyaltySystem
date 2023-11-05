@@ -17,17 +17,17 @@ public class UserConverter : JsonConverter
         var item = JObject.Load(reader);
         var user = new User
         {
-            Id          = Guid.Parse(item["UserId"].Value<string>()),
-            FirstName   = item["FirstName"]?.Value<string>(),
-            LastName    = item["LastName"]?.Value<string>(),
-            Status      = Enum.Parse<UserStatus>(item["Status"].Value<string>()),
-            ContactInfo = new ContactInfo { Email = item["Email"]?.Value<string>() }
+            Id          = Guid.Parse(item[UserId].Value<string>()),
+            FirstName   = item[FirstName]?.Value<string>(),
+            LastName    = item[LastName]?.Value<string>(),
+            Status      = Enum.Parse<UserStatus>(item[Status].Value<string>()),
+            ContactInfo = new ContactInfo { Email = item[Email]?.Value<string>() }
         };
 
-        var phoneNumber = item["PhoneNumber"]?.Value<string>();
+        var phoneNumber = item[PhoneNumber]?.Value<string>();
         if (!string.IsNullOrWhiteSpace(phoneNumber)) user.ContactInfo.PhoneNumber = phoneNumber;
         
-        var dob = item["DateOfBirth"]?.Value<string>();
+        var dob = item[DateOfBirth]?.Value<string>();
         if (!string.IsNullOrWhiteSpace(dob)) user.DateOfBirth = DateTime.ParseExact(dob, "yyyy-MM-dd", CultureInfo.InvariantCulture);
         
         return user;
@@ -50,10 +50,10 @@ public class UserConverter : JsonConverter
 
             // Optional properties are only added if they are not null or empty.
             if (!string.IsNullOrWhiteSpace(userValue.ContactInfo.PhoneNumber))
-                obj.Add("PhoneNumber", userValue.ContactInfo.PhoneNumber);
+                obj.Add(PhoneNumber, userValue.ContactInfo.PhoneNumber);
 
             if (userValue.DateOfBirth.HasValue)
-                obj.Add("DateOfBirth", userValue.DateOfBirth.Value.ToString("yyyy-MM-dd"));
+                obj.Add(DateOfBirth, userValue.DateOfBirth.Value.ToString("yyyy-MM-dd"));
 
             // Serialize the JObject to the writer
             obj.WriteTo(writer);

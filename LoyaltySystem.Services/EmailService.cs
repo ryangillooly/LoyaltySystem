@@ -1,17 +1,19 @@
 using System.Security.Cryptography;
-using Amazon;
-using Amazon.SimpleEmail;
-using Amazon.SimpleEmail.Model;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
+using static LoyaltySystem.Core.Models.Constants;
 
 namespace LoyaltySystem.Services;
 
 public class EmailService : IEmailService
 {
     private readonly IEmailRepository _emailRepository;
-    public EmailService(IEmailRepository emailRepository) => _emailRepository = emailRepository;
+    private readonly EmailSettings _emailSettings;
+    
+    public EmailService(IEmailRepository emailRepository, EmailSettings emailSettings) => 
+        (_emailRepository, _emailSettings) = (emailRepository, emailSettings);
 
     public async Task<bool> IsEmailUnique(string email)
     {
@@ -20,32 +22,6 @@ public class EmailService : IEmailService
     }
 
     public bool IsValid(string email) => email.IsValidEmail();
-    public async Task SendEmailAsync(EmailInfo model)
-    {
-        var client = new AmazonSimpleEmailServiceClient(RegionEndpoint.EUWest1); // Change the region if necessary
-
-        var sendRequest = new SendEmailRequest
-        {
-            Source      = model.FromEmail,
-            Destination = new Destination { ToAddresses = { model.ToEmail }},
-            Message     = new Message
-            {
-                Subject = new Content(model.Subject),
-                Body    = new Body { Text = new Content { Charset = "UTF-8", Data = model.Body }}
-            }
-        };
-
-        try
-        {
-            Console.WriteLine("Sending email using Amazon SES...");
-            var response = await client.SendEmailAsync(sendRequest);
-            Console.WriteLine("Email sent successfully!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error sending email: " + ex.Message);
-        }
-    }
     public string GenerateSecureToken(int length = 32)
     {
         // Because a Base64 character represents 6 bits, and a byte is 8 bits,
@@ -58,4 +34,17 @@ public class EmailService : IEmailService
         // We take a substring in case the Base64 encoding is longer than the specified length.
         return Convert.ToBase64String(tokenData).Substring(0, length);
     }
+    public async Task SendVerificationEmailAsync(EmailToken token)
+    {
+        var verificationLink = $"{WebAddress}/user/{token.UserId}/verify-email/{token.Id}";
+        var emailInfo = new EmailInfo
+        {
+            ToEmail   = token.Email,
+            FromEmail = _emailSettings.From,
+            Subject   = "Loyalty System - Verification",
+            Body      = $"Please verify your account by going to the following URL - {verificationLink}"
+        };
+        await _emailRepository.SendEmailAsync(emailInfo);
+    }
+
 }

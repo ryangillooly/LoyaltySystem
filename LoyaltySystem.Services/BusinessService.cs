@@ -19,8 +19,11 @@ namespace LoyaltySystem.Services
             if (emailExists) throw new InvalidOperationException($"Email {newBusiness.ContactInfo.Email} already exists");
             var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
 
-            await _businessRepository.CreateBusinessAsync(newBusiness);
+            var token = new EmailToken(newBusiness.Id, newBusiness.ContactInfo.Email);
+            
+            await _businessRepository.CreateBusinessAsync(newBusiness, token);
             await _businessRepository.UpdateBusinessUserPermissionsAsync(new List<BusinessUserPermissions> { permissions });
+            await _emailService.SendVerificationEmailAsync(token);
             
             return newBusiness;
         }
