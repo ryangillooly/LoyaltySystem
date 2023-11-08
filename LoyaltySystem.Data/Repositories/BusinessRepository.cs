@@ -21,8 +21,9 @@ public class BusinessRepository : IBusinessRepository
         (_dynamoDbClient, _dynamoDbSettings) = (dynamoDbClient, dynamoDbSettings);
     
     // Businesses
-    public async Task CreateBusinessAsync(Business newBusiness, EmailToken emailToken)
+    public async Task CreateBusinessAsync(Business newBusiness, BusinessUserPermissions permissions, EmailToken emailToken)
     {
+        var permissionItem = new List<BusinessUserPermissions> { permissions }.MapBusinessUserPermissionsToItem()[0];
         var transactWriteItems = new List<TransactWriteItem>
         {
             new ()
@@ -41,6 +42,14 @@ public class BusinessRepository : IBusinessRepository
                     TableName = _dynamoDbSettings.TableName,
                     Item = emailToken.ToDynamoItem(),
                     ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            },
+            new ()
+            {
+                Put = new Put
+                {
+                    TableName = _dynamoDbSettings.TableName,
+                    Item = permissionItem
                 }
             }
         };
@@ -212,10 +221,9 @@ public class BusinessRepository : IBusinessRepository
     public async Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> updatedBusinessUserPermissions)
     {
         var dynamoRecords = updatedBusinessUserPermissions.MapBusinessUserPermissionsToItem();
-        foreach (var record in dynamoRecords)
-        {
-           await _dynamoDbClient.UpdateRecordAsync(record, null);
-        }
+        var transactWriteItems = dynamoRecords.Select(record => new TransactWriteItem { Put = new Put { TableName = _dynamoDbSettings.TableName, Item = record } }).ToList();
+
+        await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
     }
     public async Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId)
     {

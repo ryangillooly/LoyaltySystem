@@ -34,17 +34,42 @@ public class EmailService : IEmailService
         // We take a substring in case the Base64 encoding is longer than the specified length.
         return Convert.ToBase64String(tokenData).Substring(0, length);
     }
-    public async Task SendVerificationEmailAsync(EmailToken token)
+    public async Task SendVerificationEmailAsync<T>(T item, EmailToken token)
     {
-        var verificationLink = $"{WebAddress}/user/{token.UserId}/verify-email/{token.Id}";
+        string itemId;
+        string itemType;
+        
+        switch(item)
+        {
+            case User user:
+                itemId = user.Id.ToString();
+                itemType = nameof(user);
+                break;
+            case Business business:
+                itemId = business.Id.ToString();
+                itemType = nameof(business);
+                break;
+            default:
+                throw new Exception($"Unknown type provided to method {nameof(SendVerificationEmailAsync)}");
+        }
+        
+        var verificationLink = $"{WebAddress}/{itemType}/{itemId}/verify-email/{token.Id}";
         var emailInfo = new EmailInfo
         {
             ToEmail   = token.Email,
             FromEmail = _emailSettings.From,
             Subject   = "Loyalty System - Verification",
-            Body      = $"Please verify your account by going to the following URL - {verificationLink}"
+            Body      = $"Please verify your {itemType} account by going to the following URL - {verificationLink}"
         };
-        await _emailRepository.SendEmailAsync(emailInfo);
+        try
+        {
+            await _emailRepository.SendEmailAsync(emailInfo);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to send verification email - {ex}");
+        }
     }
 
+    
 }

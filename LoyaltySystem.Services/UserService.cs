@@ -19,10 +19,10 @@ public class UserService : IUserService
         var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
         if (emailExists) throw new InvalidOperationException($"Email {newUser.ContactInfo.Email} already exists");
 
-        var token = new EmailToken(newUser.Id, newUser.ContactInfo.Email);
+        var token = new UserEmailToken(newUser.Id, newUser.ContactInfo.Email);
         
         await _userRepository.CreateAsync(newUser, token);
-        await _emailService.SendVerificationEmailAsync(token);
+        await _emailService.SendVerificationEmailAsync(newUser, token);
         
         return newUser;
     }

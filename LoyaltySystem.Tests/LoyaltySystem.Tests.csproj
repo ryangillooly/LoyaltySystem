@@ -31,7 +31,6 @@
 
     <ItemGroup>
       <Folder Include="LoyaltySystem.Data\" />
-      <Folder Include="LoyaltySystem.Services\" />
     </ItemGroup>
 
     <ItemGroup>
