@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
@@ -12,6 +13,7 @@ public interface IBusinessService
     Task DeleteBusinessAsync(Guid businessId);
     Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);
     Task<Business> GetBusinessAsync(Guid businessId);
+    Task VerifyEmailAsync(VerifyBusinessEmailDto dto);
     
     
     // Business Users

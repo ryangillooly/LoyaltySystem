@@ -33,7 +33,14 @@ public class UserService : IUserService
         if (user is null) throw new UserExceptions.UserNotFoundException(userId);
         return user;
     }
-    public async Task DeleteUserAsync(Guid userId) => await _userRepository.DeleteUserAsync(userId);
+
+    public async Task DeleteUserAsync(Guid userId)
+    {
+        // TODO: Need to make sure that we don't delete a user if it still owns a Business
+        // TODO: Need to make sure that we delete all data related to a User which is being deleted (i.e. Permissions, Loyalty Cards etc)
+        await _userRepository.DeleteUserAsync(userId);
+    }
+
     public async Task<User> UpdateUserAsync(User updatedUser)
     {
         var currentRecord = await _userRepository.GetUserAsync(updatedUser.Id);
@@ -45,7 +52,7 @@ public class UserService : IUserService
     }
     public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId) =>
         await _userRepository.GetUsersBusinessPermissions(userId);
-    public async Task VerifyEmailAsync(VerifyEmailDto dto)
+    public async Task VerifyEmailAsync(VerifyUserEmailDto dto)
     {
         await _userRepository.VerifyEmailAsync(dto);
     }

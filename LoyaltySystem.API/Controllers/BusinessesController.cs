@@ -71,7 +71,6 @@ public class BusinessesController : ControllerBase
             return StatusCode(500, $"Internal server error - {ex}");
         }
     }
-
     
     [HttpDelete("{businessId:guid}")]
     public async Task<IActionResult> DeleteBusiness(Guid businessId)
@@ -79,6 +78,13 @@ public class BusinessesController : ControllerBase
         await _businessService.DeleteBusinessAsync(businessId);
         // Need to make sure that we delete all data related to a Business which is being deleted (i.e. Permissions, Loyalty Cards etc)
         return NoContent();
+    }
+    
+    [HttpPost("{businessId:guid}/verify-email/{token:guid}")]
+    public async Task<IActionResult> VerifyEmail(Guid businessId, Guid token)
+    {
+        await _businessService.VerifyEmailAsync(new VerifyBusinessEmailDto(businessId, token));
+        return Ok();
     }
 
     // Business Users

@@ -13,7 +13,7 @@ public class EmailToken
     public DateTime ExpiryDate { get; set; } = DateTime.UtcNow.AddHours(24);
 }
 
-[JsonConverter(typeof(UserEmailTokenConvertor))]
+[JsonConverter(typeof(EmailTokenConvertor))]
 public class UserEmailToken : EmailToken
 {
     public UserEmailToken() { }
@@ -21,7 +21,7 @@ public class UserEmailToken : EmailToken
     public Guid UserId { get; set; }
 }
 
-[JsonConverter(typeof(BusinessEmailTokenConvertor))]
+[JsonConverter(typeof(EmailTokenConvertor))]
 public class BusinessEmailToken : EmailToken
 {
     public BusinessEmailToken() { }

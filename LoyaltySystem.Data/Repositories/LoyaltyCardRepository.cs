@@ -71,13 +71,13 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
             TableName = _dynamoDbSettings.TableName,
             Key = new Dictionary<string, AttributeValue>
             {
-                {"PK", new AttributeValue { S = dynamoRecord["PK"].S }},
-                {"SK", new AttributeValue { S = dynamoRecord["SK"].S }}
+                {"PK", new AttributeValue { S = dynamoRecord[Pk].S }},
+                {"SK", new AttributeValue { S = dynamoRecord[Sk].S }}
             },
             UpdateExpression = "SET #St = :status, LastUpdatedDate = :lastUpdatedDate",  // Using the alias #St for Status
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                {":status",          new AttributeValue { S = dynamoRecord["Status"].S }},
+                {":status",          new AttributeValue { S = dynamoRecord[Status].S }},
                 {":lastUpdatedDate", new AttributeValue { S = updatedLoyaltyCard.LastUpdatedDate.ToString() }}
             },
             ExpressionAttributeNames = new Dictionary<string, string>
@@ -125,13 +125,13 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                     TableName = _dynamoDbSettings.TableName,
                     Key = new Dictionary<string, AttributeValue>
                     {
-                         {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
-                         {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
+                         {"PK", new AttributeValue {S = loyaltyRecord[Pk].S}},
+                         {"SK", new AttributeValue {S = loyaltyRecord[Sk].S}}
                     },
                     UpdateExpression = "SET Points = :points, LastStampDate = :lastStampDate",
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
-                        {":points",        new AttributeValue {N = loyaltyRecord["Points"].N}},
+                        {":points",        new AttributeValue {N = loyaltyRecord[Points].N}},
                         {":lastStampDate", new AttributeValue {S = $"{DateTime.UtcNow}"}}
                     }
                 }
@@ -163,14 +163,14 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
                     TableName = _dynamoDbSettings.TableName,
                     Key = new Dictionary<string, AttributeValue>
                     {
-                        {"PK", new AttributeValue {S = loyaltyRecord["PK"].S}},
-                        {"SK", new AttributeValue {S = loyaltyRecord["SK"].S}}
+                        {"PK", new AttributeValue {S = loyaltyRecord[Pk].S}},
+                        {"SK", new AttributeValue {S = loyaltyRecord[Pk].S}}
                     },
                     UpdateExpression = "SET Points = :points, LastRedeemDate = :lastRedeemDate",
                     ExpressionAttributeValues = new Dictionary<string, AttributeValue>
                     {
-                        {":points",         new AttributeValue  { N = loyaltyRecord["Points"].N} },
-                        {":lastRedeemDate", new AttributeValue { S = loyaltyRecord["LastRedeemDate"].S} }
+                        {":points",         new AttributeValue  { N = loyaltyRecord[Points].N} },
+                        {":lastRedeemDate", new AttributeValue { S = loyaltyRecord[LastRedeemDate].S} }
                     }
                 }
             }
@@ -213,7 +213,7 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
     private void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
     {
         var user = response.Responses.First().Item.MapItemToUser();
-        var business = response.Responses.Last().Item.MapItemToLoyaltyCard();
+        var business = response.Responses.Last().Item.MapItemToBusiness();
 
         if (user     is null)       throw new UserNotFoundException(userId);
         if (business is null)       throw new BusinessNotFoundException(businessId);

@@ -75,7 +75,7 @@ public static class TestDataFactory
                 { EntityTypeAttName, new AttributeValue { S = $"{EntityType.Permission}" } },
                 { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
-                { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },
+                { BusinessUserListPk,      new AttributeValue { S = BusinessPrefix + permission.BusinessId } },
                 { BusinessUserListSk,      new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
             })
             .ToList();

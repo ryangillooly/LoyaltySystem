@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
@@ -17,13 +18,22 @@ namespace LoyaltySystem.Services
         {
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
             if (emailExists) throw new InvalidOperationException($"Email {newBusiness.ContactInfo.Email} already exists");
+            
             var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
-
             var token = new BusinessEmailToken(newBusiness.Id, newBusiness.ContactInfo.Email);
             
-            await _emailService.SendVerificationEmailAsync(newBusiness, token);
-            await _businessRepository.CreateBusinessAsync(newBusiness, permissions, token);
-            //await _businessRepository.UpdateBusinessUserPermissionsAsync(new List<BusinessUserPermissions> { permissions });
+            try
+            {
+                // TODO: Need to make sure that we are only creating a business if the Owning User is Active
+                await _businessRepository.CreateBusinessAsync(newBusiness, permissions, token);
+                await _emailService.SendVerificationEmailAsync(newBusiness, token);
+               //  await _businessRepository.UpdateBusinessUserPermissionsAsync(new List<BusinessUserPermissions> { permissions });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
             
             return newBusiness;
         }
@@ -41,11 +51,16 @@ namespace LoyaltySystem.Services
         
         public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList) =>
             await _businessRepository.GetBusinessesAsync(businessIdList);
-        
-        public async Task DeleteBusinessAsync(Guid businessId) => 
+
+        public async Task DeleteBusinessAsync(Guid businessId)
+        {
+            // TODO: 
             await _businessRepository.DeleteBusinessAsync(businessId);
+        }
         
-        
+        public async Task VerifyEmailAsync(VerifyBusinessEmailDto dto) => await _businessRepository.VerifyEmailAsync(dto);
+
+
         // Business User Permissions
         public async Task<List<BusinessUserPermissions>> CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions)
         {

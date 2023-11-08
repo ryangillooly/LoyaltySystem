@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
@@ -10,6 +11,7 @@ public interface IBusinessRepository
     Task<Business> GetBusinessAsync(Guid businessId);
     Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);
     Task DeleteBusinessAsync(Guid businessId);
+    Task VerifyEmailAsync(VerifyBusinessEmailDto dto);
     
     
     // Business User Permissions

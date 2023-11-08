@@ -150,10 +150,10 @@ public static class DynamoDbMapper
                 // Attributes
                 { UserId,                  new AttributeValue { S = $"{permission.UserId}" } },
                 { BusinessId,              new AttributeValue { S = $"{permission.BusinessId}" } },
-                { EntityTypeAttName, new AttributeValue { S = $"{EntityType.Permission}" } },
+                { EntityTypeAttName,       new AttributeValue { S = $"{EntityType.Permission}" } },
                 { Role,                    new AttributeValue { S = $"{Enum.Parse<UserRole>(permission.Role.ToString())}" }},
                 { Timestamp,               new AttributeValue { S = $"{DateTime.UtcNow}" } },
-                { BusinessUserListPk,      new AttributeValue { S = $"{permission.BusinessId}" } },
+                { BusinessUserListPk,      new AttributeValue { S = BusinessPrefix + permission.BusinessId } },
                 { BusinessUserListSk,      new AttributeValue { S = PermissionBusinessPrefix + permission.UserId }}
             })
             .ToList();
@@ -230,7 +230,7 @@ public static class DynamoDbMapper
             { LastStampDate,           new AttributeValue { S = $"{loyaltyCard.LastStampedDate}" } },
             { Status,                  new AttributeValue { S = $"{loyaltyCard.Status}" } },
 
-            { BusinessLoyaltyListPk, new AttributeValue { S = $"{loyaltyCard.BusinessId}" } },
+            { BusinessLoyaltyListPk, new AttributeValue { S = BusinessPrefix + loyaltyCard.BusinessId } },
             { BusinessLoyaltyListSk, new AttributeValue { S = CardUserPrefix + loyaltyCard.UserId + "#" + loyaltyCard.Id }}
         };
 

@@ -36,7 +36,7 @@ namespace LoyaltySystem.API.Controllers
         [HttpPost("{userId:guid}/verify-email/{token:guid}")]
         public async Task<IActionResult> VerifyEmail(Guid userId, Guid token)
         {
-            await _userService.VerifyEmailAsync(new VerifyEmailDto(userId, token));
+            await _userService.VerifyEmailAsync(new VerifyUserEmailDto(userId, token));
             return Ok();
         }
         
@@ -44,7 +44,6 @@ namespace LoyaltySystem.API.Controllers
         public async Task<IActionResult> DeleteUser(Guid userId)
         {
             await _userService.DeleteUserAsync(userId);
-            // Need to make sure that we delete all data related to a User which is being deleted (i.e. Permissions, Loyalty Cards etc)
             return NoContent();
         }
         

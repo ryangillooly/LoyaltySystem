@@ -242,7 +242,7 @@ public static class DynamoDbMapperTests
                 mappedItem[BusinessId].S.Should().Be(permission.BusinessId.ToString());
                 mappedItem[EntityTypeAttName].S.Should().Be(EntityType.Permission.ToString());
                 mappedItem[Role].S.Should().Be(permission.Role.ToString());
-                mappedItem[BusinessUserListPk].S.Should().Be(permission.BusinessId.ToString());
+                mappedItem[BusinessUserListPk].S.Should().Be(BusinessPrefix + permission.BusinessId);
                 mappedItem[BusinessUserListSk].S.Should().Be(PermissionBusinessPrefix + permission.UserId);
             }
         }
@@ -337,7 +337,7 @@ public static class DynamoDbMapperTests
             result[IssueDate].S.Should().Be(loyaltyCard.IssueDate.ToString());
             result[LastStampDate].S.Should().Be(loyaltyCard.LastStampedDate.ToString());
             result[Status].S.Should().Be(loyaltyCard.Status.ToString());
-            result[BusinessLoyaltyListPk].S.Should().Be(loyaltyCard.BusinessId.ToString());
+            result[BusinessLoyaltyListPk].S.Should().Be(BusinessPrefix + loyaltyCard.BusinessId);
             result[BusinessLoyaltyListSk].S.Should().Be(CardUserPrefix + loyaltyCard.UserId + "#" + loyaltyCard.Id);
 
             if (loyaltyCard.LastUpdatedDate.HasValue)

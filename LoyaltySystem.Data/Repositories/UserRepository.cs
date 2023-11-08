@@ -140,7 +140,7 @@ public class UserRepository : IUserRepository
 
       return businessUserPermissionsList;
    }
-   public async Task VerifyEmailAsync(VerifyEmailDto dto)
+   public async Task VerifyEmailAsync(VerifyUserEmailDto dto)
    {
       var getRequest = new GetItemRequest
       {
