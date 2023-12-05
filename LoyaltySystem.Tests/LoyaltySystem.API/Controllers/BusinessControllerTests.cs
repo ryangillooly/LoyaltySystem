@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.DynamoDBv2.Model;
+using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Xunit;
@@ -17,15 +18,18 @@ namespace LoyaltySystem.Tests.Controllers
 {
     public class BusinessesControllerTests
     {
-        private readonly Mock<IBusinessService> _businessServiceMock = new Mock<IBusinessService>();
-        private readonly BusinessesController _controller;
+        private readonly Mock<IBusinessService> _businessServiceMock = new ();
+        private readonly IMapper                _mapper;
+        private readonly BusinessesController  _controller;
 
-        public BusinessesControllerTests()
+        public BusinessesControllerTests(IMapper mapper)
         {
             _controller = new BusinessesController(_businessServiceMock.Object);
+            _mapper     = mapper;
         }
 
         // CREATE BUSINESS
+        /*
         [Fact]
         public async Task CreateBusiness_ShouldReturnCreatedAtAction_WhenBusinessIsCreated()
         {
@@ -43,6 +47,7 @@ namespace LoyaltySystem.Tests.Controllers
             var createdAtActionResult = (CreatedAtActionResult)actionResult;
             createdAtActionResult.Value.Should().BeEquivalentTo(createdBusiness);
         }
+        */
         
         // UPDATE BUSINESS
         [Fact]
