@@ -2,6 +2,7 @@ using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Mappers;
 
 namespace LoyaltySystem.Services
 {
@@ -14,13 +15,14 @@ namespace LoyaltySystem.Services
             => (_businessRepository, _emailService) = (businessRepository, emailService);
         
         // Businesses
-        public async Task<Business> CreateBusinessAsync(Business newBusiness)
+        public async Task<Business> CreateBusinessAsync(CreateBusinessDto dto)
         {
+            var newBusiness     = new BusinessMapper().CreateBusinessFromCreateBusinessDto(dto);
             var emailExists = await _emailService.IsEmailUnique(newBusiness.ContactInfo.Email);
-            if (emailExists) throw new InvalidOperationException($"Email {newBusiness.ContactInfo.Email} already exists");
+            var permissions     = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
+            var token           = new BusinessEmailToken(newBusiness.Id, newBusiness.ContactInfo.Email);
             
-            var permissions = new BusinessUserPermissions(newBusiness.Id, newBusiness.OwnerId, UserRole.Owner);
-            var token = new BusinessEmailToken(newBusiness.Id, newBusiness.ContactInfo.Email);
+            if (emailExists) throw new InvalidOperationException($"Email {newBusiness.ContactInfo.Email} already exists");
             
             try
             {
@@ -48,16 +50,13 @@ namespace LoyaltySystem.Services
         }
         public async Task<Business> GetBusinessAsync(Guid businessId) =>
             await _businessRepository.GetBusinessAsync(businessId);
-        
         public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList) =>
             await _businessRepository.GetBusinessesAsync(businessIdList);
-
         public async Task DeleteBusinessAsync(Guid businessId)
         {
             // TODO: 
             await _businessRepository.DeleteBusinessAsync(businessId);
         }
-        
         public async Task VerifyEmailAsync(VerifyBusinessEmailDto dto) => await _businessRepository.VerifyEmailAsync(dto);
 
 

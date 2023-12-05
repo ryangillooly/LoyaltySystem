@@ -199,21 +199,20 @@ public class LoyaltyCardRepository : ILoyaltyCardRepository
             throw new LoyaltyCardAlreadyExistsException(newLoyaltyCard.UserId, newLoyaltyCard.BusinessId);
         }
     }
-    private TransactGetItemsRequest BuildLoyaltyCardGetItemsRequest(Guid userId, Guid businessId)
-    {
-        return new TransactGetItemsRequest
+    private TransactGetItemsRequest BuildLoyaltyCardGetItemsRequest(Guid userId, Guid businessId) =>
+        new()
         {
             TransactItems = new List<TransactGetItem>
             {
-                BuildTransactGetItem(_dynamoDbSettings,UserPrefix     + userId, MetaUserInfo),
-                BuildTransactGetItem(_dynamoDbSettings,BusinessPrefix + businessId, MetaBusinessInfo)
+                ToTransactGetItem(_dynamoDbSettings,UserPrefix     + userId, MetaUserInfo),
+                ToTransactGetItem(_dynamoDbSettings,BusinessPrefix + businessId, MetaBusinessInfo)
             }
         };
-    }
-    private void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
+    
+    private static void ValidateTransactGetResponse(TransactGetItemsResponse response, Guid userId, Guid businessId)
     {
-        var user = response.Responses.First().Item.MapItemToUser();
-        var business = response.Responses.Last().Item.MapItemToBusiness();
+        var user     = response.Responses.First().Item.FromDynamoItem<User>();
+        var business = response.Responses.Last().Item.FromDynamoItem<Business>();
 
         if (user     is null)       throw new UserNotFoundException(userId);
         if (business is null)       throw new BusinessNotFoundException(businessId);

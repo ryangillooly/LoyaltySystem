@@ -1,7 +1,10 @@
+using LoyaltySystem.Core.Dtos;
 using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Exceptions;
+using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
+using LoyaltySystem.Core.Mappers;
 using LoyaltySystem.Core.Settings;
 
 namespace LoyaltySystem.Services;
@@ -14,15 +17,23 @@ public class UserService : IUserService
     public UserService(IUserRepository userRepository, IEmailService emailService) =>
         (_userRepository, _emailService) = (userRepository, emailService);
 
-    public async Task<User> CreateAsync(User newUser)
+    public async Task<User> CreateAsync(CreateUserDto dto)
     {
-        var emailExists = await _emailService.IsEmailUnique(newUser.ContactInfo.Email);
-        if (emailExists) throw new InvalidOperationException($"Email {newUser.ContactInfo.Email} already exists");
-
-        var token = new UserEmailToken(newUser.Id, newUser.ContactInfo.Email);
+        await _emailService.ValidateEmailAsync(dto.ContactInfo.Email);
         
-        await _userRepository.CreateAsync(newUser, token);
-        await _emailService.SendVerificationEmailAsync(newUser, token);
+        var newUser = new UserMapper().CreateUserFromCreateUserDto(dto);
+        var token   = _emailService.GenerateEmailToken(newUser);
+        
+        try
+        {
+            await _userRepository.CreateAsync(newUser, token);
+            //await _emailService.SendVerificationEmailAsync(newUser, token);
+        }
+        catch (Exception ex)
+        {
+            await DeleteUserAsync(newUser.Id);
+            throw new UserCreationException(ex);
+        }
         
         return newUser;
     }
@@ -30,7 +41,7 @@ public class UserService : IUserService
     public async Task<User> GetUserAsync(Guid userId)
     {
         var user = await _userRepository.GetUserAsync(userId);
-        if (user is null) throw new UserExceptions.UserNotFoundException(userId);
+        if (user is null) throw new UserNotFoundException(userId);
         return user;
     }
 
@@ -52,8 +63,6 @@ public class UserService : IUserService
     }
     public async Task<List<BusinessUserPermissions>> GetUsersBusinessPermissions(Guid userId) =>
         await _userRepository.GetUsersBusinessPermissions(userId);
-    public async Task VerifyEmailAsync(VerifyUserEmailDto dto)
-    {
+    public async Task VerifyEmailAsync(VerifyUserEmailDto dto) => 
         await _userRepository.VerifyEmailAsync(dto);
-    }
 }

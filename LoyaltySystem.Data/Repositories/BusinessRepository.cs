@@ -77,7 +77,7 @@ public class BusinessRepository : IBusinessRepository
     }
     public async Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList)
     {
-        var transactItemsList = businessIdList.Select(businessId => BuildTransactGetItem(_dynamoDbSettings, BusinessPrefix + businessId, MetaBusinessInfo)).ToList();
+        var transactItemsList = businessIdList.Select(businessId => ToTransactGetItem(_dynamoDbSettings, BusinessPrefix + businessId, MetaBusinessInfo)).ToList();
         var getBusinessListRequest = new TransactGetItemsRequest { TransactItems = transactItemsList };
         var getItemsResponse = await _dynamoDbClient.TransactGetItemsAsync(getBusinessListRequest);
         return getItemsResponse.Responses.Select(itemResponse => itemResponse.Item).Select(response => response.MapItemToBusiness()).ToList();

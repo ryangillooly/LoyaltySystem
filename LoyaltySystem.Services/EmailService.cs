@@ -4,6 +4,7 @@ using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
 using static LoyaltySystem.Core.Models.Constants;
+using static LoyaltySystem.Core.Exceptions.EmailExceptions;
 
 namespace LoyaltySystem.Services;
 
@@ -22,18 +23,6 @@ public class EmailService : IEmailService
     }
 
     public bool IsValid(string email) => email.IsValidEmail();
-    public string GenerateSecureToken(int length = 32)
-    {
-        // Because a Base64 character represents 6 bits, and a byte is 8 bits,
-        // we need 3 bytes to represent 4 Base64 characters.
-        var byteLength = (int)Math.Ceiling(length * 0.75);
-        
-        var tokenData = new byte[byteLength];
-        RandomNumberGenerator.Fill(tokenData);
-        
-        // We take a substring in case the Base64 encoding is longer than the specified length.
-        return Convert.ToBase64String(tokenData).Substring(0, length);
-    }
     public async Task SendVerificationEmailAsync<T>(T item, EmailToken token)
     {
         string itemId;
@@ -70,6 +59,23 @@ public class EmailService : IEmailService
             throw new Exception($"Failed to send verification email - {ex}");
         }
     }
-
-    
+    public async Task ValidateEmailAsync(string email)
+    {
+        var emailExists = await IsEmailUnique(email);
+        if (emailExists) throw new EmailAlreadyExistsException(email);
+    }
+    public UserEmailToken GenerateEmailToken(User input) => new (input.Id, input.ContactInfo.Email);
+    public BusinessEmailToken GenerateEmailToken(Business input) => new (input.Id, input.ContactInfo.Email);
+    public string GenerateSecureToken(int length = 32)
+    {
+        // Because a Base64 character represents 6 bits, and a byte is 8 bits,
+        // we need 3 bytes to represent 4 Base64 characters.
+        var byteLength = (int)Math.Ceiling(length * 0.75);
+        
+        var tokenData = new byte[byteLength];
+        RandomNumberGenerator.Fill(tokenData);
+        
+        // We take a substring in case the Base64 encoding is longer than the specified length.
+        return Convert.ToBase64String(tokenData).Substring(0, length);
+    }
 }

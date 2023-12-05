@@ -60,6 +60,7 @@ public class EmailRepository : IEmailRepository
         catch (Exception ex)
         {
             Console.WriteLine("Error sending email: " + ex.Message);
+            throw;
         }
     }
 }

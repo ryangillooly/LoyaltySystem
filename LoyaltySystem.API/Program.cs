@@ -61,6 +61,9 @@ builder.Services.AddSingleton(emailSettings);
 // Add DynamoDb Services
 builder.AddDynamoDb();
 
+// Add Mappers
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 // Add Repositories
 builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();

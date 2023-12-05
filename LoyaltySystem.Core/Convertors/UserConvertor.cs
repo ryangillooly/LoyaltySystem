@@ -28,7 +28,7 @@ public class UserConverter : JsonConverter
         if (!string.IsNullOrWhiteSpace(phoneNumber)) user.ContactInfo.PhoneNumber = phoneNumber;
         
         var dob = item[DateOfBirth]?.Value<string>();
-        if (!string.IsNullOrWhiteSpace(dob)) user.DateOfBirth = DateTime.ParseExact(dob, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        //if (!string.IsNullOrWhiteSpace(dob)) user.DateOfBirth = DateTime.ParseExact(dob, "yyyy-MM-dd", CultureInfo.InvariantCulture);
         
         return user;
     }

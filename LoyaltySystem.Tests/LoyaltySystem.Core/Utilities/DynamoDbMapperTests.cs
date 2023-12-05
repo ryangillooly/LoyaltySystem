@@ -23,7 +23,7 @@ public static class DynamoDbMapperTests
             user.Status = UserStatus.Active;
 
             // Act
-            var result = user.MapUserToItem();
+            var result = user.ToDynamoItem();
 
             // Assert
             result.Should().NotBeNull();
@@ -53,7 +53,7 @@ public static class DynamoDbMapperTests
             user.DateOfBirth = null;
 
             // Act
-            var result = user.MapUserToItem();
+            var result = user.ToDynamoItem();
 
             // Assert
             result.TryGetValue(PhoneNumber, out var phoneNumber);

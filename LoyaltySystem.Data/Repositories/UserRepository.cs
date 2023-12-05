@@ -1,5 +1,5 @@
-using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
+using AutoMapper;
 using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Enums;
 using static LoyaltySystem.Core.Exceptions.EmailExceptions;
@@ -7,58 +7,63 @@ using static LoyaltySystem.Core.Exceptions.UserExceptions;
 using static LoyaltySystem.Core.Models.Constants;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Models.Persistance;
 using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
-using Newtonsoft.Json;
 
 namespace LoyaltySystem.Data.Repositories;
 
 public class UserRepository : IUserRepository
 {
-   private readonly IDynamoDbClient _dynamoDbClient;
+   private readonly IDynamoDbClient  _dynamoDbClient;
    private readonly DynamoDbSettings _dynamoDbSettings;
-   private readonly IEmailService _emailService;
-   private readonly EmailSettings _emailSettings;
+   private readonly IMapper          _mapper;
    
-   public UserRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings, IEmailService emailService, EmailSettings emailSettings) =>
-      (_dynamoDbClient, _dynamoDbSettings, _emailService, _emailSettings) = (dynamoDbClient, dynamoDbSettings, emailService, emailSettings);
+   public UserRepository(IDynamoDbClient dynamoDbClient, DynamoDbSettings dynamoDbSettings, IMapper mapper) =>
+      (_dynamoDbClient, _dynamoDbSettings, _mapper) = (dynamoDbClient, dynamoDbSettings, mapper);
 
    public async Task CreateAsync(User newUser, EmailToken emailToken)
    {
       var transactWriteItems = new List<TransactWriteItem>
       {
-         new ()
-         {
-            Put = new Put
-            {
-               TableName = _dynamoDbSettings.TableName,
-               Item = newUser.ToDynamoItem(),
-               ConditionExpression = "attribute_not_exists(PK)"
-            }
-         },
-         new ()
-         {
-            Put = new Put
-            {
-               TableName = _dynamoDbSettings.TableName,
-               Item = emailToken.ToDynamoItem(),
-               ConditionExpression = "attribute_not_exists(PK) AND attribute_not_exists(SK)"
-            }
-         }
+         CreateUserTransactWriteItem(newUser),
+         CreateEmailTokenTransactWriteItem(emailToken)
       };
       
       await _dynamoDbClient.TransactWriteItemsAsync(transactWriteItems);
    }
+
+   private TransactWriteItem CreateEmailTokenTransactWriteItem(EmailToken emailToken) =>
+      new ()
+      {
+         Put = new Put
+         {
+            TableName = _dynamoDbSettings.TableName,
+            Item = emailToken.ToDynamoItem(),
+            ConditionExpression = $"attribute_not_exists({Pk}) AND attribute_not_exists({Sk})"
+         }
+      };
+   private TransactWriteItem CreateUserTransactWriteItem(User newUser) =>
+      new()
+      {
+         Put = new Put
+         {
+            TableName = _dynamoDbSettings.TableName,
+            Item = _mapper.Map<UserDynamoModel>(newUser).ToDynamoItem(),
+            ConditionExpression = $"attribute_not_exists({Pk})"
+         }
+      };
+
    public async Task UpdateUserAsync(User updatedUser)
    {
-      var dynamoRecord = updatedUser.MapUserToItem();
+      var dynamoRecord = _mapper.Map<UserDynamoModel>(updatedUser);
       var updateRequest = new UpdateItemRequest
       {
          TableName = _dynamoDbSettings.TableName,
          Key = new Dictionary<string, AttributeValue>
          {
-            { Pk, new AttributeValue { S = dynamoRecord[Pk].S }},
-            { Sk, new AttributeValue { S = dynamoRecord[Sk].S }}
+            { Pk, new AttributeValue { S = dynamoRecord.PK }},
+            { Sk, new AttributeValue { S = dynamoRecord.SK }}
          },
          UpdateExpression = @"
             SET  
@@ -70,16 +75,13 @@ public class UserRepository : IUserRepository
          ",
          ExpressionAttributeValues = new Dictionary<string, AttributeValue>
          {
-            {":status",      new AttributeValue { S = dynamoRecord[Status].S }},
-            {":firstName",   new AttributeValue { S = dynamoRecord[FirstName].S }},
-            {":lastName",    new AttributeValue { S = dynamoRecord[LastName].S }},
-            {":phoneNumber", new AttributeValue { S = dynamoRecord[PhoneNumber].S }},
-            {":email",       new AttributeValue { S = dynamoRecord[Email].S }}
+            {":status",      new AttributeValue { S = dynamoRecord.Status }},
+            {":firstName",   new AttributeValue { S = dynamoRecord.FirstName }},
+            {":lastName",    new AttributeValue { S = dynamoRecord.LastName }},
+            {":phoneNumber", new AttributeValue { S = dynamoRecord.PhoneNumber }},
+            {":email",       new AttributeValue { S = dynamoRecord.Email }}
          },
-         ExpressionAttributeNames = new Dictionary<string, string>
-         {
-            {"#St", Status}  // Mapping the alias #St to the actual attribute name "Status"
-         }
+         ExpressionAttributeNames = new Dictionary<string, string> {{"#St", Status}}
       };
       
       await _dynamoDbClient.UpdateItemAsync(updateRequest);
@@ -100,7 +102,7 @@ public class UserRepository : IUserRepository
 
       if (response.Item is null || !response.IsItemSet) throw new UserNotFoundException(userId);
       
-      return response.FromDynamoItem<User>();
+      return response.Item.FromDynamoItem<User>();
    }
    public Task<IEnumerable<User>> GetAllAsync() => throw new NotImplementedException();
    public async Task DeleteUserAsync(Guid userId) => await _dynamoDbClient.DeleteItemsWithPkAsync(UserPrefix + userId);

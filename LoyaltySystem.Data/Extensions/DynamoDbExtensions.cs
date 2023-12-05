@@ -38,7 +38,7 @@ public static class DynamoDbExtensions
         return result;
     }
 
-    public static TransactGetItem BuildTransactGetItem(DynamoDbSettings dynamoDbSettings, string pkValue, string skValue)
+    public static TransactGetItem ToTransactGetItem(DynamoDbSettings dynamoDbSettings, string pkValue, string skValue)
     {
         return new TransactGetItem
         {
@@ -54,3 +54,4 @@ public static class DynamoDbExtensions
         };
     }
 }
+

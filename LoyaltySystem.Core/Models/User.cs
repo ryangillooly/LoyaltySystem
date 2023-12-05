@@ -1,26 +1,19 @@
-using System.Reflection.Metadata;
-using Amazon.DynamoDBv2.Model;
-using Amazon.DynamoDBv2.DocumentModel;
 using LoyaltySystem.Core.Convertors;
 using LoyaltySystem.Core.Enums;
-using static LoyaltySystem.Core.Models.Constants;
 using Newtonsoft.Json;
-using Document = Amazon.DynamoDBv2.DocumentModel.Document;
 
 namespace LoyaltySystem.Core.Models;
 
-[JsonConverter(typeof(UserConverter))]
+// [JsonConverter(typeof(UserConverter))]
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public ContactInfo ContactInfo { get; set; } = new ();
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public DateTime? DateOfBirth { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
     public UserStatus Status { get; set; } = UserStatus.Pending;
-    public bool IsActive() => Status == UserStatus.Active;
     public bool IsNotActive() => Status != UserStatus.Active;
-    public string GetFullName => $"{FirstName} {LastName}";
     
     public static User Merge(User current, User updated) =>
         new ()

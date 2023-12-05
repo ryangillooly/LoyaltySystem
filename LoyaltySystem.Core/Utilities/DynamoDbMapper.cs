@@ -1,11 +1,9 @@
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Enums;
-using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using static LoyaltySystem.Core.Models.Constants;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using EntityType = LoyaltySystem.Core.Enums.EntityType;
 
 namespace LoyaltySystem.Core.Utilities;
@@ -19,9 +17,9 @@ public static class DynamoDbMapper
         return Document.FromJson(json).ToAttributeMap();
     }
     
-    public static T? FromDynamoItem<T>(this GetItemResponse response)
+    public static T? FromDynamoItem<T>(this Dictionary<string, AttributeValue> response)
     {
-        var json = Document.FromAttributeMap(response.Item).ToJson();
+        var json = Document.FromAttributeMap(response).ToJson();
         return JsonConvert.DeserializeObject<T>(json);
     }
     
@@ -82,7 +80,7 @@ public static class DynamoDbMapper
             }
         };
 
-        if (item.TryGetValue(DateOfBirth, out var dateOfBirth)) user.DateOfBirth = DateTime.Parse(dateOfBirth.S);
+        //if (item.TryGetValue(DateOfBirth, out var dateOfBirth)) user.DateOfBirth = DateTime.Parse(dateOfBirth.S);
         if (item.TryGetValue(PhoneNumber, out var phoneNumber)) user.ContactInfo.PhoneNumber = phoneNumber.S;
 
         return user;
