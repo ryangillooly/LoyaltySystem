@@ -1,10 +1,7 @@
-using LoyaltySystem.Core.Convertors;
 using LoyaltySystem.Core.Enums;
-using Newtonsoft.Json;
 
 namespace LoyaltySystem.Core.Models;
 
-// [JsonConverter(typeof(UserConverter))]
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();

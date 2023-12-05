@@ -1,10 +1,9 @@
-using Amazon.DynamoDBv2.Model;
 using LoyaltySystem.Core.Dtos;
 using LoyaltySystem.Core.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Interfaces;
-using LoyaltySystem.Core.Mappers;
+using static LoyaltySystem.Core.Exceptions.UserExceptions;
 
 namespace LoyaltySystem.API.Controllers
 {
@@ -18,18 +17,34 @@ namespace LoyaltySystem.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
-            var createdUser = await _userService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetUser), new { userId = createdUser.Id }, createdUser);
+            try
+            {
+                var createdUser = await _userService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetUser), new { userId = createdUser.Id }, createdUser);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error - {ex}");
+            }
         }
         
         [HttpPut("{userId:guid}")]
         public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] User user)
         {
-            user.Id = userId;
-            var updatedUser = await _userService.UpdateUserAsync(user);
-            if (updatedUser == null) return NotFound();
-
-            return Ok(updatedUser);
+            try
+            {
+                user.Id = userId;
+                var updatedUser = await _userService.UpdateUserAsync(user);
+                return Ok(updatedUser);
+            }
+            catch(UserNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, $"Internal server error - {ex}");
+            }
         }
 
         [HttpPost("{userId:guid}/verify-email/{token:guid}")]
@@ -57,13 +72,12 @@ namespace LoyaltySystem.API.Controllers
                 var user = await _userService.GetUserAsync(userId);
                 return Ok(user);
             }
-            catch(ResourceNotFoundException ex)
+            catch(UserNotFoundException ex)
             {
                 return NotFound(ex.Message);
             }
             catch(Exception ex)
             {
-                // Handle other exceptions as needed
                 return StatusCode(500, $"Internal server error - {ex}");
             }
         }

@@ -1,9 +1,8 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
-using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Interfaces;
-using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Settings;
+using static LoyaltySystem.Core.Models.Constants;
 
 namespace LoyaltySystem.Data.Clients;
 
@@ -91,7 +90,7 @@ public class DynamoDbClient : IDynamoDbClient
     {
         try
         {
-            await DeleteItemsWithPK(pk);
+            await DeleteItemsWithPk(pk);
         }
         catch (ConditionalCheckFailedException)
         {
@@ -125,26 +124,10 @@ public class DynamoDbClient : IDynamoDbClient
         // Extract sort keys (SKs) from the response
         return response.Items.Select(item => item["SK"].S).ToList();
     }
-    public async Task DeleteItemsWithPK(string PK)
+    private async Task DeleteItemsWithPk(string PK)
     {
-        var sortKeys = await GetAllSortKeysForPartitionKey(PK);
-
-        // Create batch delete requests
-        var batchRequests = new List<WriteRequest>();
-        foreach (var SK in sortKeys)
-        {
-            batchRequests.Add(new WriteRequest
-            {
-                DeleteRequest = new DeleteRequest
-                {
-                    Key = new Dictionary<string, AttributeValue>
-                    {
-                        {"PK", new AttributeValue {S = PK}},
-                        {"SK", new AttributeValue {S = SK}}
-                    }
-                }
-            });
-        }
+        var sortKeys      = await GetAllSortKeysForPartitionKey(PK);
+        var batchRequests = sortKeys.Select(SK => DeleteWriteRequest(PK, SK)).ToList();
 
         // Split requests into chunks of 25, which is the max for a single BatchWriteItem request
         var chunkedBatchRequests = new List<List<WriteRequest>>();
@@ -158,10 +141,7 @@ public class DynamoDbClient : IDynamoDbClient
         {
             var batchWriteItemRequest = new BatchWriteItemRequest
             {
-                RequestItems = new Dictionary<string, List<WriteRequest>>
-                {
-                    {_dynamoDbSettings.TableName, chunk}
-                }
+                RequestItems = new Dictionary<string, List<WriteRequest>> {{_dynamoDbSettings.TableName, chunk}}
             };
 
             try
@@ -174,6 +154,22 @@ public class DynamoDbClient : IDynamoDbClient
             }
         }
     }
+
+    private static WriteRequest DeleteWriteRequest(string PK, string SK)
+    {
+        return new WriteRequest
+        {
+            DeleteRequest = new DeleteRequest
+            {
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    {Pk, new AttributeValue { S = PK }},
+                    {Sk, new AttributeValue { S = SK }}
+                }
+            }
+        };
+    }
+
     public async Task TransactWriteItemsAsync(List<TransactWriteItem> transactWriteItems)
     {
         var request = new TransactWriteItemsRequest

@@ -1,4 +1,5 @@
 using AutoMapper;
+using LoyaltySystem.Core.Dtos;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Models.Persistance;
 using LoyaltySystem.Core.Utilities;
@@ -17,5 +18,11 @@ public class UserProfile : Profile
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.ContactInfo.PhoneNumber))
             .ForMember(dest => dest.Status,      opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.EntityType,  opt => opt.MapFrom(src => src.GetType().Name));
+
+        CreateMap<UserDynamoModel, User>()
+            .ForPath(dest => dest.ContactInfo.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+            .ForPath(dest => dest.ContactInfo.Email,       opt => opt.MapFrom(src => src.Email));
+
+        CreateMap<CreateUserDto, User>();
     }
 }
