@@ -161,16 +161,21 @@ public class UserRepository : IUserRepository
          ExpressionAttributeNames = new Dictionary<string, string> {{"#St", Status}}
       };
    }
-   private TransactWriteItem CreateEmailTokenTransactWriteItem(EmailToken emailToken) =>
-      new ()
+
+   private TransactWriteItem CreateEmailTokenTransactWriteItem(EmailToken emailToken)
+   {
+      var emailTokenDynamoModel = _mapper.Map<UserEmailTokenDynamoModel>(emailToken);
+      return new TransactWriteItem
       {
          Put = new Put
          {
             TableName = _dynamoDbSettings.TableName,
-            Item = emailToken.ToDynamoItem(),
+            Item = emailTokenDynamoModel.ToDynamoItem(),
             ConditionExpression = $"attribute_not_exists({Pk}) AND attribute_not_exists({Sk})"
          }
       };
+   }
+
    private TransactWriteItem CreateUserTransactWriteItem(User newUser) =>
       new()
       {

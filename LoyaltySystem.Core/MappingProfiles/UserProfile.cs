@@ -2,7 +2,6 @@ using AutoMapper;
 using LoyaltySystem.Core.Dtos;
 using LoyaltySystem.Core.Models;
 using LoyaltySystem.Core.Models.Persistance;
-using LoyaltySystem.Core.Utilities;
 using static LoyaltySystem.Core.Models.Constants;
 
 namespace LoyaltySystem.Core.MappingProfiles;
@@ -11,6 +10,7 @@ public class UserProfile : Profile
 {
     public UserProfile()
     {
+        CreateMap<CreateUserDto, User>();
         CreateMap<User, UserDynamoModel>()
             .ForMember(dest => dest.PK,          opt => opt.MapFrom(src => UserPrefix + src.Id))
             .ForMember(dest => dest.SK,          opt => opt.MapFrom(src => MetaUserInfo))
@@ -23,6 +23,5 @@ public class UserProfile : Profile
             .ForPath(dest => dest.ContactInfo.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
             .ForPath(dest => dest.ContactInfo.Email,       opt => opt.MapFrom(src => src.Email));
 
-        CreateMap<CreateUserDto, User>();
     }
 }
