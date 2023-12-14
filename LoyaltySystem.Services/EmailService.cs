@@ -1,17 +1,20 @@
 using System.Security.Cryptography;
-using Amazon;
-using Amazon.SimpleEmail;
-using Amazon.SimpleEmail.Model;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
+using LoyaltySystem.Core.Settings;
 using LoyaltySystem.Core.Utilities;
+using static LoyaltySystem.Core.Models.Constants;
+using static LoyaltySystem.Core.Exceptions.EmailExceptions;
 
 namespace LoyaltySystem.Services;
 
 public class EmailService : IEmailService
 {
     private readonly IEmailRepository _emailRepository;
-    public EmailService(IEmailRepository emailRepository) => _emailRepository = emailRepository;
+    private readonly EmailSettings _emailSettings;
+    
+    public EmailService(IEmailRepository emailRepository, EmailSettings emailSettings) => 
+        (_emailRepository, _emailSettings) = (emailRepository, emailSettings);
 
     public async Task<bool> IsEmailUnique(string email)
     {
@@ -20,33 +23,49 @@ public class EmailService : IEmailService
     }
 
     public bool IsValid(string email) => email.IsValidEmail();
-    public async Task SendEmail(EmailInfo model)
+    public async Task SendVerificationEmailAsync<T>(T item, EmailToken token)
     {
-        var client = new AmazonSimpleEmailServiceClient(RegionEndpoint.EUWest1); // Change the region if necessary
-
-        var sendRequest = new SendEmailRequest
+        string itemId;
+        string itemType;
+        
+        switch(item)
         {
-            Source      = model.FromEmail,
-            Destination = new Destination { ToAddresses = { model.ToEmail }},
-            Message     = new Message
-            {
-                Subject = new Content(model.Subject),
-                Body    = new Body { Text = new Content { Charset = "UTF-8", Data = model.Body }}
-            }
+            case User user:
+                itemId = user.Id.ToString();
+                itemType = nameof(user);
+                break;
+            case Business business:
+                itemId = business.Id.ToString();
+                itemType = nameof(business);
+                break;
+            default:
+                throw new Exception($"Unknown type provided to method {nameof(SendVerificationEmailAsync)}");
+        }
+        
+        var verificationLink = $"{WebAddress}/{itemType}/{itemId}/verify-email/{token.Id}";
+        var emailInfo = new EmailInfo
+        {
+            ToEmail   = token.Email,
+            FromEmail = _emailSettings.From,
+            Subject   = "Loyalty System - Verification",
+            Body      = $"Please verify your {itemType} account by going to the following URL - {verificationLink}"
         };
-
         try
         {
-            Console.WriteLine("Sending email using Amazon SES...");
-            var response = await client.SendEmailAsync(sendRequest);
-            Console.WriteLine("Email sent successfully!");
+            await _emailRepository.SendEmailAsync(emailInfo);
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Error sending email: " + ex.Message);
+            throw new Exception($"Failed to send verification email - {ex}");
         }
     }
-
+    public async Task ValidateEmailAsync(string email)
+    {
+        var emailExists = await IsEmailUnique(email);
+        if (emailExists) throw new EmailAlreadyExistsException(email);
+    }
+    public UserEmailToken GenerateEmailToken(User input) => new (input.Id, input.ContactInfo.Email);
+    public BusinessEmailToken GenerateEmailToken(Business input) => new (input.Id, input.ContactInfo.Email);
     public string GenerateSecureToken(int length = 32)
     {
         // Because a Base64 character represents 6 bits, and a byte is 8 bits,

@@ -1,3 +1,4 @@
+using LoyaltySystem.Core.DTOs;
 using LoyaltySystem.Core.Models;
 
 namespace LoyaltySystem.Core.Interfaces;
@@ -5,18 +6,19 @@ namespace LoyaltySystem.Core.Interfaces;
 public interface IBusinessRepository
 {
     // Business
-    Task CreateBusinessAsync(Business entity);
+    Task CreateBusinessAsync(Business entity, BusinessUserPermissions permissions, EmailToken emailToken);
     Task UpdateBusinessAsync(Business updatedBusinessAsync);
-    Task<Business?> GetBusinessAsync(Guid businessId);
+    Task<Business> GetBusinessAsync(Guid businessId);
     Task<List<Business>> GetBusinessesAsync(List<Guid> businessIdList);
     Task DeleteBusinessAsync(Guid businessId);
+    Task VerifyEmailAsync(VerifyBusinessEmailDto dto);
     
     
     // Business User Permissions
     Task CreateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions);
     Task UpdateBusinessUserPermissionsAsync(List<BusinessUserPermissions> newBusinessUserPermissions);
-    Task<List<BusinessUserPermissions>?> GetBusinessPermissionsAsync(Guid businessId);
-    Task<BusinessUserPermissions?> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId);
+    Task<List<BusinessUserPermissions>> GetBusinessPermissionsAsync(Guid businessId);
+    Task<BusinessUserPermissions> GetBusinessUsersPermissionsAsync(Guid businessId, Guid userId);
     Task DeleteUsersPermissionsAsync(Guid businessId, List<Guid> userIdList);
 
     
@@ -24,7 +26,7 @@ public interface IBusinessRepository
     // Business Campaigns
     Task CreateCampaignAsync(Campaign campaign);
     Task<IReadOnlyList<Campaign>?> GetAllCampaignsAsync(Guid businessId);
-    Task<Campaign?> GetCampaignAsync(Guid businessId, Guid campaignId);
+    Task<Campaign> GetCampaignAsync(Guid businessId, Guid campaignId);
     Task UpdateCampaignAsync(Campaign updatedCampaign);
     Task DeleteCampaignAsync(Guid businessId, List<Guid> campaignIds);
 }

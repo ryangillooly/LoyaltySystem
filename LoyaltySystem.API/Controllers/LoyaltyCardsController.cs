@@ -31,8 +31,6 @@ public class LoyaltyCardsController : ControllerBase
     public async Task<IActionResult> UpdateLoyaltyCard(Guid userId, Guid businessId, [FromBody] UpdateLoyaltyCardDto dto)
     {
         var updatedLoyaltyCard = await _loyaltyCardService.UpdateLoyaltyCardAsync(userId, businessId, dto.Status);
-        if (updatedLoyaltyCard == null) return NotFound();
-
         return Ok(updatedLoyaltyCard);
     }
     
@@ -78,8 +76,6 @@ public class LoyaltyCardsController : ControllerBase
     public async Task<IActionResult> StampLoyaltyCard(Guid userId, Guid businessId)
     {
         var stampedLoyaltyCard = await _loyaltyCardService.StampLoyaltyCardAsync(userId, businessId);
-        if (stampedLoyaltyCard == null) return NotFound();
-
         return Ok(stampedLoyaltyCard);
     }
 

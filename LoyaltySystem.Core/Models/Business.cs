@@ -1,8 +1,10 @@
-using System.Diagnostics;
+using LoyaltySystem.Core.Convertors;
 using LoyaltySystem.Core.Enums;
+using Newtonsoft.Json;
 
 namespace LoyaltySystem.Core.Models;
 
+[JsonConverter(typeof(BusinessConvertor))]
 public class Business
 {
     public Business()
