@@ -379,8 +379,7 @@ public class BusinessRepository : IBusinessRepository
                BusinessId = Guid.Parse(item["BusinessId"].S),
                Name       = item["Name"].S,
                StartTime  = DateTime.Parse(item["StartTime"].S),
-               EndTime    = DateTime.Parse(item["EndTime"].S),
-               IsActive   = item["IsActive"].BOOL
+               EndTime    = DateTime.Parse(item["EndTime"].S)
            };
 
            var settings     = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
@@ -417,7 +416,6 @@ public class BusinessRepository : IBusinessRepository
            Rewards    = JsonConvert.DeserializeObject<List<Reward>>(response.Item["Rewards"].S),
            StartTime  = DateTime.Parse(response.Item["StartTime"].S),
            EndTime    = DateTime.Parse(response.Item["EndTime"].S),
-           IsActive   = response.Item["IsActive"].BOOL
        };
    }
    public async Task UpdateCampaignAsync(Campaign updatedCampaign)

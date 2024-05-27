@@ -1,4 +1,5 @@
 using Amazon.DynamoDBv2.Model;
+using LoyaltySystem.Core.Exceptions;
 using LoyaltySystem.Core.Interfaces;
 using LoyaltySystem.Core.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -44,9 +45,13 @@ public class LoyaltyCardsController : ControllerBase
             var card = await _loyaltyCardService.GetLoyaltyCardAsync(userId, businessId);
             return Ok(card);
         }
-        catch(ResourceNotFoundException ex)
+        catch (ResourceNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (LoyaltyCardExceptions.LoyaltyCardExceptionBase ex)
+        {
+            return UnprocessableEntity(ex);
         }
         catch(Exception ex)
         {
@@ -63,9 +68,13 @@ public class LoyaltyCardsController : ControllerBase
             var card = await _loyaltyCardService.GetLoyaltyCardsAsync(userId);
             return Ok(card);
         }
-        catch(ResourceNotFoundException ex)
+        catch (ResourceNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (LoyaltyCardExceptions.LoyaltyCardExceptionBase ex)
+        {
+            return UnprocessableEntity(ex.Message);
         }
         catch(Exception ex)
         {

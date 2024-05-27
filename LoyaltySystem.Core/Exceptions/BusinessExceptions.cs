@@ -64,6 +64,12 @@ public class BusinessExceptions
     public class CampaignNotActiveException : BusinessExceptionBase
     {
         public CampaignNotActiveException(Guid businessId, Guid campaignId)
-            : base(businessId, $"The Campaign {campaignId}") { }
+            : base(businessId, $"The Campaign {campaignId} is not currently active") { }
+    }
+    
+    public class CampaignRewardNotActiveException : BusinessExceptionBase
+    {
+        public CampaignRewardNotActiveException(Guid businessId, Guid rewardId)
+            : base(businessId, $"The Campaign Reward {rewardId} is not currently active") { }
     }
 }

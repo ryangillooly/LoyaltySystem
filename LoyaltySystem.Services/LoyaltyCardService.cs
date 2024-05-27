@@ -91,29 +91,19 @@ public class LoyaltyCardService : ILoyaltyCardService
 
     public async Task<LoyaltyCard> RedeemLoyaltyCardRewardAsync(Guid userId, Guid businessId, Guid campaignId, Guid rewardId)
     {
-        // Get Loyalty Card
         var loyaltyCard = await _loyaltyCardRepository.GetLoyaltyCardAsync(userId, businessId);
-        
-        // Validate that it's active
         if (loyaltyCard!.Status != LoyaltyStatus.Active) throw new InactiveCardException(userId, businessId);
-
-        // Get Loyalty Campaign, and Rewards
-        var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
-
-        // Validate that it's active
-        if (!campaign!.IsActive) throw new CampaignNotActiveException(businessId, campaignId);
-
-        // Get specific reward from Campaign
-        var selectedReward = campaign.Rewards.First(reward => reward.Id == rewardId);
         
-        // If the card points are less than the reward point requirements, throw error
+        var campaign = await _businessRepository.GetCampaignAsync(businessId, campaignId);
+        if (campaign!.IsActive is false) throw new CampaignNotActiveException(businessId, campaignId);
+        
+        var selectedReward = campaign.Rewards.First(reward => reward.Id == rewardId);
+        if (selectedReward.IsActive is false) throw new CampaignRewardNotActiveException(businessId, selectedReward.Id);
         if (loyaltyCard.Points < selectedReward.PointsRequired) throw new NotEnoughPointsException(userId, businessId, campaignId, rewardId, selectedReward);
         
-        // Update Loyalty Card Redeem Date + Points
         loyaltyCard.LastRedeemDate = DateTime.UtcNow;
         loyaltyCard.Points        -= selectedReward.PointsRequired;
         
-       // Redeem Reward 
        await _loyaltyCardRepository.RedeemLoyaltyCardRewardAsync(loyaltyCard, campaignId, rewardId);
        
         return loyaltyCard;

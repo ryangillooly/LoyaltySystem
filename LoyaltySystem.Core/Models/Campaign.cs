@@ -8,7 +8,9 @@ public class Campaign
     public List<Reward> Rewards { get; set; } = new ();
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    public bool IsActive { get; set; } = true;
+
+    public bool IsActive => DateTime.UtcNow >= StartTime &&
+                            DateTime.UtcNow < EndTime;
     
     public static Campaign Merge(Campaign current, Campaign updated) =>
         new ()
@@ -19,6 +21,5 @@ public class Campaign
             Rewards    = updated.Rewards.Count is 0 ? current.Rewards : updated.Rewards,
             StartTime  = updated.StartTime != current.StartTime && updated.StartTime == DateTime.MinValue ? current.StartTime : updated.StartTime,
             EndTime    = updated.EndTime   != current.EndTime   && updated.EndTime   == DateTime.MinValue ? current.EndTime   : updated.EndTime,
-            IsActive   = updated.IsActive  == current.IsActive  ? current.IsActive  : updated.IsActive
         };
 }
