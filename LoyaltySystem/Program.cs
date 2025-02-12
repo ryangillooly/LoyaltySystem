@@ -9,6 +9,16 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowLocalhost3000", policy =>
+            {
+                policy.WithOrigins("http://localhost:3000")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
+        
         // Read from appsettings.json for "DefaultConnection" and "Jwt:SecretKey" etc.
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         
@@ -49,14 +59,15 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-
+        
         var app = builder.Build();
 
         // Optional: app.UseAuthentication(); app.UseAuthorization();
 
         app.UseSwagger();
         app.UseSwaggerUI();
-
+        
+        app.UseCors("AllowLocalhost3000");
         app.MapControllers();
         app.Run();
     }

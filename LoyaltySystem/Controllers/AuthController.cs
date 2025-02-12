@@ -24,7 +24,7 @@ public class AuthController : ControllerBase
         {
             return BadRequest(result.ErrorMessage);
         }
-        return Ok($"User registered successfully: {result.UserId}");
+        return Ok(new { userId = result.UserId});
     }
 
     // POST /api/auth/login
