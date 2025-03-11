@@ -26,6 +26,11 @@ namespace LoyaltySystem.Application.Interfaces
         ILoyaltyCardRepository LoyaltyCardRepository { get; }
         
         /// <summary>
+        /// Gets the transaction repository
+        /// </summary>
+        ITransactionRepository TransactionRepository { get; }
+        
+        /// <summary>
         /// Saves all changes made in this unit of work to the database.
         /// </summary>
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<Reward> _rewards;
 
-        public Guid Id { get; private set; }
+        public LoyaltyProgramId Id { get; private set; }
         public Guid BrandId { get; private set; }
         public string Name { get; private set; }
         public LoyaltyProgramType Type { get; private set; }
@@ -66,7 +67,7 @@ namespace LoyaltySystem.Domain.Entities
             // Type-specific validation
             ValidateProgramTypeParameters(type, stampThreshold, pointsConversionRate);
 
-            Id = Guid.NewGuid();
+            Id = new LoyaltyProgramId();
             BrandId = brandId;
             Name = name;
             Type = type;

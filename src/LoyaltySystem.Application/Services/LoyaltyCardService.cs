@@ -126,17 +126,8 @@ namespace LoyaltySystem.Application.Services
                 }
 
                 // Create new card
-                var card = new LoyaltyCard
-                {
-                    Id = LoyaltyCardId.New(),
-                    CustomerId = customerId,
-                    ProgramId = programId,
-                    Status = CardStatus.Active,
-                    Balance = 0,
-                    StampCount = 0,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                // TODO: Should this create a Stamp or Points card? 
+                var card = new LoyaltyCard(programId, customerId, LoyaltyProgramType.Points);
 
                 await _cardRepository.AddAsync(card);
                 await _unitOfWork.SaveChangesAsync();
@@ -160,8 +151,21 @@ namespace LoyaltySystem.Application.Services
                     return OperationResult<LoyaltyCardDto>.FailureResult("Card not found");
                 }
 
-                card.Status = status;
-                card.UpdatedAt = DateTime.UtcNow;
+                // Use the appropriate domain method based on the requested status
+                switch (status)
+                {
+                    case CardStatus.Expired:
+                        card.Expire();
+                        break;
+                    case CardStatus.Suspended:
+                        card.Suspend();
+                        break;
+                    case CardStatus.Active:
+                        card.Reactivate();
+                        break;
+                    default:
+                        return OperationResult<LoyaltyCardDto>.FailureResult($"Unsupported status change to {status}");
+                }
 
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
@@ -175,59 +179,71 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        public async Task<OperationResult<TransactionDto>> IssueStampsAsync(LoyaltyCardId cardId, int stampCount, StoreId storeId, decimal purchaseAmount, string transactionReference)
+        public async Task<OperationResult<TransactionDto>> IssueStampsAsync(
+            LoyaltyCardId cardId, 
+            int stampCount, 
+            StoreId storeId, 
+            decimal purchaseAmount, 
+            string transactionReference)
         {
             try
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
+                
                 if (card == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Card not found");
+                    return OperationResult<TransactionDto>.FailureResult($"Card with ID {cardId} not found");
                 }
-
+                
                 if (card.Status != CardStatus.Active)
                 {
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
                 }
-
-                var program = await _programRepository.GetByIdAsync(card.ProgramId);
-                if (program == null)
+                
+                if (card.Type != LoyaltyProgramType.Stamp)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Program not found");
+                    return OperationResult<TransactionDto>.FailureResult("Cannot issue stamps to a points-based card");
                 }
-
-                // Create transaction
-                var transaction = new Transaction
+                
+                if (stampCount <= 0)
                 {
-                    Id = TransactionId.New(),
-                    CardId = cardId,
-                    Type = TransactionType.StampIssuance,
-                    StampCount = stampCount,
-                    Points = 0,
-                    Amount = purchaseAmount,
-                    StoreId = storeId,
-                    PosReference = transactionReference,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    return OperationResult<TransactionDto>.FailureResult("Stamp count must be greater than zero");
+                }
+                
+                _logger.LogInformation($"Issuing {stampCount} stamps to card {cardId}");
 
+                await _unitOfWork.BeginTransactionAsync();
+                
+                // Create transaction
+                var transaction = new Transaction(
+                    cardId.Value,
+                    TransactionType.StampIssuance,
+                    quantity: stampCount,
+                    transactionAmount: purchaseAmount,
+                    storeId: storeId.Value,
+                    posTransactionId: transactionReference);
+                
                 // Update card
-                card.StampCount += stampCount;
+                card.StampsCollected += stampCount;
                 card.UpdatedAt = DateTime.UtcNow;
-
+                
                 await _unitOfWork.TransactionRepository.AddAsync(transaction);
                 await _cardRepository.UpdateAsync(card);
-                await _unitOfWork.SaveChangesAsync();
-
+                await _unitOfWork.CommitTransactionAsync();
+                
+                _logger.LogInformation($"Successfully issued {stampCount} stamps to card {cardId}");
+                
                 return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error issuing stamps for card {CardId}", cardId);
-                return OperationResult<TransactionDto>.FailureResult($"Error issuing stamps: {ex.Message}");
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error issuing stamps to card {0}: {1}", cardId, ex.Message);
+                return OperationResult<TransactionDto>.FailureResult("Error issuing stamps: " + ex.Message);
             }
         }
 
-        public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal transactionAmount, StoreId storeId, Guid? staffId, string posTransactionId)
+        public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal purchaseAmount, StoreId storeId, Guid? staffId, string posTransactionId)
         {
             try
             {
@@ -242,34 +258,43 @@ namespace LoyaltySystem.Application.Services
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
                 }
 
-                // Create transaction
-                var transaction = new Transaction
+                if (card.Type != LoyaltyProgramType.Points)
                 {
-                    Id = TransactionId.New(),
-                    CardId = cardId,
-                    Type = TransactionType.PointsIssuance,
-                    Points = points,
-                    Amount = transactionAmount,
-                    StoreId = storeId,
-                    StaffId = staffId,
-                    PosReference = posTransactionId,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    return OperationResult<TransactionDto>.FailureResult("Cannot add points to a stamp-based card");
+                }
 
-                // Update card
-                card.Balance += points;
+                if (points <= 0)
+                {
+                    return OperationResult<TransactionDto>.FailureResult("Points amount must be greater than zero");
+                }
+
+                _logger.LogInformation($"Adding {points} points to card {cardId}");
+
+                // Create transaction
+                var transaction = new Transaction(
+                    cardId.Value,
+                    TransactionType.PointsIssuance,
+                    pointsAmount: points,
+                    transactionAmount: purchaseAmount,
+                    storeId: storeId.Value,
+                    posTransactionId: posTransactionId);
+
+                // Update card with points
+                card.PointsBalance += points;
                 card.UpdatedAt = DateTime.UtcNow;
 
                 await _unitOfWork.TransactionRepository.AddAsync(transaction);
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation($"Successfully added {points} points to card {cardId}");
 
                 return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding points to card {CardId}", cardId);
-                return OperationResult<TransactionDto>.FailureResult($"Error adding points: {ex.Message}");
+                return OperationResult<TransactionDto>.FailureResult("Error adding points: " + ex.Message);
             }
         }
 
@@ -288,7 +313,7 @@ namespace LoyaltySystem.Application.Services
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
                 }
 
-                var reward = await _unitOfWork.RewardRepository.GetByIdAsync(rewardId);
+                var reward = await _programRepository.GetRewardByIdAsync(rewardId);
                 if (reward == null)
                 {
                     return OperationResult<TransactionDto>.FailureResult("Reward not found");
@@ -307,50 +332,48 @@ namespace LoyaltySystem.Application.Services
 
                 // Check if reward is within valid date range
                 var now = DateTime.UtcNow;
-                if (reward.StartDate.HasValue && reward.StartDate.Value > now)
+                if (reward.ValidFrom.HasValue && reward.ValidFrom.Value > now)
                 {
                     return OperationResult<TransactionDto>.FailureResult("Reward is not yet available");
                 }
 
-                if (reward.EndDate.HasValue && reward.EndDate.Value < now)
+                if (reward.ValidTo.HasValue && reward.ValidTo.Value < now)
                 {
                     return OperationResult<TransactionDto>.FailureResult("Reward has expired");
                 }
 
                 // Check if card has enough points/stamps
-                if (reward.RequiredPoints > 0 && card.Balance < reward.RequiredPoints)
+                if (reward.RequiredValue > 0 && card.PointsBalance < reward.RequiredValue)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredPoints}, Available: {card.Balance}");
+                    return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredValue}, Available: {card.PointsBalance}");
                 }
 
-                if (reward.RequiredStamps > 0 && card.StampCount < reward.RequiredStamps)
+                /*
+                if (reward.RequiredStamps > 0 && card.StampsCollected < reward.RequiredStamps)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredStamps}, Available: {card.StampCount}");
+                    return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredStamps}, Available: {card.StampsCollected}");
                 }
+                */
 
                 // Create transaction
-                var transaction = new Transaction
-                {
-                    Id = TransactionId.New(),
-                    CardId = cardId,
-                    Type = TransactionType.Redemption,
-                    RewardId = rewardId,
-                    Points = reward.RequiredPoints > 0 ? -reward.RequiredPoints : 0,
-                    StampCount = reward.RequiredStamps > 0 ? -reward.RequiredStamps : 0,
-                    StoreId = storeId,
-                    StaffId = staffId,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var transaction = new Transaction(
+                    cardId.Value,
+                    TransactionType.RewardRedemption,
+                    rewardId: rewardId.Value,
+                    quantity: reward.RequiredStamps > 0 ? -reward.RequiredStamps : null,
+                    pointsAmount: reward.RequiredPoints > 0 ? -reward.RequiredPoints : null,
+                    storeId: storeId.Value,
+                    staffId: staffId);
 
                 // Update card
                 if (reward.RequiredPoints > 0)
                 {
-                    card.Balance -= reward.RequiredPoints;
+                    card.PointsBalance -= reward.RequiredPoints;
                 }
 
                 if (reward.RequiredStamps > 0)
                 {
-                    card.StampCount -= reward.RequiredStamps;
+                    card.StampsCollected -= reward.RequiredStamps;
                 }
 
                 card.UpdatedAt = DateTime.UtcNow;
@@ -381,8 +404,7 @@ namespace LoyaltySystem.Application.Services
                 // Generate a unique QR code
                 var qrCode = Guid.NewGuid().ToString("N");
                 
-                card.QrCode = qrCode;
-                card.UpdatedAt = DateTime.UtcNow;
+                card.UpdateQrCode(qrCode);
 
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
@@ -554,16 +576,15 @@ namespace LoyaltySystem.Application.Services
         {
             return new LoyaltyCardDto
             {
-                Id = card.Id.ToString(),
-                CustomerId = card.CustomerId.ToString(),
-                ProgramId = card.ProgramId.ToString(),
-                Status = card.Status.ToString(),
-                Balance = card.Balance,
-                StampCount = card.StampCount,
-                QrCode = card.QrCode,
+                Id = card.Id,
+                CustomerId = card.CustomerId,
+                ProgramId = card.ProgramId,
+                Status = card.Status,
+                PointsBalance = card.PointsBalance,
+                StampCount = card.StampsCollected,
                 CreatedAt = card.CreatedAt,
-                UpdatedAt = card.UpdatedAt,
-                ExpiresAt = card.ExpiresAt
+                ExpiresAt = card.ExpiresAt,
+                TotalTransactions = card.Transactions.Count
             };
         }
 
@@ -573,15 +594,16 @@ namespace LoyaltySystem.Application.Services
             {
                 Id = transaction.Id.ToString(),
                 CardId = transaction.CardId.ToString(),
-                Type = transaction.Type.ToString(),
-                Points = transaction.Points,
-                StampCount = transaction.StampCount,
-                Amount = transaction.Amount,
-                StoreId = transaction.StoreId?.ToString(),
-                StaffId = transaction.StaffId,
+                StoreId = transaction.StoreId.ToString(),
+                StoreName = transaction.Store?.Name ?? string.Empty,
+                TransactionDate = transaction.Timestamp,
+                TransactionType = transaction.Type.ToString(),
+                Amount = transaction.TransactionAmount ?? 0,
+                PointsEarned = transaction.PointsAmount ?? 0,
+                StampsEarned = transaction.Quantity ?? 0,
                 RewardId = transaction.RewardId?.ToString(),
-                PosReference = transaction.PosReference,
-                CreatedAt = transaction.CreatedAt
+                RewardTitle = transaction.Reward?.Title ?? string.Empty,
+                PosTransactionId = transaction.PosTransactionId ?? string.Empty
             };
         }
     }

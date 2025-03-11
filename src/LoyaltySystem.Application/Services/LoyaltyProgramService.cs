@@ -385,10 +385,10 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 // Get all programs
-                var programs = await _programRepository.GetAllAsync(1, 1000);
+                var programs = await _programRepository.GetAllAsync(0, 1000);
                 
                 // Calculate analytics
-                int totalPrograms = programs.Count;
+                int totalPrograms = programs.Count();
                 int activePrograms = programs.Count(p => p.IsActive);
                 int stampPrograms = programs.Count(p => p.Type == LoyaltyProgramType.Stamp);
                 int pointsPrograms = programs.Count(p => p.Type == LoyaltyProgramType.Points);
@@ -426,7 +426,7 @@ namespace LoyaltySystem.Application.Services
         private async Task<Dictionary<string, int>> GetProgramCountByBrandAsync()
         {
             var result = new Dictionary<string, int>();
-            var brands = await _brandRepository.GetAllAsync(1, 1000);
+            var brands = await _brandRepository.GetAllAsync(0, 1000);
             
             foreach (var brand in brands)
             {
@@ -468,11 +468,11 @@ namespace LoyaltySystem.Application.Services
                 }
                 
                 int totalTransactions = transactions.Count;
-                decimal totalPointsIssued = transactions.Where(t => t.Type == TransactionType.PointsIssued).Sum(t => t.Points ?? 0);
-                decimal totalPointsRedeemed = transactions.Where(t => t.Type == TransactionType.PointsRedeemed).Sum(t => t.Points ?? 0);
-                int totalStampsIssued = transactions.Where(t => t.Type == TransactionType.StampIssued).Sum(t => t.Stamps ?? 0);
-                int totalStampsRedeemed = transactions.Where(t => t.Type == TransactionType.StampRedeemed).Sum(t => t.Stamps ?? 0);
-                int totalRedemptions = transactions.Count(t => t.Type == TransactionType.RewardRedeemed);
+                decimal totalPointsIssued = transactions.Where(t => t.Type == TransactionType.PointsIssuance).Sum(t => t.PointsAmount ?? 0);
+                decimal totalPointsRedeemed = transactions.Where(t => t.Type == TransactionType.RewardRedemption && t.PointsAmount.HasValue && t.PointsAmount.Value < 0).Sum(t => -1 * (t.PointsAmount ?? 0));
+                int totalStampsIssued = transactions.Where(t => t.Type == TransactionType.StampIssuance).Sum(t => t.Quantity ?? 0);
+                int totalStampsRedeemed = transactions.Where(t => t.Type == TransactionType.RewardRedemption && t.Quantity.HasValue && t.Quantity.Value < 0).Sum(t => -1 * (t.Quantity ?? 0));
+                int totalRedemptions = transactions.Count(t => t.Type == TransactionType.RewardRedemption);
                 
                 var analytics = new ProgramDetailedAnalyticsDto
                 {

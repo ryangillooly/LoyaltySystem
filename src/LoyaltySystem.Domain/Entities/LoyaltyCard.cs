@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,17 +14,17 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<Transaction> _transactions;
 
-        public Guid Id { get; private set; }
-        public Guid ProgramId { get; private set; }
-        public Guid CustomerId { get; private set; }
+        public LoyaltyCardId Id { get; private set; }
+        public LoyaltyProgramId ProgramId { get; set; }
+        public CustomerId CustomerId { get; set; }
         public LoyaltyProgramType Type { get; private set; }
-        public int StampsCollected { get; private set; }
-        public decimal PointsBalance { get; private set; }
-        public CardStatus Status { get; private set; }
+        public int StampsCollected { get; set; }
+        public decimal PointsBalance { get; set; }
+        public CardStatus Status { get; set; }
         public string QrCode { get; private set; }
-        public DateTime CreatedAt { get; private set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? ExpiresAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
         public virtual LoyaltyProgram Program { get; private set; }
@@ -39,8 +40,8 @@ namespace LoyaltySystem.Domain.Entities
         }
 
         public LoyaltyCard(
-            Guid programId,
-            Guid customerId,
+            LoyaltyProgramId programId,
+            CustomerId customerId,
             LoyaltyProgramType type,
             DateTime? expiresAt = null)
         {
@@ -50,7 +51,7 @@ namespace LoyaltySystem.Domain.Entities
             if (customerId == Guid.Empty)
                 throw new ArgumentException("Customer ID cannot be empty", nameof(customerId));
 
-            Id = Guid.NewGuid();
+            Id = new LoyaltyCardId();
             ProgramId = programId;
             CustomerId = customerId;
             Type = type;
@@ -109,7 +110,7 @@ namespace LoyaltySystem.Domain.Entities
         public Transaction AddPoints(
             decimal pointsAmount,
             decimal transactionAmount,
-            Guid storeId,
+            StoreId storeId,
             Guid? staffId = null,
             string posTransactionId = null)
         {
@@ -152,7 +153,7 @@ namespace LoyaltySystem.Domain.Entities
         /// </summary>
         public Transaction RedeemReward(
             Reward reward,
-            Guid storeId,
+            StoreId storeId,
             Guid? staffId = null)
         {
             // Validation

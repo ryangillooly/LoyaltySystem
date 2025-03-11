@@ -18,6 +18,11 @@ namespace LoyaltySystem.Domain.Repositories
         Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id);
         
         /// <summary>
+        /// Gets all loyalty programs with optional paging.
+        /// </summary>
+        Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int take = 100);
+        
+        /// <summary>
         /// Gets loyalty programs for a specific brand.
         /// </summary>
         Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId);
@@ -46,6 +51,11 @@ namespace LoyaltySystem.Domain.Repositories
         /// Gets the rewards for a specific program.
         /// </summary>
         Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId);
+
+        /// <summary>
+        /// Gets the count of programs based on the type
+        /// </summary>
+        Task<int> GetCountByTypeAsync(LoyaltyProgramType type);
         
         /// <summary>
         /// Gets active rewards for a specific program.

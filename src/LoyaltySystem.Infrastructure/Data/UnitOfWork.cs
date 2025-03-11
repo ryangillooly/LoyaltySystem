@@ -20,6 +20,7 @@ namespace LoyaltySystem.Infrastructure.Data
         private IBrandRepository _brandRepository;
         private ILoyaltyProgramRepository _loyaltyProgramRepository;
         private ILoyaltyCardRepository _loyaltyCardRepository;
+        private ITransactionRepository _transactionRepository;
         
         /// <summary>
         /// Brand repository instance.
@@ -38,6 +39,12 @@ namespace LoyaltySystem.Infrastructure.Data
         /// </summary>
         public ILoyaltyCardRepository LoyaltyCardRepository => 
             _loyaltyCardRepository ??= new LoyaltyCardRepository(_dbConnection);
+        
+        /// <summary>
+        /// Transaction repository instance.
+        /// </summary>
+        public ITransactionRepository TransactionRepository => 
+            _transactionRepository ??= new TransactionRepository(_dbConnection);
         
         /// <summary>
         /// Creates a new unit of work with the given database connection.

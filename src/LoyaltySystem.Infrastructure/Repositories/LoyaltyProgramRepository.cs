@@ -443,5 +443,36 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 reward.UpdatedAt
             }, transaction);
         }
+
+        public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int take = 100)
+        {
+            const string sql = @"
+                SELECT 
+                    id AS Id,
+                    brand_id AS BrandId,
+                    name AS Name,
+                    type::int AS Type,
+                    stamp_threshold AS StampThreshold,
+                    points_conversion_rate AS PointsConversionRate,
+                    daily_stamp_limit AS DailyStampLimit,
+                    minimum_transaction_amount AS MinimumTransactionAmount,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM loyalty_programs 
+                ORDER BY created_at DESC
+                LIMIT @Take OFFSET @Skip";
+
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { Skip = skip, Take = take };
+            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+            foreach (var program in programs)
+            {
+                await LoadRewardsForProgram(program);
+            }
+
+            return programs;
+        }
     }
 } 
