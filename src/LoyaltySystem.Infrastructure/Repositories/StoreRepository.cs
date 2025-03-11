@@ -24,11 +24,34 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<Store?> GetByIdAsync(StoreId id)
         {
             const string sql = @"
-                SELECT s.*, a.*, b.*
-                FROM Stores s
-                LEFT JOIN Addresses a ON s.AddressId = a.Id
-                LEFT JOIN Brands b ON s.BrandId = b.Id
-                WHERE s.Id = @Id";
+                SELECT 
+                    s.id AS Id,
+                    s.name AS Name,
+                    s.address_id AS AddressId,
+                    s.contact_info AS ContactInfo,
+                    s.brand_id AS BrandId,
+                    s.created_at AS CreatedAt,
+                    s.updated_at AS UpdatedAt,
+                    a.id AS Id,
+                    a.line1 AS Line1,
+                    a.line2 AS Line2,
+                    a.city AS City,
+                    a.state AS State,
+                    a.postal_code AS PostalCode,
+                    a.country AS Country,
+                    a.created_at AS CreatedAt,
+                    a.updated_at AS UpdatedAt,
+                    b.id AS Id,
+                    b.name AS Name,
+                    b.category AS Category,
+                    b.logo AS Logo,
+                    b.description AS Description,
+                    b.created_at AS CreatedAt,
+                    b.updated_at AS UpdatedAt
+                FROM stores s
+                LEFT JOIN addresses a ON s.address_id = a.id
+                LEFT JOIN brands b ON s.brand_id = b.id
+                WHERE s.id = @Id";
 
             var parameters = new { Id = id.Value };
             
@@ -55,13 +78,35 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Store>> GetAllAsync(int page, int pageSize)
         {
             const string sql = @"
-                SELECT s.*, a.*, b.*
-                FROM Stores s
-                LEFT JOIN Addresses a ON s.AddressId = a.Id
-                LEFT JOIN Brands b ON s.BrandId = b.Id
-                ORDER BY s.Name
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+                SELECT 
+                    s.id AS Id,
+                    s.name AS Name,
+                    s.address_id AS AddressId,
+                    s.contact_info AS ContactInfo,
+                    s.brand_id AS BrandId,
+                    s.created_at AS CreatedAt,
+                    s.updated_at AS UpdatedAt,
+                    a.id AS Id,
+                    a.line1 AS Line1,
+                    a.line2 AS Line2,
+                    a.city AS City,
+                    a.state AS State,
+                    a.postal_code AS PostalCode,
+                    a.country AS Country,
+                    a.created_at AS CreatedAt,
+                    a.updated_at AS UpdatedAt,
+                    b.id AS Id,
+                    b.name AS Name,
+                    b.category AS Category,
+                    b.logo AS Logo,
+                    b.description AS Description,
+                    b.created_at AS CreatedAt,
+                    b.updated_at AS UpdatedAt
+                FROM stores s
+                LEFT JOIN addresses a ON s.address_id = a.id
+                LEFT JOIN brands b ON s.brand_id = b.id
+                ORDER BY s.name
+                LIMIT @PageSize OFFSET @Offset";
             
             var parameters = new { Offset = (page - 1) * pageSize, PageSize = pageSize };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -87,12 +132,35 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Store>> GetByBrandIdAsync(BrandId brandId)
         {
             const string sql = @"
-                SELECT s.*, a.*, b.*
-                FROM Stores s
-                LEFT JOIN Addresses a ON s.AddressId = a.Id
-                LEFT JOIN Brands b ON s.BrandId = b.Id
-                WHERE s.BrandId = @BrandId
-                ORDER BY s.Name";
+                SELECT 
+                    s.id AS Id,
+                    s.name AS Name,
+                    s.address_id AS AddressId,
+                    s.contact_info AS ContactInfo,
+                    s.brand_id AS BrandId,
+                    s.created_at AS CreatedAt,
+                    s.updated_at AS UpdatedAt,
+                    a.id AS Id,
+                    a.line1 AS Line1,
+                    a.line2 AS Line2,
+                    a.city AS City,
+                    a.state AS State,
+                    a.postal_code AS PostalCode,
+                    a.country AS Country,
+                    a.created_at AS CreatedAt,
+                    a.updated_at AS UpdatedAt,
+                    b.id AS Id,
+                    b.name AS Name,
+                    b.category AS Category,
+                    b.logo AS Logo,
+                    b.description AS Description,
+                    b.created_at AS CreatedAt,
+                    b.updated_at AS UpdatedAt
+                FROM stores s
+                LEFT JOIN addresses a ON s.address_id = a.id
+                LEFT JOIN brands b ON s.brand_id = b.id
+                WHERE s.brand_id = @BrandId
+                ORDER BY s.name";
             
             var parameters = new { BrandId = brandId.Value };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -120,7 +188,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             // First insert the address
             var addressId = Guid.NewGuid();
             const string addressSql = @"
-                INSERT INTO Addresses (Id, Line1, Line2, City, State, PostalCode, Country, CreatedAt, UpdatedAt)
+                INSERT INTO addresses (id, line1, line2, city, state, postal_code, country, created_at, updated_at)
                 VALUES (@Id, @Line1, @Line2, @City, @State, @PostalCode, @Country, @CreatedAt, @UpdatedAt)
                 RETURNING *";
             
@@ -142,7 +210,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             // Finally insert the store
             const string storeSql = @"
-                INSERT INTO Stores (Id, Name, AddressId, ContactInfo, BrandId, CreatedAt, UpdatedAt)
+                INSERT INTO stores (id, name, address_id, contact_info, brand_id, created_at, updated_at)
                 VALUES (@Id, @Name, @AddressId, @ContactInfo, @BrandId, @CreatedAt, @UpdatedAt)
                 RETURNING *";
             
@@ -169,20 +237,20 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             // Update address
             const string addressSql = @"
-                UPDATE Addresses
-                SET Line1 = @Line1,
-                    Line2 = @Line2,
-                    City = @City,
-                    State = @State,
-                    PostalCode = @PostalCode,
-                    Country = @Country,
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE addresses
+                SET line1 = @Line1,
+                    line2 = @Line2,
+                    city = @City,
+                    state = @State,
+                    postal_code = @PostalCode,
+                    country = @Country,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
             
             var dbConnection = await _connection.GetConnectionAsync();
             
             // Get the address ID from the database
-            const string getAddressIdSql = @"SELECT AddressId FROM Stores WHERE Id = @Id";
+            const string getAddressIdSql = @"SELECT address_id FROM stores WHERE id = @Id";
             var addressId = await dbConnection.ExecuteScalarAsync<Guid>(getAddressIdSql, new { Id = store.Id });
             
             var addressParams = new
@@ -201,11 +269,11 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             // Update store
             const string storeSql = @"
-                UPDATE Stores
-                SET Name = @Name,
-                    ContactInfo = @ContactInfo,
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE stores
+                SET name = @Name,
+                    contact_info = @ContactInfo,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
             
             var storeParams = new
             {
@@ -222,13 +290,36 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             // This is a simplified approach. In a real application, you would use a spatial database or a more sophisticated algorithm
             const string sql = @"
-                SELECT s.*, a.*, b.*,
-                       (6371 * acos(cos(radians(@Latitude)) * cos(radians(JSON_VALUE(s.Location, '$.Latitude'))) * 
-                        cos(radians(JSON_VALUE(s.Location, '$.Longitude')) - radians(@Longitude)) + 
-                        sin(radians(@Latitude)) * sin(radians(JSON_VALUE(s.Location, '$.Latitude'))))) AS Distance
-                FROM Stores s
-                LEFT JOIN Addresses a ON s.AddressId = a.Id
-                LEFT JOIN Brands b ON s.BrandId = b.Id
+                SELECT 
+                    s.id AS Id,
+                    s.name AS Name,
+                    s.address_id AS AddressId,
+                    s.contact_info AS ContactInfo,
+                    s.brand_id AS BrandId,
+                    s.created_at AS CreatedAt,
+                    s.updated_at AS UpdatedAt,
+                    a.id AS Id,
+                    a.line1 AS Line1,
+                    a.line2 AS Line2,
+                    a.city AS City,
+                    a.state AS State,
+                    a.postal_code AS PostalCode,
+                    a.country AS Country,
+                    a.created_at AS CreatedAt,
+                    a.updated_at AS UpdatedAt,
+                    b.id AS Id,
+                    b.name AS Name,
+                    b.category AS Category,
+                    b.logo AS Logo,
+                    b.description AS Description,
+                    b.created_at AS CreatedAt,
+                    b.updated_at AS UpdatedAt,
+                    (6371 * acos(cos(radians(@Latitude)) * cos(radians(cast(json_extract(s.location::json, '$.Latitude') as float))) * 
+                    cos(radians(cast(json_extract(s.location::json, '$.Longitude') as float)) - radians(@Longitude)) + 
+                    sin(radians(@Latitude)) * sin(radians(cast(json_extract(s.location::json, '$.Latitude') as float))))) AS Distance
+                FROM stores s
+                LEFT JOIN addresses a ON s.address_id = a.id
+                LEFT JOIN brands b ON s.brand_id = b.id
                 HAVING Distance < @Radius
                 ORDER BY Distance";
 
@@ -264,14 +355,47 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Transaction>> GetTransactionsAsync(StoreId storeId, DateTime start, DateTime end, int page, int pageSize)
         {
             const string sql = @"
-                SELECT t.*, lc.*, r.*
-                FROM Transactions t
-                JOIN LoyaltyCards lc ON t.LoyaltyCardId = lc.Id
-                LEFT JOIN Rewards r ON t.RewardId = r.Id
-                WHERE t.StoreId = @StoreId AND t.TransactionDate BETWEEN @Start AND @End
-                ORDER BY t.TransactionDate DESC
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+                SELECT 
+                    t.id AS Id,
+                    t.card_id AS CardId,
+                    t.type::int AS Type,
+                    t.reward_id AS RewardId,
+                    t.quantity AS Quantity,
+                    t.points_amount AS PointsAmount,
+                    t.transaction_amount AS TransactionAmount,
+                    t.store_id AS StoreId,
+                    t.staff_id AS StaffId,
+                    t.pos_transaction_id AS PosTransactionId,
+                    t.timestamp AS Timestamp,
+                    t.created_at AS CreatedAt,
+                    t.metadata AS Metadata,
+                    lc.id AS Id,
+                    lc.program_id AS ProgramId,
+                    lc.customer_id AS CustomerId,
+                    lc.type::int AS Type,
+                    lc.stamps_collected AS StampsCollected,
+                    lc.points_balance AS PointsBalance,
+                    lc.status::int AS Status,
+                    lc.qr_code AS QrCode,
+                    lc.created_at AS CreatedAt,
+                    lc.expires_at AS ExpiresAt,
+                    lc.updated_at AS UpdatedAt,
+                    r.id AS Id,
+                    r.program_id AS ProgramId,
+                    r.title AS Title,
+                    r.description AS Description,
+                    r.required_value AS RequiredValue,
+                    r.valid_from AS ValidFrom,
+                    r.valid_to AS ValidTo,
+                    r.is_active AS IsActive,
+                    r.created_at AS CreatedAt,
+                    r.updated_at AS UpdatedAt
+                FROM transactions t
+                JOIN loyalty_cards lc ON t.card_id = lc.id
+                LEFT JOIN rewards r ON t.reward_id = r.id
+                WHERE t.store_id = @StoreId AND t.timestamp BETWEEN @Start AND @End
+                ORDER BY t.timestamp DESC
+                LIMIT @PageSize OFFSET @Offset";
 
             var parameters = new
             {
@@ -301,8 +425,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT COUNT(*)
-                FROM Transactions
-                WHERE StoreId = @StoreId AND TransactionDate BETWEEN @Start AND @End";
+                FROM transactions
+                WHERE store_id = @StoreId AND timestamp BETWEEN @Start AND @End";
 
             var parameters = new { StoreId = storeId.Value, Start = start, End = end };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -312,9 +436,11 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<int> GetTotalStampsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
         {
             const string sql = @"
-                SELECT COALESCE(SUM(StampsEarned), 0)
-                FROM Transactions
-                WHERE StoreId = @StoreId AND TransactionDate BETWEEN @Start AND @End";
+                SELECT COALESCE(SUM(quantity), 0)
+                FROM transactions
+                WHERE store_id = @StoreId 
+                AND type = 'StampIssuance'::transaction_type 
+                AND timestamp BETWEEN @Start AND @End";
 
             var parameters = new { StoreId = storeId.Value, Start = start, End = end };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -324,9 +450,11 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<decimal> GetTotalPointsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
         {
             const string sql = @"
-                SELECT COALESCE(SUM(PointsEarned), 0)
-                FROM Transactions
-                WHERE StoreId = @StoreId AND TransactionDate BETWEEN @Start AND @End";
+                SELECT COALESCE(SUM(points_amount), 0)
+                FROM transactions
+                WHERE store_id = @StoreId 
+                AND type = 'PointsIssuance'::transaction_type 
+                AND timestamp BETWEEN @Start AND @End";
 
             var parameters = new { StoreId = storeId.Value, Start = start, End = end };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -337,8 +465,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT COUNT(*)
-                FROM Transactions
-                WHERE StoreId = @StoreId AND RewardId IS NOT NULL AND TransactionDate BETWEEN @Start AND @End";
+                FROM transactions
+                WHERE store_id = @StoreId 
+                AND type = 'RewardRedemption'::transaction_type 
+                AND timestamp BETWEEN @Start AND @End";
 
             var parameters = new { StoreId = storeId.Value, Start = start, End = end };
             var dbConnection = await _connection.GetConnectionAsync();

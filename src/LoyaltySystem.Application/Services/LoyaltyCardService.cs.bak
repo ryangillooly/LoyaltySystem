@@ -60,15 +60,15 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByQrCodeAsync(qrCode);
                 if (card == null)
                 {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Card not found");
+                    return OperationResult<LoyaltyCardDto>.Failure("Card not found");
                 }
 
-                return OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
+                return OperationResult<LoyaltyCardDto>.Success(MapToDto(card));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting card by QR code {QrCode}", qrCode);
-                return OperationResult<LoyaltyCardDto>.FailureResult($"Error retrieving card: {ex.Message}");
+                return OperationResult<LoyaltyCardDto>.Failure($"Error retrieving card: {ex.Message}");
             }
         }
 
@@ -77,12 +77,12 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 var cards = await _cardRepository.GetByCustomerIdAsync(customerId);
-                return OperationResult<IEnumerable<LoyaltyCardDto>>.SuccessResult(cards.Select(MapToDto));
+                return OperationResult<IEnumerable<LoyaltyCardDto>>.Success(cards.Select(MapToDto));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting cards for customer {CustomerId}", customerId);
-                return OperationResult<IEnumerable<LoyaltyCardDto>>.FailureResult($"Error retrieving cards: {ex.Message}");
+                return OperationResult<IEnumerable<LoyaltyCardDto>>.Failure($"Error retrieving cards: {ex.Message}");
             }
         }
 
@@ -91,12 +91,12 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 var cards = await _cardRepository.GetByProgramIdAsync(programId);
-                return OperationResult<IEnumerable<LoyaltyCardDto>>.SuccessResult(cards.Select(MapToDto));
+                return OperationResult<IEnumerable<LoyaltyCardDto>>.Success(cards.Select(MapToDto));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting cards for program {ProgramId}", programId);
-                return OperationResult<IEnumerable<LoyaltyCardDto>>.FailureResult($"Error retrieving cards: {ex.Message}");
+                return OperationResult<IEnumerable<LoyaltyCardDto>>.Failure($"Error retrieving cards: {ex.Message}");
             }
         }
 
@@ -108,21 +108,21 @@ namespace LoyaltySystem.Application.Services
                 var customer = await _customerRepository.GetByIdAsync(customerId);
                 if (customer == null)
                 {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Customer not found");
+                    return OperationResult<LoyaltyCardDto>.Failure("Customer not found");
                 }
 
                 // Check if program exists
                 var program = await _programRepository.GetByIdAsync(programId);
                 if (program == null)
                 {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Loyalty program not found");
+                    return OperationResult<LoyaltyCardDto>.Failure("Loyalty program not found");
                 }
 
                 // Check if customer already has a card for this program
                 var existingCards = await _cardRepository.GetByCustomerIdAsync(customerId);
                 if (existingCards.Any(c => c.ProgramId == programId))
                 {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Customer already enrolled in this program");
+                    return OperationResult<LoyaltyCardDto>.Failure("Customer already enrolled in this program");
                 }
 
                 // Create new card
@@ -141,12 +141,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.AddAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
+                return OperationResult<LoyaltyCardDto>.Success(MapToDto(card));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating card for customer {CustomerId} in program {ProgramId}", customerId, programId);
-                return OperationResult<LoyaltyCardDto>.FailureResult($"Error creating card: {ex.Message}");
+                return OperationResult<LoyaltyCardDto>.Failure($"Error creating card: {ex.Message}");
             }
         }
 
@@ -157,7 +157,7 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(id);
                 if (card == null)
                 {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Card not found");
+                    return OperationResult<LoyaltyCardDto>.Failure("Card not found");
                 }
 
                 card.Status = status;
@@ -166,12 +166,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
+                return OperationResult<LoyaltyCardDto>.Success(MapToDto(card));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating card status for {CardId} to {Status}", id, status);
-                return OperationResult<LoyaltyCardDto>.FailureResult($"Error updating card status: {ex.Message}");
+                return OperationResult<LoyaltyCardDto>.Failure($"Error updating card status: {ex.Message}");
             }
         }
 
@@ -182,18 +182,18 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Card not found");
+                    return OperationResult<TransactionDto>.Failure("Card not found");
                 }
 
                 if (card.Status != CardStatus.Active)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
+                    return OperationResult<TransactionDto>.Failure($"Card is not active. Current status: {card.Status}");
                 }
 
                 var program = await _programRepository.GetByIdAsync(card.ProgramId);
                 if (program == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Program not found");
+                    return OperationResult<TransactionDto>.Failure("Program not found");
                 }
 
                 // Create transaction
@@ -218,12 +218,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
+                return OperationResult<TransactionDto>.Success(MapToTransactionDto(transaction));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error issuing stamps for card {CardId}", cardId);
-                return OperationResult<TransactionDto>.FailureResult($"Error issuing stamps: {ex.Message}");
+                return OperationResult<TransactionDto>.Failure($"Error issuing stamps: {ex.Message}");
             }
         }
 
@@ -234,12 +234,12 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Card not found");
+                    return OperationResult<TransactionDto>.Failure("Card not found");
                 }
 
                 if (card.Status != CardStatus.Active)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
+                    return OperationResult<TransactionDto>.Failure($"Card is not active. Current status: {card.Status}");
                 }
 
                 // Create transaction
@@ -264,12 +264,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
+                return OperationResult<TransactionDto>.Success(MapToTransactionDto(transaction));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding points to card {CardId}", cardId);
-                return OperationResult<TransactionDto>.FailureResult($"Error adding points: {ex.Message}");
+                return OperationResult<TransactionDto>.Failure($"Error adding points: {ex.Message}");
             }
         }
 
@@ -280,52 +280,52 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Card not found");
+                    return OperationResult<TransactionDto>.Failure("Card not found");
                 }
 
                 if (card.Status != CardStatus.Active)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
+                    return OperationResult<TransactionDto>.Failure($"Card is not active. Current status: {card.Status}");
                 }
 
                 var reward = await _unitOfWork.RewardRepository.GetByIdAsync(rewardId);
                 if (reward == null)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Reward not found");
+                    return OperationResult<TransactionDto>.Failure("Reward not found");
                 }
 
                 if (reward.ProgramId != card.ProgramId)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Reward does not belong to the card's program");
+                    return OperationResult<TransactionDto>.Failure("Reward does not belong to the card's program");
                 }
 
                 // Check if reward is active
                 if (!reward.IsActive)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Reward is not active");
+                    return OperationResult<TransactionDto>.Failure("Reward is not active");
                 }
 
                 // Check if reward is within valid date range
                 var now = DateTime.UtcNow;
                 if (reward.StartDate.HasValue && reward.StartDate.Value > now)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Reward is not yet available");
+                    return OperationResult<TransactionDto>.Failure("Reward is not yet available");
                 }
 
                 if (reward.EndDate.HasValue && reward.EndDate.Value < now)
                 {
-                    return OperationResult<TransactionDto>.FailureResult("Reward has expired");
+                    return OperationResult<TransactionDto>.Failure("Reward has expired");
                 }
 
                 // Check if card has enough points/stamps
                 if (reward.RequiredPoints > 0 && card.Balance < reward.RequiredPoints)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredPoints}, Available: {card.Balance}");
+                    return OperationResult<TransactionDto>.Failure($"Insufficient points. Required: {reward.RequiredPoints}, Available: {card.Balance}");
                 }
 
                 if (reward.RequiredStamps > 0 && card.StampCount < reward.RequiredStamps)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredStamps}, Available: {card.StampCount}");
+                    return OperationResult<TransactionDto>.Failure($"Insufficient stamps. Required: {reward.RequiredStamps}, Available: {card.StampCount}");
                 }
 
                 // Create transaction
@@ -359,12 +359,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
+                return OperationResult<TransactionDto>.Success(MapToTransactionDto(transaction));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error redeeming reward {RewardId} for card {CardId}", rewardId, cardId);
-                return OperationResult<TransactionDto>.FailureResult($"Error redeeming reward: {ex.Message}");
+                return OperationResult<TransactionDto>.Failure($"Error redeeming reward: {ex.Message}");
             }
         }
 
@@ -375,7 +375,7 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<string>.FailureResult("Card not found");
+                    return OperationResult<string>.Failure("Card not found");
                 }
 
                 // Generate a unique QR code
@@ -387,12 +387,12 @@ namespace LoyaltySystem.Application.Services
                 await _cardRepository.UpdateAsync(card);
                 await _unitOfWork.SaveChangesAsync();
 
-                return OperationResult<string>.SuccessResult(qrCode);
+                return OperationResult<string>.Success(qrCode);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating QR code for card {CardId}", cardId);
-                return OperationResult<string>.FailureResult($"Error generating QR code: {ex.Message}");
+                return OperationResult<string>.Failure($"Error generating QR code: {ex.Message}");
             }
         }
 
@@ -403,12 +403,12 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<string>.FailureResult("Card not found");
+                    return OperationResult<string>.Failure("Card not found");
                 }
 
                 if (!string.IsNullOrEmpty(card.QrCode))
                 {
-                    return OperationResult<string>.SuccessResult(card.QrCode);
+                    return OperationResult<string>.Success(card.QrCode);
                 }
 
                 return await GenerateQrCodeAsync(cardId);
@@ -416,7 +416,7 @@ namespace LoyaltySystem.Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting or generating QR code for card {CardId}", cardId);
-                return OperationResult<string>.FailureResult($"Error with QR code: {ex.Message}");
+                return OperationResult<string>.Failure($"Error with QR code: {ex.Message}");
             }
         }
 
@@ -427,74 +427,63 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
                 {
-                    return OperationResult<IEnumerable<TransactionDto>>.FailureResult("Card not found");
+                    return OperationResult<IEnumerable<TransactionDto>>.Failure("Card not found");
                 }
 
                 var transactions = await _unitOfWork.TransactionRepository.GetByCardIdAsync(cardId);
-                return OperationResult<IEnumerable<TransactionDto>>.SuccessResult(transactions.Select(MapToTransactionDto));
+                return OperationResult<IEnumerable<TransactionDto>>.Success(transactions.Select(MapToTransactionDto));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting transactions for card {CardId}", cardId);
-                return OperationResult<IEnumerable<TransactionDto>>.FailureResult($"Error retrieving transactions: {ex.Message}");
+                return OperationResult<IEnumerable<TransactionDto>>.Failure($"Error retrieving transactions: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<int>> GetCardCountByStatusAsync(CardStatus status)
+        public async Task<OperationResult<Dictionary<CardStatus, int>>> GetCardCountByStatusAsync()
         {
             try
             {
-                var counts = await _cardRepository.GetCardCountByStatusAsync(status);
-                return OperationResult<int>.SuccessResult(counts);
+                var counts = await _cardRepository.GetCardCountByStatusAsync();
+                return OperationResult<Dictionary<CardStatus, int>>.Success(counts);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting card counts by status");
-                return OperationResult<int>.FailureResult($"Error retrieving card counts: {ex.Message}");
+                return OperationResult<Dictionary<CardStatus, int>>.Failure($"Error retrieving card counts: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<DTOs.ProgramAnalyticsDto>> GetProgramCardAnalyticsAsync(LoyaltyProgramId programId)
+        public async Task<OperationResult<ProgramAnalyticsDto>> GetProgramCardAnalyticsAsync(LoyaltyProgramId programId)
         {
             try
             {
-                _logger.LogInformation($"Retrieving program analytics for program {programId}");
-                
                 var program = await _programRepository.GetByIdAsync(programId);
                 if (program == null)
                 {
-                    _logger.LogWarning($"Program not found: {programId}");
-                    return OperationResult<DTOs.ProgramAnalyticsDto>.FailureResult("Program not found");
+                    return OperationResult<ProgramAnalyticsDto>.FailureResult("Program not found");
                 }
 
-                // Get the cards for the program
                 var cards = await _cardRepository.GetByProgramIdAsync(programId);
                 
-                // Get all transactions for the program
-                var transactions = await _unitOfWork.TransactionRepository.GetByProgramIdAsync(programId);
-                
-                // Get rewards for the program
-                var rewards = await _unitOfWork.RewardRepository.GetByProgramIdAsync(programId);
-                
-                // Build analytics
-                var analytics = new DTOs.ProgramAnalyticsDto
+                // Get analytics data
+                var analytics = new ProgramAnalyticsDto
                 {
-                    TotalPrograms = 1, // We're only looking at one program
+                    TotalPrograms = 1,
                     ActivePrograms = program.IsActive ? 1 : 0,
                     StampPrograms = program.Type == LoyaltyProgramType.Stamp ? 1 : 0,
                     PointsPrograms = program.Type == LoyaltyProgramType.Points ? 1 : 0,
-                    TotalRewards = rewards.Count(),
-                    ActiveRewards = rewards.Count(r => r.IsActive),
+                    TotalRewards = 0, // For now
+                    ActiveRewards = 0, // For now
                     ProgramsByBrand = new Dictionary<string, int> { { program.BrandId.ToString(), 1 } }
                 };
-                
-                _logger.LogInformation($"Successfully retrieved program analytics for program {programId}");
-                return OperationResult<DTOs.ProgramAnalyticsDto>.SuccessResult(analytics);
+
+                return OperationResult<ProgramAnalyticsDto>.SuccessResult(analytics);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error retrieving program analytics: {ex.Message}");
-                return OperationResult<DTOs.ProgramAnalyticsDto>.FailureResult($"Error retrieving program analytics: {ex.Message}");
+                _logger.LogError(ex, "Error getting program card analytics for program {ProgramId}", programId);
+                return OperationResult<ProgramAnalyticsDto>.FailureResult($"Error retrieving program analytics: {ex.Message}");
             }
         }
 

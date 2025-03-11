@@ -30,13 +30,26 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    b.Id, b.Name, b.Category, b.Logo, b.Description, b.CreatedAt, b.UpdatedAt,
-                    c.Email, c.Phone, c.Website,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country
-                FROM Brands b
-                LEFT JOIN BrandContacts c ON b.Id = c.BrandId
-                LEFT JOIN BrandAddresses a ON b.Id = a.BrandId
-                WHERE b.Id = @Id";
+                    b.id AS Id, 
+                    b.name AS Name, 
+                    b.category AS Category, 
+                    b.logo AS Logo, 
+                    b.description AS Description, 
+                    b.created_at AS CreatedAt, 
+                    b.updated_at AS UpdatedAt,
+                    c.email AS Email, 
+                    c.phone AS Phone, 
+                    c.website AS Website,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country
+                FROM brands b
+                LEFT JOIN brand_contacts c ON b.id = c.brand_id
+                LEFT JOIN brand_addresses a ON b.id = a.brand_id
+                WHERE b.id = @Id";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -69,15 +82,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    b.Id, b.Name, b.Category, b.Logo, b.Description, b.CreatedAt, b.UpdatedAt,
-                    c.Email, c.Phone, c.Website,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country
-                FROM Brands b
-                LEFT JOIN BrandContacts c ON b.Id = c.BrandId
-                LEFT JOIN BrandAddresses a ON b.Id = a.BrandId
-                ORDER BY b.Name
-                OFFSET @Skip ROWS
-                FETCH NEXT @Take ROWS ONLY";
+                    b.id AS Id, 
+                    b.name AS Name, 
+                    b.category AS Category, 
+                    b.logo AS Logo, 
+                    b.description AS Description, 
+                    b.created_at AS CreatedAt, 
+                    b.updated_at AS UpdatedAt,
+                    c.email AS Email, 
+                    c.phone AS Phone, 
+                    c.website AS Website,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country
+                FROM brands b
+                LEFT JOIN brand_contacts c ON b.id = c.brand_id
+                LEFT JOIN brand_addresses a ON b.id = a.brand_id
+                ORDER BY b.name
+                LIMIT @Take OFFSET @Skip";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -110,16 +135,28 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    b.Id, b.Name, b.Category, b.Logo, b.Description, b.CreatedAt, b.UpdatedAt,
-                    c.Email, c.Phone, c.Website,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country
-                FROM Brands b
-                LEFT JOIN BrandContacts c ON b.Id = c.BrandId
-                LEFT JOIN BrandAddresses a ON b.Id = a.BrandId
-                WHERE b.Category = @Category
-                ORDER BY b.Name
-                OFFSET @Skip ROWS
-                FETCH NEXT @Take ROWS ONLY";
+                    b.id AS Id, 
+                    b.name AS Name, 
+                    b.category AS Category, 
+                    b.logo AS Logo, 
+                    b.description AS Description, 
+                    b.created_at AS CreatedAt, 
+                    b.updated_at AS UpdatedAt,
+                    c.email AS Email, 
+                    c.phone AS Phone, 
+                    c.website AS Website,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country
+                FROM brands b
+                LEFT JOIN brand_contacts c ON b.id = c.brand_id
+                LEFT JOIN brand_addresses a ON b.id = a.brand_id
+                WHERE b.category = @Category
+                ORDER BY b.name
+                LIMIT @Take OFFSET @Skip";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -151,15 +188,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task AddAsync(Brand brand)
         {
             const string insertBrandSql = @"
-                INSERT INTO Brands (Id, Name, Category, Logo, Description, CreatedAt, UpdatedAt)
+                INSERT INTO brands (id, name, category, logo, description, created_at, updated_at)
                 VALUES (@Id, @Name, @Category, @Logo, @Description, @CreatedAt, @UpdatedAt)";
                 
             const string insertContactSql = @"
-                INSERT INTO BrandContacts (BrandId, Email, Phone, Website)
+                INSERT INTO brand_contacts (brand_id, email, phone, website)
                 VALUES (@BrandId, @Email, @Phone, @Website)";
                 
             const string insertAddressSql = @"
-                INSERT INTO BrandAddresses (BrandId, Line1, Line2, City, State, PostalCode, Country)
+                INSERT INTO brand_addresses (brand_id, line1, line2, city, state, postal_code, country)
                 VALUES (@BrandId, @Line1, @Line2, @City, @State, @PostalCode, @Country)";
 
             var connection = await _dbConnection.GetConnectionAsync();
@@ -211,30 +248,30 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task UpdateAsync(Brand brand)
         {
             const string updateBrandSql = @"
-                UPDATE Brands
-                SET Name = @Name, 
-                    Category = @Category, 
-                    Logo = @Logo, 
-                    Description = @Description, 
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE brands
+                SET name = @Name, 
+                    category = @Category, 
+                    logo = @Logo, 
+                    description = @Description, 
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
                 
             const string updateContactSql = @"
-                UPDATE BrandContacts
-                SET Email = @Email, 
-                    Phone = @Phone, 
-                    Website = @Website
-                WHERE BrandId = @BrandId";
+                UPDATE brand_contacts
+                SET email = @Email, 
+                    phone = @Phone, 
+                    website = @Website
+                WHERE brand_id = @BrandId";
                 
             const string updateAddressSql = @"
-                UPDATE BrandAddresses
-                SET Line1 = @Line1, 
-                    Line2 = @Line2, 
-                    City = @City, 
-                    State = @State, 
-                    PostalCode = @PostalCode, 
-                    Country = @Country
-                WHERE BrandId = @BrandId";
+                UPDATE brand_addresses
+                SET line1 = @Line1, 
+                    line2 = @Line2, 
+                    city = @City, 
+                    state = @State, 
+                    postal_code = @PostalCode, 
+                    country = @Country
+                WHERE brand_id = @BrandId";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -286,14 +323,25 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    s.Id, s.BrandId, s.Name, s.ContactInfo, s.CreatedAt, s.UpdatedAt,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country,
-                    g.Latitude, g.Longitude
-                FROM Stores s
-                LEFT JOIN StoreAddresses a ON s.Id = a.StoreId
-                LEFT JOIN StoreGeoLocations g ON s.Id = g.StoreId
-                WHERE s.BrandId = @BrandId
-                ORDER BY s.Name";
+                    s.id AS Id, 
+                    s.brand_id AS BrandId, 
+                    s.name AS Name, 
+                    s.contact_info AS ContactInfo, 
+                    s.created_at AS CreatedAt, 
+                    s.updated_at AS UpdatedAt,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country,
+                    g.latitude AS Latitude, 
+                    g.longitude AS Longitude
+                FROM stores s
+                LEFT JOIN store_addresses a ON s.id = a.store_id
+                LEFT JOIN store_geo_locations g ON s.id = g.store_id
+                WHERE s.brand_id = @BrandId
+                ORDER BY s.name";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -326,13 +374,24 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    s.Id, s.BrandId, s.Name, s.ContactInfo, s.CreatedAt, s.UpdatedAt,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country,
-                    g.Latitude, g.Longitude
-                FROM Stores s
-                LEFT JOIN StoreAddresses a ON s.Id = a.StoreId
-                LEFT JOIN StoreGeoLocations g ON s.Id = g.StoreId
-                WHERE s.Id = @Id";
+                    s.id AS Id, 
+                    s.brand_id AS BrandId, 
+                    s.name AS Name, 
+                    s.contact_info AS ContactInfo, 
+                    s.created_at AS CreatedAt, 
+                    s.updated_at AS UpdatedAt,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country,
+                    g.latitude AS Latitude, 
+                    g.longitude AS Longitude
+                FROM stores s
+                LEFT JOIN store_addresses a ON s.id = a.store_id
+                LEFT JOIN store_geo_locations g ON s.id = g.store_id
+                WHERE s.id = @Id";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -364,15 +423,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task AddStoreAsync(Store store)
         {
             const string insertStoreSql = @"
-                INSERT INTO Stores (Id, BrandId, Name, ContactInfo, CreatedAt, UpdatedAt)
+                INSERT INTO stores (id, brand_id, name, contact_info, created_at, updated_at)
                 VALUES (@Id, @BrandId, @Name, @ContactInfo, @CreatedAt, @UpdatedAt)";
                 
             const string insertAddressSql = @"
-                INSERT INTO StoreAddresses (StoreId, Line1, Line2, City, State, PostalCode, Country)
+                INSERT INTO store_addresses (store_id, line1, line2, city, state, postal_code, country)
                 VALUES (@StoreId, @Line1, @Line2, @City, @State, @PostalCode, @Country)";
                 
             const string insertLocationSql = @"
-                INSERT INTO StoreGeoLocations (StoreId, Latitude, Longitude)
+                INSERT INTO store_geo_locations (store_id, latitude, longitude)
                 VALUES (@StoreId, @Latitude, @Longitude)";
 
             var connection = await _dbConnection.GetConnectionAsync();
@@ -423,27 +482,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task UpdateStoreAsync(Store store)
         {
             const string updateStoreSql = @"
-                UPDATE Stores
-                SET Name = @Name, 
-                    ContactInfo = @ContactInfo, 
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE stores
+                SET name = @Name, 
+                    contact_info = @ContactInfo, 
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
                 
             const string updateAddressSql = @"
-                UPDATE StoreAddresses
-                SET Line1 = @Line1, 
-                    Line2 = @Line2, 
-                    City = @City, 
-                    State = @State, 
-                    PostalCode = @PostalCode, 
-                    Country = @Country
-                WHERE StoreId = @StoreId";
+                UPDATE store_addresses
+                SET line1 = @Line1, 
+                    line2 = @Line2, 
+                    city = @City, 
+                    state = @State, 
+                    postal_code = @PostalCode, 
+                    country = @Country
+                WHERE store_id = @StoreId";
                 
             const string updateLocationSql = @"
-                UPDATE StoreGeoLocations
-                SET Latitude = @Latitude, 
-                    Longitude = @Longitude
-                WHERE StoreId = @StoreId";
+                UPDATE store_geo_locations
+                SET latitude = @Latitude, 
+                    longitude = @Longitude
+                WHERE store_id = @StoreId";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -497,13 +556,24 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             const string sql = @"
                 SELECT 
-                    s.Id, s.BrandId, s.Name, s.ContactInfo, s.CreatedAt, s.UpdatedAt,
-                    a.Line1, a.Line2, a.City, a.State, a.PostalCode, a.Country,
-                    g.Latitude, g.Longitude
-                FROM Stores s
-                LEFT JOIN StoreAddresses a ON s.Id = a.StoreId
-                LEFT JOIN StoreGeoLocations g ON s.Id = g.StoreId
-                WHERE g.Latitude IS NOT NULL AND g.Longitude IS NOT NULL";
+                    s.id AS Id, 
+                    s.brand_id AS BrandId, 
+                    s.name AS Name, 
+                    s.contact_info AS ContactInfo, 
+                    s.created_at AS CreatedAt, 
+                    s.updated_at AS UpdatedAt,
+                    a.line1 AS Line1, 
+                    a.line2 AS Line2, 
+                    a.city AS City, 
+                    a.state AS State, 
+                    a.postal_code AS PostalCode, 
+                    a.country AS Country,
+                    g.latitude AS Latitude, 
+                    g.longitude AS Longitude
+                FROM stores s
+                LEFT JOIN store_addresses a ON s.id = a.store_id
+                LEFT JOIN store_geo_locations g ON s.id = g.store_id
+                WHERE g.latitude IS NOT NULL AND g.longitude IS NOT NULL";
 
             var connection = await _dbConnection.GetConnectionAsync();
             

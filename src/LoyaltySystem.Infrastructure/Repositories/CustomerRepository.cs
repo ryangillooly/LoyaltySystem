@@ -24,8 +24,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<Customer?> GetByIdAsync(CustomerId id)
         {
             const string sql = @"
-                SELECT * FROM Customers
-                WHERE Id = @Id";
+                SELECT * FROM customers
+                WHERE id = @Id";
 
             var parameters = new { Id = id.Value };
             
@@ -38,10 +38,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Customer>> GetAllAsync(int page, int pageSize)
         {
             const string sql = @"
-                SELECT * FROM Customers
-                ORDER BY Name
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+                SELECT * FROM customers
+                ORDER BY name
+                LIMIT @PageSize OFFSET @Offset";
             
             var parameters = new { Offset = (page - 1) * pageSize, PageSize = pageSize };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -52,7 +51,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<int> GetTotalCountAsync()
         {
-            const string sql = "SELECT COUNT(*) FROM Customers";
+            const string sql = "SELECT COUNT(*) FROM customers";
             var dbConnection = await _connection.GetConnectionAsync();
             return await dbConnection.ExecuteScalarAsync<int>(sql);
         }
@@ -60,11 +59,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Customer>> SearchAsync(string searchTerm, int page, int pageSize)
         {
             const string sql = @"
-                SELECT * FROM Customers
-                WHERE Name LIKE @SearchTerm OR Email LIKE @SearchTerm OR Phone LIKE @SearchTerm
-                ORDER BY Name
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+                SELECT * FROM customers
+                WHERE name ILIKE @SearchTerm OR email ILIKE @SearchTerm OR phone ILIKE @SearchTerm
+                ORDER BY name
+                LIMIT @PageSize OFFSET @Offset";
             
             var parameters = new 
             { 
@@ -83,7 +81,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             // Insert the customer
             const string customerSql = @"
-                INSERT INTO Customers (Id, Name, Email, Phone, MarketingConsent, JoinedAt, LastLoginAt, CreatedAt, UpdatedAt)
+                INSERT INTO customers (id, name, email, phone, marketing_consent, joined_at, last_login_at, created_at, updated_at)
                 VALUES (@Id, @Name, @Email, @Phone, @MarketingConsent, @JoinedAt, @LastLoginAt, @CreatedAt, @UpdatedAt)
                 RETURNING *";
             
@@ -122,9 +120,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Customer>> GetNewCustomersAsync(DateTime start, DateTime end)
         {
             const string sql = @"
-                SELECT * FROM Customers
-                WHERE CreatedAt BETWEEN @Start AND @End
-                ORDER BY CreatedAt DESC";
+                SELECT * FROM customers
+                WHERE joined_at BETWEEN @Start AND @End
+                ORDER BY joined_at DESC";
 
             var parameters = new { Start = start, End = end };
             var dbConnection = await _connection.GetConnectionAsync();
@@ -136,14 +134,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task UpdateAsync(Customer customer)
         {
             const string sql = @"
-                UPDATE Customers 
-                SET Name = @Name,
-                    Email = @Email,
-                    Phone = @Phone,
-                    MarketingConsent = @MarketingConsent,
-                    LastLoginAt = @LastLoginAt,
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE customers 
+                SET name = @Name,
+                    email = @Email,
+                    phone = @Phone,
+                    marketing_consent = @MarketingConsent,
+                    last_login_at = @LastLoginAt,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
             
             var dbConnection = await _connection.GetConnectionAsync();
             var parameters = new
@@ -169,9 +167,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<int> GetCustomersWithCardsCountAsync()
         {
             const string sql = @"
-                SELECT COUNT(DISTINCT c.Id) 
-                FROM Customers c
-                JOIN LoyaltyCards lc ON c.Id = lc.CustomerId";
+                SELECT COUNT(DISTINCT c.id) 
+                FROM customers c
+                JOIN loyalty_cards lc ON c.id = lc.customer_id";
             
             var dbConnection = await _connection.GetConnectionAsync();
             return await dbConnection.ExecuteScalarAsync<int>(sql);

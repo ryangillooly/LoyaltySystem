@@ -11,6 +11,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create extension for geospatial functionality
 CREATE EXTENSION IF NOT EXISTS postgis;
 
+-- Create extension for text search and similarity
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Create Brands table
 CREATE TABLE IF NOT EXISTS brands (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -104,6 +107,8 @@ CREATE TABLE IF NOT EXISTS customers (
 
 CREATE INDEX idx_customers_email ON customers (email) WHERE email IS NOT NULL;
 CREATE INDEX idx_customers_phone ON customers (phone) WHERE phone IS NOT NULL;
+-- Add enhanced search for customers by name (using trigram similarity)
+CREATE INDEX idx_customers_name_gin ON customers USING gin(name gin_trgm_ops);
 
 -- Create LoyaltyPrograms table
 CREATE TABLE IF NOT EXISTS loyalty_programs (
@@ -160,6 +165,8 @@ CREATE TABLE IF NOT EXISTS rewards (
 
 CREATE INDEX idx_rewards_program_id ON rewards (program_id);
 CREATE INDEX idx_rewards_valid_period ON rewards (valid_from, valid_to) WHERE valid_from IS NOT NULL AND valid_to IS NOT NULL;
+-- Add index for active rewards (commonly queried)
+CREATE INDEX idx_rewards_program_active ON rewards(program_id, is_active) WHERE is_active = TRUE;
 
 -- Create LoyaltyCards table
 CREATE TABLE IF NOT EXISTS loyalty_cards (
@@ -185,6 +192,8 @@ CREATE INDEX idx_loyalty_cards_program_id ON loyalty_cards (program_id);
 CREATE INDEX idx_loyalty_cards_customer_id ON loyalty_cards (customer_id);
 CREATE INDEX idx_loyalty_cards_status ON loyalty_cards (status);
 CREATE INDEX idx_loyalty_cards_expires_at ON loyalty_cards (expires_at) WHERE expires_at IS NOT NULL;
+-- Add composite index for common query patterns
+CREATE INDEX idx_loyalty_cards_program_status ON loyalty_cards(program_id, status);
 
 -- Create Transactions table with partitioning
 CREATE TABLE IF NOT EXISTS transactions (
@@ -214,12 +223,17 @@ CREATE TABLE transactions_2023 PARTITION OF transactions
     FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
 CREATE TABLE transactions_2024 PARTITION OF transactions
     FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+-- Add partition for next year
+CREATE TABLE transactions_2025 PARTITION OF transactions
+    FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');
 
 -- Create indexes for transactions
 CREATE INDEX idx_transactions_card_id ON transactions (card_id);
 CREATE INDEX idx_transactions_type ON transactions (type);
 CREATE INDEX idx_transactions_store_id ON transactions (store_id);
 CREATE INDEX idx_transactions_pos_transaction_id ON transactions (pos_transaction_id) WHERE pos_transaction_id IS NOT NULL;
+-- Add composite index for common query patterns
+CREATE INDEX idx_transactions_card_timestamp ON transactions(card_id, timestamp);
 
 -- Use BRIN index for timestamp column (efficient for time-ordered data)
 CREATE INDEX idx_transactions_timestamp_brin ON transactions USING BRIN (timestamp);
@@ -239,6 +253,51 @@ CREATE TABLE IF NOT EXISTS card_links (
 CREATE UNIQUE INDEX idx_card_links_card_hash ON card_links (card_hash);
 CREATE INDEX idx_card_links_card_id ON card_links (card_id);
 
+-- PERFORMANCE OPTIMIZATIONS FOR HIGH-VOLUME TABLES
+
+-- Optimize autovacuum for transactions table
+ALTER TABLE transactions SET (
+    autovacuum_vacuum_scale_factor = 0.05,
+    autovacuum_analyze_scale_factor = 0.025,
+    fillfactor = 80
+);
+
+-- Optimize loyalty_cards table
+ALTER TABLE loyalty_cards SET (
+    autovacuum_vacuum_scale_factor = 0.1,
+    autovacuum_analyze_scale_factor = 0.05,
+    fillfactor = 90
+);
+
+-- PARTITION MANAGEMENT TOOLS
+
+-- Create table to track partition maintenance
+CREATE TABLE IF NOT EXISTS partition_maintenance_log (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    year INTEGER NOT NULL,
+    notes TEXT
+);
+
+-- Procedure to create new transaction partitions automatically
+CREATE OR REPLACE PROCEDURE create_transaction_partition(year INTEGER)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    EXECUTE format(
+        'CREATE TABLE IF NOT EXISTS transactions_%s PARTITION OF transactions
+         FOR VALUES FROM (%L) TO (%L)',
+        year,
+        year || '-01-01',
+        (year + 1) || '-01-01'
+    );
+    
+    -- Log it
+    INSERT INTO partition_maintenance_log (year, notes)
+    VALUES (year, 'Created partition for year ' || year);
+END;
+$$;
+
 -- Create functions for automatic timestamp updates
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
@@ -248,17 +307,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers for automatic timestamp updates
+-- Apply timestamp update triggers to all tables that need it
 CREATE TRIGGER update_brands_timestamp
 BEFORE UPDATE ON brands
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
 CREATE TRIGGER update_stores_timestamp
 BEFORE UPDATE ON stores
-FOR EACH ROW EXECUTE FUNCTION update_timestamp();
-
-CREATE TRIGGER update_customers_timestamp
-BEFORE UPDATE ON customers
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
 CREATE TRIGGER update_loyalty_programs_timestamp
@@ -277,101 +332,212 @@ CREATE TRIGGER update_card_links_timestamp
 BEFORE UPDATE ON card_links
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
--- Create function to find nearby stores
-CREATE OR REPLACE FUNCTION find_nearby_stores(
-    lat DOUBLE PRECISION,
-    lng DOUBLE PRECISION,
-    radius_in_meters INTEGER DEFAULT 5000
-)
-RETURNS TABLE (
-    id UUID,
-    brand_id UUID,
-    name VARCHAR,
-    distance_in_meters DOUBLE PRECISION
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        s.id,
-        s.brand_id,
-        s.name,
-        ST_Distance(
-            sgl.location::geography,
-            ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography
-        ) AS distance_in_meters
-    FROM 
-        stores s
-    JOIN 
-        store_geo_locations sgl ON s.id = sgl.store_id
-    WHERE 
-        ST_DWithin(
-            sgl.location::geography,
-            ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography,
-            radius_in_meters
-        )
-    ORDER BY 
-        distance_in_meters;
-END;
-$$ LANGUAGE plpgsql;
+-- DATA INTEGRITY ENHANCEMENTS
 
--- Create function to expire loyalty cards
-CREATE OR REPLACE FUNCTION expire_loyalty_cards()
-RETURNS INTEGER AS $$
+-- Ensure card type matches program type
+CREATE OR REPLACE FUNCTION check_card_program_type_consistency()
+RETURNS TRIGGER AS $$
 DECLARE
-    expired_count INTEGER;
+    program_type loyalty_program_type;
 BEGIN
-    UPDATE loyalty_cards
-    SET 
-        status = 'Expired',
-        updated_at = CURRENT_TIMESTAMP
-    WHERE 
-        status = 'Active' AND
-        expires_at IS NOT NULL AND
-        expires_at < CURRENT_TIMESTAMP;
+    SELECT type INTO program_type
+    FROM loyalty_programs
+    WHERE id = NEW.program_id;
     
-    GET DIAGNOSTICS expired_count = ROW_COUNT;
-    RETURN expired_count;
+    IF NEW.type != program_type THEN
+        RAISE EXCEPTION 'Card type must match program type';
+    END IF;
+    
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create a materialized view for analytics (active cards by program)
-CREATE MATERIALIZED VIEW IF NOT EXISTS active_cards_by_program AS
+CREATE TRIGGER tr_check_card_program_type_consistency
+BEFORE INSERT OR UPDATE ON loyalty_cards
+FOR EACH ROW
+EXECUTE FUNCTION check_card_program_type_consistency();
+
+-- Validate reward redemption
+CREATE OR REPLACE FUNCTION validate_reward_redemption()
+RETURNS TRIGGER AS $$
+DECLARE
+    card_record RECORD;
+    reward_record RECORD;
+BEGIN
+    IF NEW.type != 'RewardRedemption' THEN
+        RETURN NEW;
+    END IF;
+    
+    -- Get card details
+    SELECT * INTO card_record
+    FROM loyalty_cards
+    WHERE id = NEW.card_id;
+    
+    -- Get reward details
+    SELECT * INTO reward_record
+    FROM rewards
+    WHERE id = NEW.reward_id;
+    
+    -- Check if reward belongs to the card's program
+    IF card_record.program_id != reward_record.program_id THEN
+        RAISE EXCEPTION 'Reward does not belong to the card program';
+    END IF;
+    
+    -- Check if card has enough points/stamps
+    IF card_record.type = 'Stamp' AND card_record.stamps_collected < reward_record.required_value THEN
+        RAISE EXCEPTION 'Insufficient stamps for redemption';
+    ELSIF card_record.type = 'Points' AND card_record.points_balance < reward_record.required_value THEN
+        RAISE EXCEPTION 'Insufficient points for redemption';
+    END IF;
+    
+    -- Check reward validity period
+    IF (reward_record.valid_from IS NOT NULL AND reward_record.valid_from > CURRENT_TIMESTAMP) OR
+       (reward_record.valid_to IS NOT NULL AND reward_record.valid_to < CURRENT_TIMESTAMP) THEN
+        RAISE EXCEPTION 'Reward is not valid at this time';
+    END IF;
+    
+    -- Check if reward is active
+    IF NOT reward_record.is_active THEN
+        RAISE EXCEPTION 'Reward is not active';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_validate_reward_redemption
+BEFORE INSERT ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION validate_reward_redemption();
+
+-- ANALYTICS SUPPORT WITH MATERIALIZED VIEWS
+
+-- Program metrics materialized view for fast reporting
+CREATE MATERIALIZED VIEW mv_program_metrics AS
 SELECT 
-    lp.id AS program_id,
-    lp.name AS program_name,
+    p.id AS program_id,
+    p.name AS program_name,
     b.id AS brand_id,
     b.name AS brand_name,
-    COUNT(*) AS active_card_count,
-    SUM(CASE WHEN lc.type = 'Points' THEN lc.points_balance ELSE 0 END) AS total_points,
-    SUM(CASE WHEN lc.type = 'Stamp' THEN lc.stamps_collected ELSE 0 END) AS total_stamps
-FROM 
-    loyalty_programs lp
-JOIN 
-    brands b ON lp.brand_id = b.id
-JOIN 
-    loyalty_cards lc ON lp.id = lc.program_id
-WHERE 
-    lc.status = 'Active'
-GROUP BY 
-    lp.id, lp.name, b.id, b.name
+    COUNT(DISTINCT c.id) AS total_cards,
+    COUNT(DISTINCT CASE WHEN c.status = 'Active' THEN c.id END) AS active_cards,
+    SUM(CASE WHEN c.status = 'Active' THEN c.points_balance ELSE 0 END) AS total_active_points,
+    COUNT(DISTINCT t.id) AS total_transactions,
+    COALESCE(AVG(CASE WHEN t.type = 'PointsIssuance' THEN t.points_amount END), 0) AS avg_points_per_transaction,
+    COALESCE(AVG(t.transaction_amount), 0) AS avg_transaction_amount
+FROM loyalty_programs p
+JOIN brands b ON p.brand_id = b.id
+LEFT JOIN loyalty_cards c ON p.id = c.program_id
+LEFT JOIN transactions t ON c.id = t.card_id
+GROUP BY p.id, p.name, b.id, b.name
 WITH DATA;
 
-CREATE UNIQUE INDEX ON active_cards_by_program (program_id);
+CREATE UNIQUE INDEX idx_mv_program_metrics_program_id ON mv_program_metrics(program_id);
+CREATE INDEX idx_mv_program_metrics_brand_id ON mv_program_metrics(brand_id);
 
--- Create function to refresh the materialized view
-CREATE OR REPLACE FUNCTION refresh_active_cards_view()
+-- Customer engagement metrics
+CREATE MATERIALIZED VIEW mv_customer_metrics AS
+SELECT 
+    c.id AS customer_id,
+    c.name AS customer_name,
+    COUNT(DISTINCT lc.id) AS total_cards,
+    SUM(CASE WHEN lc.status = 'Active' THEN 1 ELSE 0 END) AS active_cards,
+    SUM(lc.points_balance) AS total_points,
+    MAX(t.timestamp) AS last_transaction_date,
+    COUNT(DISTINCT t.id) AS total_transactions,
+    COUNT(DISTINCT CASE WHEN t.type = 'RewardRedemption' THEN t.id END) AS total_redemptions
+FROM customers c
+LEFT JOIN loyalty_cards lc ON c.id = lc.customer_id
+LEFT JOIN transactions t ON lc.id = t.card_id
+GROUP BY c.id, c.name
+WITH DATA;
+
+CREATE UNIQUE INDEX idx_mv_customer_metrics_customer_id ON mv_customer_metrics(customer_id);
+
+-- Function to refresh materialized views
+CREATE OR REPLACE PROCEDURE refresh_analytics_views()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW mv_program_metrics;
+    REFRESH MATERIALIZED VIEW mv_customer_metrics;
+END;
+$$;
+
+-- SECURITY WITH ROW-LEVEL SECURITY
+
+-- Create an app context for current brand/store/staff access control
+CREATE TABLE IF NOT EXISTS app_context (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Function to set app context
+CREATE OR REPLACE FUNCTION set_app_context(p_key TEXT, p_value TEXT)
 RETURNS VOID AS $$
 BEGIN
-    REFRESH MATERIALIZED VIEW active_cards_by_program;
+    -- Delete existing key if present
+    DELETE FROM app_context WHERE key = p_key;
+    
+    -- Insert new key-value
+    INSERT INTO app_context (key, value) VALUES (p_key, p_value);
 END;
 $$ LANGUAGE plpgsql;
 
--- Create a comment to explain how to schedule the refresh
-COMMENT ON FUNCTION refresh_active_cards_view() IS 'Schedule this function to run daily using pg_cron extension or an external scheduler.';
+-- Function to get app context
+CREATE OR REPLACE FUNCTION get_app_context(p_key TEXT)
+RETURNS TEXT AS $$
+DECLARE
+    v_value TEXT;
+BEGIN
+    SELECT value INTO v_value FROM app_context WHERE key = p_key;
+    RETURN v_value;
+END;
+$$ LANGUAGE plpgsql;
 
--- Optionally add sample data
--- INSERT INTO brands (id, name, category, created_at, updated_at)
--- VALUES (uuid_generate_v4(), 'Sample Coffee Shop', 'Food & Beverage', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+-- Enable row-level security on tables
+ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_programs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_cards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for multi-tenant isolation
+-- Brand isolation
+CREATE POLICY brand_isolation ON brands
+    USING (id::TEXT = get_app_context('current_brand_id') OR get_app_context('user_role') = 'admin');
+
+-- Store isolation by brand
+CREATE POLICY store_isolation ON stores
+    USING (brand_id::TEXT = get_app_context('current_brand_id') OR get_app_context('user_role') = 'admin');
+
+-- Program isolation by brand
+CREATE POLICY program_isolation ON loyalty_programs
+    USING (brand_id::TEXT = get_app_context('current_brand_id') OR get_app_context('user_role') = 'admin');
+
+-- Card isolation by brand (through program)
+CREATE POLICY card_isolation ON loyalty_cards
+    USING (program_id IN (
+        SELECT id FROM loyalty_programs 
+        WHERE brand_id::TEXT = get_app_context('current_brand_id')
+    ) OR get_app_context('user_role') = 'admin');
+
+-- Transaction isolation by store
+CREATE POLICY transaction_isolation ON transactions
+    USING (store_id::TEXT = get_app_context('current_store_id') 
+        OR store_id IN (
+            SELECT id FROM stores 
+            WHERE brand_id::TEXT = get_app_context('current_brand_id')
+        )
+        OR get_app_context('user_role') = 'admin');
+
+-- Reward isolation by brand (through program)
+CREATE POLICY reward_isolation ON rewards
+    USING (program_id IN (
+        SELECT id FROM loyalty_programs 
+        WHERE brand_id::TEXT = get_app_context('current_brand_id')
+    ) OR get_app_context('user_role') = 'admin');
 
 -- Done
 COMMENT ON DATABASE CURRENT_CATALOG IS 'Loyalty System Database - Created with PostgreSQL-specific optimizations'; 

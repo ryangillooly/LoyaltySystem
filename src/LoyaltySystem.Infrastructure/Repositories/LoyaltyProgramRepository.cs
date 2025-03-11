@@ -24,14 +24,24 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
         }
-
-        /// <summary>
-        /// Gets a loyalty program by its ID.
-        /// </summary>
+        
         public async Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id)
         {
             const string sql = @"
-                SELECT * FROM LoyaltyPrograms WHERE Id = @Id";
+                SELECT 
+                    id AS Id,
+                    brand_id AS BrandId,
+                    name AS Name,
+                    type::int AS Type,
+                    stamp_threshold AS StampThreshold,
+                    points_conversion_rate AS PointsConversionRate,
+                    daily_stamp_limit AS DailyStampLimit,
+                    minimum_transaction_amount AS MinimumTransactionAmount,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM loyalty_programs 
+                WHERE id = @Id";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { Id = id.Value };
@@ -44,16 +54,25 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             return program;
         }
-
-        /// <summary>
-        /// Gets loyalty programs for a specific brand.
-        /// </summary>
+        
         public async Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId)
         {
             const string sql = @"
-                SELECT * FROM LoyaltyPrograms 
-                WHERE BrandId = @BrandId
-                ORDER BY CreatedAt DESC";
+                SELECT 
+                    id AS Id,
+                    brand_id AS BrandId,
+                    name AS Name,
+                    type::int AS Type,
+                    stamp_threshold AS StampThreshold,
+                    points_conversion_rate AS PointsConversionRate,
+                    daily_stamp_limit AS DailyStampLimit,
+                    minimum_transaction_amount AS MinimumTransactionAmount,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM loyalty_programs 
+                WHERE brand_id = @BrandId
+                ORDER BY created_at DESC";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { BrandId = brandId.Value };
@@ -66,16 +85,25 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             return programs;
         }
-
-        /// <summary>
-        /// Gets active loyalty programs for a specific brand.
-        /// </summary>
+        
         public async Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(BrandId brandId)
         {
             const string sql = @"
-                SELECT * FROM LoyaltyPrograms 
-                WHERE BrandId = @BrandId AND IsActive = @IsActive
-                ORDER BY CreatedAt DESC";
+                SELECT 
+                    id AS Id,
+                    brand_id AS BrandId,
+                    name AS Name,
+                    type::int AS Type,
+                    stamp_threshold AS StampThreshold,
+                    points_conversion_rate AS PointsConversionRate,
+                    daily_stamp_limit AS DailyStampLimit,
+                    minimum_transaction_amount AS MinimumTransactionAmount,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM loyalty_programs 
+                WHERE brand_id = @BrandId AND is_active = @IsActive
+                ORDER BY created_at DESC";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { BrandId = brandId.Value, IsActive = true };
@@ -89,20 +117,44 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return programs;
         }
 
-        /// <summary>
-        /// Gets loyalty programs by type.
-        /// </summary>
+        public async Task<int> GetCountByTypeAsync(LoyaltyProgramType type)
+        {
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM loyalty_programs
+                WHERE type = @Type::loyalty_program_type
+            ";
+        
+            var connection = await _dbConnection.GetConnectionAsync();
+            return await connection.ExecuteScalarAsync<int>(sql, new { Type = type.ToString() });
+        }
+        
         public async Task<IEnumerable<LoyaltyProgram>> GetByTypeAsync(LoyaltyProgramType type, int page, int pageSize)
         {
             const string sql = @"
-                SELECT * FROM LoyaltyPrograms 
-                WHERE Type = @Type
-                ORDER BY CreatedAt DESC
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+                SELECT 
+                    id AS Id,
+                    brand_id AS BrandId,
+                    name AS Name,
+                    type::int AS Type,
+                    stamp_threshold AS StampThreshold,
+                    points_conversion_rate AS PointsConversionRate,
+                    daily_stamp_limit AS DailyStampLimit,
+                    minimum_transaction_amount AS MinimumTransactionAmount,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM loyalty_programs 
+                WHERE type = @Type::loyalty_program_type
+                ORDER BY created_at DESC
+                LIMIT @PageSize OFFSET @Offset";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { Type = (int)type, Offset = (page - 1) * pageSize, PageSize = pageSize };
+            var parameters = new { 
+                Type = type.ToString(), 
+                Offset = (page - 1) * pageSize, 
+                PageSize = pageSize 
+            };
             var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
 
             foreach (var program in programs)
@@ -113,26 +165,23 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return programs;
         }
 
-        /// <summary>
-        /// Adds a new loyalty program.
-        /// </summary>
         public async Task AddAsync(LoyaltyProgram program)
         {
             const string insertProgramSql = @"
-                INSERT INTO LoyaltyPrograms (
-                    Id, BrandId, Name, Type, StampThreshold, PointsConversionRate,
-                    DailyStampLimit, MinimumTransactionAmount, IsActive, CreatedAt, UpdatedAt
+                INSERT INTO loyalty_programs (
+                    id, brand_id, name, type, stamp_threshold, points_conversion_rate,
+                    daily_stamp_limit, minimum_transaction_amount, is_active, created_at, updated_at
                 ) VALUES (
-                    @Id, @BrandId, @Name, @Type, @StampThreshold, @PointsConversionRate,
+                    @Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
                     @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @CreatedAt, @UpdatedAt
                 )";
                 
             const string insertExpirationSql = @"
-                INSERT INTO ProgramExpirationPolicies (
-                    ProgramId, HasExpiration, ExpirationType, ExpirationValue,
-                    ExpiresOnSpecificDate, ExpirationDay, ExpirationMonth
+                INSERT INTO program_expiration_policies (
+                    program_id, has_expiration, expiration_type, expiration_value,
+                    expires_on_specific_date, expiration_day, expiration_month
                 ) VALUES (
-                    @ProgramId, @HasExpiration, @ExpirationType, @ExpirationValue,
+                    @ProgramId, @HasExpiration, @ExpirationType::expiration_type, @ExpirationValue,
                     @ExpiresOnSpecificDate, @ExpirationDay, @ExpirationMonth
                 )";
 
@@ -147,7 +196,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                         program.Id,
                         program.BrandId,
                         program.Name,
-                        Type = (int)program.Type,
+                        Type = program.Type.ToString(),
                         program.StampThreshold,
                         program.PointsConversionRate,
                         program.DailyStampLimit,
@@ -163,7 +212,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                         { 
                             ProgramId = program.Id, 
                             program.ExpirationPolicy.HasExpiration, 
-                            ExpirationType = (int)program.ExpirationPolicy.ExpirationType, 
+                            ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(), 
                             program.ExpirationPolicy.ExpirationValue,
                             program.ExpirationPolicy.ExpiresOnSpecificDate,
                             program.ExpirationPolicy.ExpirationDay,
@@ -187,31 +236,28 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Updates an existing loyalty program.
-        /// </summary>
         public async Task UpdateAsync(LoyaltyProgram program)
         {
             const string updateProgramSql = @"
-                UPDATE LoyaltyPrograms
-                SET Name = @Name, 
-                    StampThreshold = @StampThreshold, 
-                    PointsConversionRate = @PointsConversionRate,
-                    DailyStampLimit = @DailyStampLimit, 
-                    MinimumTransactionAmount = @MinimumTransactionAmount, 
-                    IsActive = @IsActive,
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE loyalty_programs
+                SET name = @Name, 
+                    stamp_threshold = @StampThreshold, 
+                    points_conversion_rate = @PointsConversionRate,
+                    daily_stamp_limit = @DailyStampLimit, 
+                    minimum_transaction_amount = @MinimumTransactionAmount, 
+                    is_active = @IsActive,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
                 
             const string updateExpirationSql = @"
-                UPDATE ProgramExpirationPolicies
-                SET HasExpiration = @HasExpiration,
-                    ExpirationType = @ExpirationType,
-                    ExpirationValue = @ExpirationValue,
-                    ExpiresOnSpecificDate = @ExpiresOnSpecificDate,
-                    ExpirationDay = @ExpirationDay,
-                    ExpirationMonth = @ExpirationMonth
-                WHERE ProgramId = @ProgramId";
+                UPDATE program_expiration_policies
+                SET has_expiration = @HasExpiration,
+                    expiration_type = @ExpirationType::expiration_type,
+                    expiration_value = @ExpirationValue,
+                    expires_on_specific_date = @ExpiresOnSpecificDate,
+                    expiration_day = @ExpirationDay,
+                    expiration_month = @ExpirationMonth
+                WHERE program_id = @ProgramId";
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -237,7 +283,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                         { 
                             ProgramId = program.Id, 
                             program.ExpirationPolicy.HasExpiration, 
-                            ExpirationType = (int)program.ExpirationPolicy.ExpirationType, 
+                            ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(), 
                             program.ExpirationPolicy.ExpirationValue,
                             program.ExpirationPolicy.ExpiresOnSpecificDate,
                             program.ExpirationPolicy.ExpirationDay,
@@ -255,15 +301,23 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Gets the rewards for a specific program.
-        /// </summary>
         public async Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId)
         {
             const string sql = @"
-                SELECT * FROM Rewards 
-                WHERE ProgramId = @ProgramId
-                ORDER BY RequiredValue";
+                SELECT 
+                    id AS Id,
+                    program_id AS ProgramId,
+                    title AS Title,
+                    description AS Description,
+                    required_value AS RequiredValue,
+                    valid_from AS ValidFrom,
+                    valid_to AS ValidTo,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM rewards 
+                WHERE program_id = @ProgramId
+                ORDER BY required_value";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { ProgramId = programId.Value };
@@ -272,15 +326,23 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return rewards;
         }
 
-        /// <summary>
-        /// Gets active rewards for a specific program.
-        /// </summary>
         public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
         {
             const string sql = @"
-                SELECT * FROM Rewards 
-                WHERE ProgramId = @ProgramId AND IsActive = @IsActive
-                ORDER BY RequiredValue";
+                SELECT 
+                    id AS Id,
+                    program_id AS ProgramId,
+                    title AS Title,
+                    description AS Description,
+                    required_value AS RequiredValue,
+                    valid_from AS ValidFrom,
+                    valid_to AS ValidTo,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM rewards 
+                WHERE program_id = @ProgramId AND is_active = @IsActive
+                ORDER BY required_value";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { ProgramId = programId.Value, IsActive = true };
@@ -289,13 +351,22 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return rewards;
         }
 
-        /// <summary>
-        /// Gets a specific reward.
-        /// </summary>
         public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
         {
             const string sql = @"
-                SELECT * FROM Rewards WHERE Id = @Id";
+                SELECT 
+                    id AS Id,
+                    program_id AS ProgramId,
+                    title AS Title,
+                    description AS Description,
+                    required_value AS RequiredValue,
+                    valid_from AS ValidFrom,
+                    valid_to AS ValidTo,
+                    is_active AS IsActive,
+                    created_at AS CreatedAt,
+                    updated_at AS UpdatedAt
+                FROM rewards 
+                WHERE id = @Id";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { Id = rewardId.Value };
@@ -304,30 +375,24 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return reward;
         }
 
-        /// <summary>
-        /// Adds a new reward.
-        /// </summary>
         public async Task AddRewardAsync(Reward reward)
         {
             var connection = await _dbConnection.GetConnectionAsync();
             await AddRewardAsync(reward, null);
         }
 
-        /// <summary>
-        /// Updates an existing reward.
-        /// </summary>
         public async Task UpdateRewardAsync(Reward reward)
         {
             const string sql = @"
-                UPDATE Rewards
-                SET Title = @Title,
-                    Description = @Description,
-                    RequiredValue = @RequiredValue,
-                    ValidFrom = @ValidFrom,
-                    ValidTo = @ValidTo,
-                    IsActive = @IsActive,
-                    UpdatedAt = @UpdatedAt
-                WHERE Id = @Id";
+                UPDATE rewards
+                SET title = @Title,
+                    description = @Description,
+                    required_value = @RequiredValue,
+                    valid_from = @ValidFrom,
+                    valid_to = @ValidTo,
+                    is_active = @IsActive,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
 
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
@@ -343,9 +408,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
             });
         }
 
-        /// <summary>
-        /// Loads rewards for a loyalty program.
-        /// </summary>
         private async Task LoadRewardsForProgram(LoyaltyProgram program)
         {
             var rewards = await GetRewardsForProgramAsync(new LoyaltyProgramId(program.Id));
@@ -355,15 +417,12 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
         }
 
-        /// <summary>
-        /// Adds a reward to the database, optionally as part of a transaction.
-        /// </summary>
         private async Task AddRewardAsync(Reward reward, IDbTransaction? transaction = null)
         {
             const string sql = @"
-                INSERT INTO Rewards (
-                    Id, ProgramId, Title, Description, RequiredValue,
-                    ValidFrom, ValidTo, IsActive, CreatedAt, UpdatedAt
+                INSERT INTO rewards (
+                    id, program_id, title, description, required_value,
+                    valid_from, valid_to, is_active, created_at, updated_at
                 ) VALUES (
                     @Id, @ProgramId, @Title, @Description, @RequiredValue,
                     @ValidFrom, @ValidTo, @IsActive, @CreatedAt, @UpdatedAt

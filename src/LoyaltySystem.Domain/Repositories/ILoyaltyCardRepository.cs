@@ -28,6 +28,11 @@ namespace LoyaltySystem.Domain.Repositories
         Task<IEnumerable<LoyaltyCard>> GetByProgramIdAsync(LoyaltyProgramId programId);
         
         /// <summary>
+        /// Get loyalty card count by status
+        /// </summary>
+        Task<int> GetCardCountByStatusAsync(CardStatus status);
+        
+        /// <summary>
         /// Gets a loyalty card by its QR code.
         /// </summary>
         Task<LoyaltyCard> GetByQrCodeAsync(string qrCode);

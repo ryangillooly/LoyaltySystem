@@ -21,7 +21,7 @@ namespace LoyaltySystem.Application.Interfaces
         Task<OperationResult<string>> GenerateQrCodeAsync(LoyaltyCardId cardId);
         Task<OperationResult<string>> GetOrGenerateQrCodeAsync(LoyaltyCardId cardId);
         Task<OperationResult<IEnumerable<TransactionDto>>> GetCardTransactionsAsync(LoyaltyCardId cardId);
-        Task<OperationResult<Dictionary<CardStatus, int>>> GetCardCountByStatusAsync();
+        Task<OperationResult<int>> GetCardCountByStatusAsync(CardStatus status);
         Task<OperationResult<ProgramAnalyticsDto>> GetProgramCardAnalyticsAsync(LoyaltyProgramId programId);
         Task<int> GetActiveCardCountForProgramAsync(string programId);
         Task<int> GetCardCountForProgramAsync(string programId);

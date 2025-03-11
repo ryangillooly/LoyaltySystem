@@ -152,7 +152,7 @@ namespace LoyaltySystem.Admin.API.Controllers
                 return NotFound("Customer not found");
             }
             
-            var result = await _cardService.GetCardsByCustomerIdAsync(id);
+            var result = await _cardService.GetByCustomerIdAsync(id);
             
             if (!result.Success)
             {
@@ -229,12 +229,13 @@ namespace LoyaltySystem.Admin.API.Controllers
         {
             _logger.LogInformation("Admin requesting customer loyalty analytics");
             
-            var cardCountsResult = await _cardService.GetCardCountByStatusAsync();
+            var cardCountsResult = await _cardService.GetCardCountByStatusAsync(CardStatus.Active);
             int activeCards = 0;
-            
-            if (cardCountsResult.Success && cardCountsResult.Data.TryGetValue(CardStatus.Active, out int count))
+
+            var cardCount = cardCountsResult.Data as int?;
+            if (cardCountsResult.Success && cardCount > 0)
             {
-                activeCards = count;
+                activeCards = cardCount.Value;
             }
             
             var totalCustomers = await _customerService.GetTotalCustomerCountAsync();
@@ -242,22 +243,22 @@ namespace LoyaltySystem.Admin.API.Controllers
             
             // Calculate average cards per customer
             double averageCardsPerCustomer = 0;
-            if (customersWithCards.Success && customersWithCards > 0)
+            if (customersWithCards > 0)
             {
                 averageCardsPerCustomer = (double)activeCards / customersWithCards;
             }
             
             // Calculate enrollment rate
             double enrollmentRate = 0;
-            if (totalCustomers > 0 && customersWithCards.Success)
+            if (totalCustomers > 0)
             {
-                enrollmentRate = (double)customersWithCards.Data / totalCustomers;
+                enrollmentRate = (double) customersWithCards / totalCustomers;
             }
             
             return Ok(new
             {
                 TotalCustomers = totalCustomers,
-                CustomersWithCards = customersWithCards.Success ? customersWithCards.Data : 0,
+                CustomersWithCards = customersWithCards > 0 ? customersWithCards : 0,
                 AverageCardsPerCustomer = averageCardsPerCustomer,
                 ActiveCards = activeCards,
                 EnrollmentRate = enrollmentRate

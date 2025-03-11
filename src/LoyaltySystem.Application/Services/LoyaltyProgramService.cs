@@ -96,7 +96,7 @@ namespace LoyaltySystem.Application.Services
                 }
                 
                 var programs = await _programRepository.GetByTypeAsync(programType, page, pageSize);
-                var totalCount = await _programRepository.GetTotalCountByTypeAsync(programType);
+                var totalCount = await _programRepository.GetCountByTypeAsync(programType);
                 
                 var programDtos = programs.Select(MapToDto).ToList();
                 var result = new PagedResult<LoyaltyProgramDto>(programDtos, totalCount, page, pageSize);
@@ -229,8 +229,7 @@ namespace LoyaltySystem.Application.Services
                     program.Id,
                     dto.Title,
                     dto.Description,
-                    dto.RequiredPoints,
-                    dto.RequiredStamps,
+                    dto.RequiredPoints > 0 ? dto.RequiredPoints : dto.RequiredStamps,
                     dto.StartDate,
                     dto.EndDate
                 );
@@ -263,8 +262,7 @@ namespace LoyaltySystem.Application.Services
                 reward.Update(
                     dto.Title,
                     dto.Description,
-                    dto.RequiredPoints,
-                    dto.RequiredStamps,
+                    dto.RequiredPoints > 0 ? dto.RequiredPoints : dto.RequiredStamps,
                     dto.StartDate,
                     dto.EndDate
                 );
@@ -330,8 +328,7 @@ namespace LoyaltySystem.Application.Services
                 var reward = program.CreateReward(
                     dto.Title,
                     dto.Description,
-                    dto.RequiredPoints,
-                    dto.RequiredStamps,
+                    dto.RequiredPoints > 0 ? dto.RequiredPoints : dto.RequiredStamps,
                     dto.StartDate,
                     dto.EndDate
                 );
@@ -374,10 +371,10 @@ namespace LoyaltySystem.Application.Services
                 ProgramId = reward.ProgramId.ToString(),
                 Title = reward.Title,
                 Description = reward.Description,
-                RequiredPoints = reward.RequiredPoints,
-                RequiredStamps = reward.RequiredStamps,
-                StartDate = reward.StartDate,
-                EndDate = reward.EndDate,
+                RequiredPoints = reward.RequiredValue,
+                RequiredStamps = reward.RequiredValue,
+                StartDate = reward.ValidFrom,
+                EndDate = reward.ValidTo,
                 IsActive = reward.IsActive,
                 CreatedAt = reward.CreatedAt
             };
@@ -434,7 +431,7 @@ namespace LoyaltySystem.Application.Services
             foreach (var brand in brands)
             {
                 var programs = await _programRepository.GetByBrandIdAsync(brand.Id);
-                result[brand.Name] = programs.Count;
+                result[brand.Name] = programs.Count();
             }
             
             return result;
@@ -457,7 +454,7 @@ namespace LoyaltySystem.Application.Services
                 var cards = await _unitOfWork.LoyaltyCardRepository.GetByProgramIdAsync(programIdObj);
                 
                 // Calculate analytics
-                int totalCards = cards.Count;
+                int totalCards = cards.Count();
                 int activeCards = cards.Count(c => c.Status == CardStatus.Active);
                 int suspendedCards = cards.Count(c => c.Status == CardStatus.Suspended);
                 int expiredCards = cards.Count(c => c.Status == CardStatus.Expired);
@@ -487,7 +484,7 @@ namespace LoyaltySystem.Application.Services
                     ActiveCards = activeCards,
                     SuspendedCards = suspendedCards,
                     ExpiredCards = expiredCards,
-                    TotalRewards = rewards.Count,
+                    TotalRewards = rewards.Count(),
                     ActiveRewards = rewards.Count(r => r.IsActive),
                     TotalTransactions = totalTransactions,
                     TotalPointsIssued = totalPointsIssued,
@@ -532,7 +529,7 @@ namespace LoyaltySystem.Application.Services
     {
         public string BrandId { get; set; }
         public string Name { get; set; }
-        public int Type { get; set; }
+        public LoyaltyProgramType Type { get; set; }
         public int? StampThreshold { get; set; }
         public decimal? PointsConversionRate { get; set; }
         public int? DailyStampLimit { get; set; }

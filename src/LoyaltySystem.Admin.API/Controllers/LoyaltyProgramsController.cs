@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -112,7 +113,7 @@ namespace LoyaltySystem.Admin.API.Controllers
             {
                 BrandId = request.BrandId.ToString(),
                 Name = request.Name,
-                Type = Enum.Parse<LoyaltySystem.Domain.Enums.LoyaltyProgramType>(request.Type),
+                Type = Enum.Parse<LoyaltyProgramType>(request.Type),
                 StampThreshold = request.ExpirationPolicy?.PeriodMonths,
                 PointsConversionRate = null,
                 DailyStampLimit = null,
@@ -177,9 +178,10 @@ namespace LoyaltySystem.Admin.API.Controllers
             {
                 Title = request.Name,
                 Description = request.Description,
-                RequiredValue = request.RequiredPoints ?? request.RequiredStamps ?? 0,
-                ValidFrom = request.StartDate,
-                ValidTo = request.EndDate
+                RequiredPoints = request.RequiredPoints ?? 0,
+                RequiredStamps = request.RequiredStamps ?? 0,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate
             };
             
             var result = await _programService.CreateRewardAsync(id.ToString(), createDto);
@@ -261,9 +263,10 @@ namespace LoyaltySystem.Admin.API.Controllers
             {
                 Title = request.Name,
                 Description = request.Description,
-                RequiredValue = request.RequiredPoints ?? request.RequiredStamps ?? 0,
-                ValidFrom = request.StartDate,
-                ValidTo = request.EndDate
+                RequiredPoints = request.RequiredPoints ?? 0,
+                RequiredStamps = request.RequiredStamps ?? 0,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate
             };
             
             var result = await _programService.UpdateRewardAsync(rewardId.ToString(), updateDto);

@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Common;
 using System;
 
 namespace LoyaltySystem.Domain.Entities
@@ -7,7 +8,7 @@ namespace LoyaltySystem.Domain.Entities
     /// </summary>
     public class Brand
     {
-        public Guid Id { get; private set; }
+        public BrandId Id { get; private set; }
         public string Name { get; private set; }
         public string Category { get; private set; }
         public string Logo { get; private set; }
@@ -31,7 +32,7 @@ namespace LoyaltySystem.Domain.Entities
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Brand name cannot be empty", nameof(name));
 
-            Id = Guid.NewGuid();
+            Id = new BrandId();
             Name = name;
             Category = category;
             Logo = logo;

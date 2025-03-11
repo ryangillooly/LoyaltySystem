@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         {
             _logger.LogInformation("Admin requesting loyalty card by ID: {CardId}", id);
             
-            var result = await _loyaltyCardService.GetCardByIdAsync(id);
+            var result = await _loyaltyCardService.GetByIdAsync(id);
             
             if (!result.Success)
             {
@@ -45,7 +46,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         {
             _logger.LogInformation("Admin requesting loyalty cards for customer ID: {CustomerId}", customerId);
             
-            var result = await _loyaltyCardService.GetCardsByCustomerIdAsync(customerId);
+            var result = await _loyaltyCardService.GetByCustomerIdAsync(customerId);
             
             if (!result.Success)
             {
@@ -97,7 +98,7 @@ namespace LoyaltySystem.Admin.API.Controllers
             _logger.LogInformation("Admin updating loyalty card status for ID: {CardId} to {Status}", 
                 id, request.Status);
             
-            var result = await _loyaltyCardService.UpdateCardStatusAsync(id, request.Status);
+            var result = await _loyaltyCardService.UpdateCardStatusAsync(id, Enum.Parse<CardStatus>(request.Status));
             
             if (!result.Success)
             {
@@ -114,9 +115,9 @@ namespace LoyaltySystem.Admin.API.Controllers
         {
             _logger.LogInformation("Admin requesting loyalty card count by status");
             
-            var active = await _loyaltyCardService.GetCardCountByStatusAsync("Active");
-            var suspended = await _loyaltyCardService.GetCardCountByStatusAsync("Suspended");
-            var expired = await _loyaltyCardService.GetCardCountByStatusAsync("Expired");
+            var active = await _loyaltyCardService.GetCardCountByStatusAsync(CardStatus.Active);
+            var suspended = await _loyaltyCardService.GetCardCountByStatusAsync(CardStatus.Suspended);
+            var expired = await _loyaltyCardService.GetCardCountByStatusAsync(CardStatus.Expired);
             
             return Ok(new 
             {
@@ -132,22 +133,22 @@ namespace LoyaltySystem.Admin.API.Controllers
             _logger.LogInformation("Admin requesting card analytics for program ID: {ProgramId}", programId);
             
             // Get program details first to ensure it exists
-            var programResult = await _programService.GetProgramByIdAsync(programId);
+            var programResult = await _programService.GetProgramByIdAsync(programId.ToString());
             if (!programResult.Success)
             {
                 return NotFound($"Program with ID {programId} not found");
             }
             
-            var activeCount = await _loyaltyCardService.GetActiveCardCountForProgramAsync(programId);
-            var totalCards = await _loyaltyCardService.GetCardCountForProgramAsync(programId);
-            var avgTransactions = await _loyaltyCardService.GetAverageTransactionsPerCardForProgramAsync(programId);
+            var activeCount = await _loyaltyCardService.GetActiveCardCountForProgramAsync(programId.ToString());
+            var totalCards = await _loyaltyCardService.GetCardCountForProgramAsync(programId.ToString());
+            var avgTransactions = await _loyaltyCardService.GetAverageTransactionsPerCardForProgramAsync(programId.ToString());
             
             return Ok(new
             {
-                ProgramName = programResult.Data.Name,
-                TotalCards = totalCards.Data,
-                ActiveCards = activeCount.Data,
-                AverageTransactionsPerCard = avgTransactions.Data
+                ProgramName = programResult.Data?.Name,
+                TotalCards = totalCards,
+                ActiveCards = activeCount,
+                AverageTransactionsPerCard = avgTransactions
             });
         }
     }
