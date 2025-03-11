@@ -7,7 +7,9 @@ using Dapper;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
+using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Infrastructure.Data;
+using LoyaltySystem.Infrastructure.Data.Extensions;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
@@ -26,187 +28,89 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a loyalty program by its ID.
         /// </summary>
-        public async Task<LoyaltyProgram> GetByIdAsync(Guid id)
+        public async Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id)
         {
             const string sql = @"
-                SELECT 
-                    p.Id, p.BrandId, p.Name, p.Type, p.StampThreshold, p.PointsConversionRate,
-                    p.DailyStampLimit, p.MinimumTransactionAmount, p.IsActive, p.CreatedAt, p.UpdatedAt,
-                    e.HasExpiration, e.ExpirationType, e.ExpirationValue, 
-                    e.ExpiresOnSpecificDate, e.ExpirationDay, e.ExpirationMonth
-                FROM LoyaltyPrograms p
-                LEFT JOIN ProgramExpirationPolicies e ON p.Id = e.ProgramId
-                WHERE p.Id = @Id";
+                SELECT * FROM LoyaltyPrograms WHERE Id = @Id";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            var programDictionary = new Dictionary<Guid, LoyaltyProgram>();
-            
-            var programs = await connection.QueryAsync<LoyaltyProgram, ExpirationPolicy, LoyaltyProgram>(
-                sql,
-                (program, expirationPolicy) =>
-                {
-                    if (!programDictionary.TryGetValue(program.Id, out var existingProgram))
-                    {
-                        existingProgram = program;
-                        existingProgram.SetExpirationPolicy(expirationPolicy);
-                        programDictionary.Add(existingProgram.Id, existingProgram);
-                    }
-                    
-                    return existingProgram;
-                },
-                new { Id = id },
-                splitOn: "HasExpiration");
-                
-            var result = programs.FirstOrDefault();
-            
-            if (result != null)
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { Id = id.Value };
+            var program = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgram>(sql, parameters);
+
+            if (program != null)
             {
-                // Load rewards separately
-                await LoadRewardsAsync(result);
+                await LoadRewardsForProgram(program);
             }
-            
-            return result;
+
+            return program;
         }
 
         /// <summary>
         /// Gets loyalty programs for a specific brand.
         /// </summary>
-        public async Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(Guid brandId)
+        public async Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId)
         {
             const string sql = @"
-                SELECT 
-                    p.Id, p.BrandId, p.Name, p.Type, p.StampThreshold, p.PointsConversionRate,
-                    p.DailyStampLimit, p.MinimumTransactionAmount, p.IsActive, p.CreatedAt, p.UpdatedAt,
-                    e.HasExpiration, e.ExpirationType, e.ExpirationValue, 
-                    e.ExpiresOnSpecificDate, e.ExpirationDay, e.ExpirationMonth
-                FROM LoyaltyPrograms p
-                LEFT JOIN ProgramExpirationPolicies e ON p.Id = e.ProgramId
-                WHERE p.BrandId = @BrandId
-                ORDER BY p.Name";
+                SELECT * FROM LoyaltyPrograms 
+                WHERE BrandId = @BrandId
+                ORDER BY CreatedAt DESC";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            var programDictionary = new Dictionary<Guid, LoyaltyProgram>();
-            
-            var programs = await connection.QueryAsync<LoyaltyProgram, ExpirationPolicy, LoyaltyProgram>(
-                sql,
-                (program, expirationPolicy) =>
-                {
-                    if (!programDictionary.TryGetValue(program.Id, out var existingProgram))
-                    {
-                        existingProgram = program;
-                        existingProgram.SetExpirationPolicy(expirationPolicy);
-                        programDictionary.Add(existingProgram.Id, existingProgram);
-                    }
-                    
-                    return existingProgram;
-                },
-                new { BrandId = brandId },
-                splitOn: "HasExpiration");
-                
-            var result = programs.Distinct().ToList();
-            
-            foreach (var program in result)
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { BrandId = brandId.Value };
+            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+            foreach (var program in programs)
             {
-                await LoadRewardsAsync(program);
+                await LoadRewardsForProgram(program);
             }
-            
-            return result;
+
+            return programs;
         }
 
         /// <summary>
         /// Gets active loyalty programs for a specific brand.
         /// </summary>
-        public async Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(Guid brandId)
+        public async Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(BrandId brandId)
         {
             const string sql = @"
-                SELECT 
-                    p.Id, p.BrandId, p.Name, p.Type, p.StampThreshold, p.PointsConversionRate,
-                    p.DailyStampLimit, p.MinimumTransactionAmount, p.IsActive, p.CreatedAt, p.UpdatedAt,
-                    e.HasExpiration, e.ExpirationType, e.ExpirationValue, 
-                    e.ExpiresOnSpecificDate, e.ExpirationDay, e.ExpirationMonth
-                FROM LoyaltyPrograms p
-                LEFT JOIN ProgramExpirationPolicies e ON p.Id = e.ProgramId
-                WHERE p.BrandId = @BrandId AND p.IsActive = 1
-                ORDER BY p.Name";
+                SELECT * FROM LoyaltyPrograms 
+                WHERE BrandId = @BrandId AND IsActive = @IsActive
+                ORDER BY CreatedAt DESC";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            var programDictionary = new Dictionary<Guid, LoyaltyProgram>();
-            
-            var programs = await connection.QueryAsync<LoyaltyProgram, ExpirationPolicy, LoyaltyProgram>(
-                sql,
-                (program, expirationPolicy) =>
-                {
-                    if (!programDictionary.TryGetValue(program.Id, out var existingProgram))
-                    {
-                        existingProgram = program;
-                        existingProgram.SetExpirationPolicy(expirationPolicy);
-                        programDictionary.Add(existingProgram.Id, existingProgram);
-                    }
-                    
-                    return existingProgram;
-                },
-                new { BrandId = brandId },
-                splitOn: "HasExpiration");
-                
-            var result = programs.Distinct().ToList();
-            
-            foreach (var program in result)
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { BrandId = brandId.Value, IsActive = true };
+            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+            foreach (var program in programs)
             {
-                await LoadRewardsAsync(program);
+                await LoadRewardsForProgram(program);
             }
-            
-            return result;
+
+            return programs;
         }
 
         /// <summary>
         /// Gets loyalty programs by type.
         /// </summary>
-        public async Task<IEnumerable<LoyaltyProgram>> GetByTypeAsync(LoyaltyProgramType type, int skip, int take)
+        public async Task<IEnumerable<LoyaltyProgram>> GetByTypeAsync(LoyaltyProgramType type, int page, int pageSize)
         {
             const string sql = @"
-                SELECT 
-                    p.Id, p.BrandId, p.Name, p.Type, p.StampThreshold, p.PointsConversionRate,
-                    p.DailyStampLimit, p.MinimumTransactionAmount, p.IsActive, p.CreatedAt, p.UpdatedAt,
-                    e.HasExpiration, e.ExpirationType, e.ExpirationValue, 
-                    e.ExpiresOnSpecificDate, e.ExpirationDay, e.ExpirationMonth
-                FROM LoyaltyPrograms p
-                LEFT JOIN ProgramExpirationPolicies e ON p.Id = e.ProgramId
-                WHERE p.Type = @Type
-                ORDER BY p.BrandId, p.Name
-                OFFSET @Skip ROWS
-                FETCH NEXT @Take ROWS ONLY";
+                SELECT * FROM LoyaltyPrograms 
+                WHERE Type = @Type
+                ORDER BY CreatedAt DESC
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            var programDictionary = new Dictionary<Guid, LoyaltyProgram>();
-            
-            var programs = await connection.QueryAsync<LoyaltyProgram, ExpirationPolicy, LoyaltyProgram>(
-                sql,
-                (program, expirationPolicy) =>
-                {
-                    if (!programDictionary.TryGetValue(program.Id, out var existingProgram))
-                    {
-                        existingProgram = program;
-                        existingProgram.SetExpirationPolicy(expirationPolicy);
-                        programDictionary.Add(existingProgram.Id, existingProgram);
-                    }
-                    
-                    return existingProgram;
-                },
-                new { Type = (int)type, Skip = skip, Take = take },
-                splitOn: "HasExpiration");
-                
-            var result = programs.Distinct().ToList();
-            
-            foreach (var program in result)
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { Type = (int)type, Offset = (page - 1) * pageSize, PageSize = pageSize };
+            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+            foreach (var program in programs)
             {
-                await LoadRewardsAsync(program);
+                await LoadRewardsForProgram(program);
             }
-            
-            return result;
+
+            return programs;
         }
 
         /// <summary>
@@ -354,56 +258,50 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets the rewards for a specific program.
         /// </summary>
-        public async Task<IEnumerable<Reward>> GetRewardsForProgramAsync(Guid programId)
+        public async Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId)
         {
             const string sql = @"
-                SELECT 
-                    r.Id, r.ProgramId, r.Title, r.Description, r.RequiredValue,
-                    r.ValidFrom, r.ValidTo, r.IsActive, r.CreatedAt, r.UpdatedAt
-                FROM Rewards r
-                WHERE r.ProgramId = @ProgramId
-                ORDER BY r.RequiredValue";
+                SELECT * FROM Rewards 
+                WHERE ProgramId = @ProgramId
+                ORDER BY RequiredValue";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.QueryAsync<Reward>(sql, new { ProgramId = programId });
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { ProgramId = programId.Value };
+            var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
+
+            return rewards;
         }
 
         /// <summary>
         /// Gets active rewards for a specific program.
         /// </summary>
-        public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(Guid programId)
+        public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
         {
-            var now = DateTime.UtcNow;
-            
             const string sql = @"
-                SELECT 
-                    r.Id, r.ProgramId, r.Title, r.Description, r.RequiredValue,
-                    r.ValidFrom, r.ValidTo, r.IsActive, r.CreatedAt, r.UpdatedAt
-                FROM Rewards r
-                WHERE r.ProgramId = @ProgramId
-                AND r.IsActive = 1
-                AND (r.ValidFrom IS NULL OR r.ValidFrom <= @Now)
-                AND (r.ValidTo IS NULL OR r.ValidTo >= @Now)
-                ORDER BY r.RequiredValue";
+                SELECT * FROM Rewards 
+                WHERE ProgramId = @ProgramId AND IsActive = @IsActive
+                ORDER BY RequiredValue";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.QueryAsync<Reward>(sql, new { ProgramId = programId, Now = now });
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { ProgramId = programId.Value, IsActive = true };
+            var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
+
+            return rewards;
         }
 
         /// <summary>
         /// Gets a specific reward.
         /// </summary>
-        public async Task<Reward> GetRewardByIdAsync(Guid rewardId)
+        public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
         {
             const string sql = @"
-                SELECT 
-                    r.Id, r.ProgramId, r.Title, r.Description, r.RequiredValue,
-                    r.ValidFrom, r.ValidTo, r.IsActive, r.CreatedAt, r.UpdatedAt
-                FROM Rewards r
-                WHERE r.Id = @Id";
+                SELECT * FROM Rewards WHERE Id = @Id";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.QueryFirstOrDefaultAsync<Reward>(sql, new { Id = rewardId });
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+            var parameters = new { Id = rewardId.Value };
+            var reward = await dbConnection.QuerySingleOrDefaultAsync<Reward>(sql, parameters);
+
+            return reward;
         }
 
         /// <summary>
@@ -448,9 +346,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Loads rewards for a loyalty program.
         /// </summary>
-        private async Task LoadRewardsAsync(LoyaltyProgram program)
+        private async Task LoadRewardsForProgram(LoyaltyProgram program)
         {
-            var rewards = await GetRewardsForProgramAsync(program.Id);
+            var rewards = await GetRewardsForProgramAsync(new LoyaltyProgramId(program.Id));
             foreach (var reward in rewards)
             {
                 program.AddReward(reward);
@@ -460,7 +358,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Adds a reward to the database, optionally as part of a transaction.
         /// </summary>
-        private async Task AddRewardAsync(Reward reward, IDbTransaction transaction = null)
+        private async Task AddRewardAsync(Reward reward, IDbTransaction? transaction = null)
         {
             const string sql = @"
                 INSERT INTO Rewards (

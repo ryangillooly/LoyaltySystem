@@ -7,6 +7,7 @@ using Dapper;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
+using LoyaltySystem.Infrastructure.Data.Extensions;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {

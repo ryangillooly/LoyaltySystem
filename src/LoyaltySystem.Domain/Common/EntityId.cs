@@ -38,7 +38,7 @@ namespace LoyaltySystem.Domain.Common
         }
         
         // Convert GUID to prefixed Base64 representation
-        public string ToString()
+        public override string ToString()
         {
             return $"{Prefix}{EncodeGuid(_value)}";
         }
@@ -112,14 +112,14 @@ namespace LoyaltySystem.Domain.Common
         }
         
         // Equality members
-        public bool Equals(EntityId other)
+        public bool Equals(EntityId? other)
         {
             if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             return _value.Equals(other._value);
         }
         
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;

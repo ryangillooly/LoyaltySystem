@@ -106,6 +106,49 @@ namespace LoyaltySystem.Infrastructure.Data
         }
         
         /// <summary>
+        /// Executes an operation within a transaction and returns a result.
+        /// </summary>
+        public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
+        {
+            if (operation == null)
+                throw new ArgumentNullException(nameof(operation));
+                
+            try
+            {
+                await BeginTransactionAsync();
+                var result = await operation();
+                await CommitTransactionAsync();
+                return result;
+            }
+            catch
+            {
+                await RollbackTransactionAsync();
+                throw;
+            }
+        }
+        
+        /// <summary>
+        /// Executes an operation within a transaction.
+        /// </summary>
+        public async Task ExecuteInTransactionAsync(Func<Task> operation)
+        {
+            if (operation == null)
+                throw new ArgumentNullException(nameof(operation));
+                
+            try
+            {
+                await BeginTransactionAsync();
+                await operation();
+                await CommitTransactionAsync();
+            }
+            catch
+            {
+                await RollbackTransactionAsync();
+                throw;
+            }
+        }
+        
+        /// <summary>
         /// Disposes the connection and transaction.
         /// </summary>
         public void Dispose()

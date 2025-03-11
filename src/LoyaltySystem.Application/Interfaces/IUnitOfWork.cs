@@ -44,5 +44,15 @@ namespace LoyaltySystem.Application.Interfaces
         /// Rolls back the transaction.
         /// </summary>
         Task RollbackTransactionAsync();
+
+        /// <summary>
+        /// Executes an operation within a transaction and returns a result.
+        /// </summary>
+        Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation);
+        
+        /// <summary>
+        /// Executes an operation within a transaction.
+        /// </summary>
+        Task ExecuteInTransactionAsync(Func<Task> operation);
     }
 } 

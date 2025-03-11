@@ -1,0 +1,12 @@
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/bin/Debug/net8.0/LoyaltySystem.Domain.deps.json
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/bin/Debug/net8.0/LoyaltySystem.Domain.dll
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/bin/Debug/net8.0/LoyaltySystem.Domain.pdb
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.AssemblyInfoInputs.cache
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.AssemblyInfo.cs
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.csproj.CoreCompileInputs.cache
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.sourcelink.json
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.dll
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/refint/LoyaltySystem.Domain.dll
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/LoyaltySystem.Domain.pdb
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Domain/obj/Debug/net8.0/ref/LoyaltySystem.Domain.dll

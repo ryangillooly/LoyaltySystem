@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LoyaltySystem.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cde705498cd9b8dba7281fde0e539ff302abc385")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+398192bed0a3db082c326b055c95db5276fc7b6f")]
 [assembly: System.Reflection.AssemblyProductAttribute("LoyaltySystem.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LoyaltySystem.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

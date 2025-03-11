@@ -9,6 +9,7 @@ using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
+using LoyaltySystem.Infrastructure.Data.Extensions;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
@@ -35,7 +36,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a loyalty card by its ID.
         /// </summary>
-        public async Task<LoyaltyCard> GetByIdAsync(LoyaltyCardId id)
+        public async Task<LoyaltyCard?> GetByIdAsync(LoyaltyCardId id)
         {
             const string sql = @"
                 SELECT 
@@ -118,7 +119,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a loyalty card by its QR code.
         /// </summary>
-        public async Task<LoyaltyCard> GetByQrCodeAsync(string qrCode)
+        public async Task<LoyaltyCard?> GetByQrCodeAsync(string qrCode)
         {
             const string sql = @"
                 SELECT 
@@ -158,9 +159,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
             {
-                Id = card.Id.Value,
-                ProgramId = card.ProgramId.Value,
-                CustomerId = card.CustomerId.Value,
+                Id = card.Id,
+                ProgramId = card.ProgramId,
+                CustomerId = card.CustomerId,
                 Type = card.Type.ToString(),  // Using enum name for PostgreSQL enum type
                 card.StampsCollected,
                 card.PointsBalance,
@@ -194,7 +195,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 {
                     await connection.ExecuteAsync(sql, new
                     {
-                        Id = card.Id.Value,
+                        Id = card.Id,
                         card.StampsCollected,
                         card.PointsBalance,
                         Status = card.Status.ToString(),  // Using enum name for PostgreSQL enum type
@@ -284,25 +285,35 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     c.qr_code AS QrCode, c.created_at AS CreatedAt, 
                     c.expires_at AS ExpiresAt, c.updated_at AS UpdatedAt
                 FROM loyalty_cards c
-                WHERE c.status = @Status
+                WHERE c.status = @Status::card_status
                 ORDER BY c.created_at DESC
                 LIMIT @Take OFFSET @Skip";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            var cards = await connection.QueryAsync<LoyaltyCard>(sql, new 
-            { 
-                Status = status.ToString(),
-                Skip = skip,
-                Take = take
-            });
+            var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { Status = status, Skip = skip, Take = take });
             
-            var cardsList = cards.ToList();
-            foreach (var card in cardsList)
+            // Load transactions for each card
+            foreach (var card in cards)
             {
                 await LoadTransactionsAsync(card);
             }
             
-            return cardsList;
+            return cards;
+        }
+
+        /// <summary>
+        /// Gets a loyalty card by its ID including all transactions.
+        /// </summary>
+        public async Task<LoyaltyCard?> GetByIdWithTransactionsAsync(LoyaltyCardId id)
+        {
+            var card = await GetByIdAsync(id);
+            
+            if (card != null)
+            {
+                await LoadTransactionsAsync(card);
+            }
+            
+            return card;
         }
 
         /// <summary>
@@ -323,7 +334,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 ORDER BY t.timestamp DESC";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            var transactions = await connection.QueryAsync<Transaction>(sql, new { CardId = card.Id.Value });
+            var transactions = await connection.QueryAsync<Transaction>(sql, new { CardId = card.Id });
             
             foreach (var transaction in transactions)
             {
@@ -334,7 +345,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Adds a transaction to the database.
         /// </summary>
-        private async Task AddTransactionAsync(Transaction transaction, IDbTransaction dbTransaction = null)
+        private async Task AddTransactionAsync(Transaction transaction, IDbTransaction? dbTransaction = null)
         {
             const string sql = @"
                 INSERT INTO transactions (
@@ -351,13 +362,13 @@ namespace LoyaltySystem.Infrastructure.Repositories
             await connection.ExecuteAsync(sql, new
             {
                 Id = Guid.NewGuid(),  // Generate a new ID for the transaction
-                CardId = transaction.CardId.Value,
+                CardId = transaction.CardId,
                 Type = transaction.Type.ToString(),  // Using enum name for PostgreSQL enum type
-                RewardId = transaction.RewardId?.Value,
+                RewardId = transaction.RewardId,
                 transaction.Quantity,
                 transaction.PointsAmount,
                 transaction.TransactionAmount,
-                StoreId = transaction.StoreId.Value,
+                StoreId = transaction.StoreId,
                 transaction.StaffId,
                 transaction.PosTransactionId,
                 transaction.Timestamp,
@@ -372,18 +383,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
     /// </summary>
     public class EntityIdTypeHandler<T> : SqlMapper.TypeHandler<T> where T : EntityId, new()
     {
-        public override void SetValue(IDbDataParameter parameter, T value)
+        public override void SetValue(IDbDataParameter parameter, T? value)
         {
-            parameter.Value = value?.Value ?? DBNull.Value;
+            parameter.Value = value == null ? DBNull.Value : (object)value.Value;
         }
 
-        public override T Parse(object value)
+        public override T? Parse(object? value)
         {
             if (value is DBNull || value == null)
                 return null;
 
             if (value is Guid guid)
-                return (T)Activator.CreateInstance(typeof(T), guid);
+                return (T)Activator.CreateInstance(typeof(T), guid)!;
 
             if (value is string str && !string.IsNullOrEmpty(str))
             {
@@ -392,7 +403,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 
                 // Try parsing as GUID
                 if (Guid.TryParse(str, out guid))
-                    return (T)Activator.CreateInstance(typeof(T), guid);
+                    return (T)Activator.CreateInstance(typeof(T), guid)!;
             }
 
             throw new ArgumentException($"Could not convert {value} to {typeof(T).Name}");

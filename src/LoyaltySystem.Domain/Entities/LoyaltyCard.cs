@@ -266,6 +266,18 @@ namespace LoyaltySystem.Domain.Entities
         }
 
         /// <summary>
+        /// Updates the QR code for this card.
+        /// </summary>
+        public void UpdateQrCode(string qrCode)
+        {
+            if (string.IsNullOrEmpty(qrCode))
+                throw new ArgumentException("QR code cannot be empty", nameof(qrCode));
+
+            QrCode = qrCode;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
         /// Adds an existing transaction to the card.
         /// Used by the repository for loading transactions.
         /// </summary>

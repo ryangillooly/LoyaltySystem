@@ -9,7 +9,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "bnd_";
         
-        public BrandId() { }
+        public BrandId() : base(Guid.NewGuid()) { }
         
         public BrandId(Guid value) : base(value) { }
         
@@ -24,7 +24,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "sto_";
         
-        public StoreId() { }
+        public StoreId() : base(Guid.NewGuid()) { }
         
         public StoreId(Guid value) : base(value) { }
         
@@ -39,7 +39,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "cus_";
         
-        public CustomerId() { }
+        public CustomerId() : base(Guid.NewGuid()) { }
         
         public CustomerId(Guid value) : base(value) { }
         
@@ -54,7 +54,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "prg_";
         
-        public LoyaltyProgramId() { }
+        public LoyaltyProgramId() : base(Guid.NewGuid()) { }
         
         public LoyaltyProgramId(Guid value) : base(value) { }
         
@@ -69,7 +69,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "lcy_";
         
-        public LoyaltyCardId() { }
+        public LoyaltyCardId() : base(Guid.NewGuid()) { }
         
         public LoyaltyCardId(Guid value) : base(value) { }
         
@@ -84,7 +84,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "rwd_";
         
-        public RewardId() { }
+        public RewardId() : base(Guid.NewGuid()) { }
         
         public RewardId(Guid value) : base(value) { }
         
@@ -99,7 +99,7 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "txn_";
         
-        public TransactionId() { }
+        public TransactionId() : base(Guid.NewGuid()) { }
         
         public TransactionId(Guid value) : base(value) { }
         
@@ -114,11 +114,26 @@ namespace LoyaltySystem.Domain.Common
     {
         public override string Prefix => "usr_";
         
-        public UserId() { }
+        public UserId() : base(Guid.NewGuid()) { }
         
         public UserId(Guid value) : base(value) { }
         
         // Create from string representation
         public static UserId FromString(string prefixed) => Parse<UserId>(prefixed);
+    }
+    
+    /// <summary>
+    /// User Role identifier (rol_xxxxxxxx)
+    /// </summary>
+    public class UserRoleId : EntityId
+    {
+        public override string Prefix => "rol_";
+        
+        public UserRoleId() : base(Guid.NewGuid()) { }
+        
+        public UserRoleId(Guid value) : base(value) { }
+        
+        // Create from string representation
+        public static UserRoleId FromString(string prefixed) => Parse<UserRoleId>(prefixed);
     }
 } 

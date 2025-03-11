@@ -1,6 +1,0 @@
-@LoyaltySystem.API_HostAddress = http://localhost:5046
-
-GET {{LoyaltySystem.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

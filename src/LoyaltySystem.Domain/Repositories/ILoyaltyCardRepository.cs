@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Domain.Repositories
 {
@@ -14,17 +15,17 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets a loyalty card by its ID.
         /// </summary>
-        Task<LoyaltyCard> GetByIdAsync(Guid id);
+        Task<LoyaltyCard> GetByIdAsync(LoyaltyCardId id);
         
         /// <summary>
         /// Gets loyalty cards for a specific customer.
         /// </summary>
-        Task<IEnumerable<LoyaltyCard>> GetByCustomerIdAsync(Guid customerId);
+        Task<IEnumerable<LoyaltyCard>> GetByCustomerIdAsync(CustomerId customerId);
         
         /// <summary>
         /// Gets loyalty cards for a specific program.
         /// </summary>
-        Task<IEnumerable<LoyaltyCard>> GetByProgramIdAsync(Guid programId);
+        Task<IEnumerable<LoyaltyCard>> GetByProgramIdAsync(LoyaltyProgramId programId);
         
         /// <summary>
         /// Gets a loyalty card by its QR code.
@@ -49,11 +50,16 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Get count of active cards for a program.
         /// </summary>
-        Task<int> GetActiveCardCountForProgramAsync(Guid programId);
+        Task<int> GetActiveCardCountForProgramAsync(LoyaltyProgramId programId);
         
         /// <summary>
         /// Find cards by status.
         /// </summary>
         Task<IEnumerable<LoyaltyCard>> FindByStatusAsync(CardStatus status, int skip, int take);
+        
+        /// <summary>
+        /// Gets a loyalty card by its ID including all transactions.
+        /// </summary>
+        Task<LoyaltyCard> GetByIdWithTransactionsAsync(LoyaltyCardId id);
     }
 } 

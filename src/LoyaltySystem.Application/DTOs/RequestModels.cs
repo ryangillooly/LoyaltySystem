@@ -11,7 +11,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The ID of the loyalty card.
         /// </summary>
-        public LoyaltyCardId CardId { get; set; }
+        public LoyaltyCardId? CardId { get; set; }
         
         /// <summary>
         /// The number of stamps to issue.
@@ -21,7 +21,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The store where the stamps are being issued.
         /// </summary>
-        public StoreId StoreId { get; set; }
+        public StoreId? StoreId { get; set; }
         
         /// <summary>
         /// The staff member issuing the stamps (optional).
@@ -31,7 +31,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The POS transaction ID (optional).
         /// </summary>
-        public string PosTransactionId { get; set; }
+        public string? PosTransactionId { get; set; }
     }
     
     /// <summary>
@@ -42,7 +42,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The ID of the loyalty card.
         /// </summary>
-        public LoyaltyCardId CardId { get; set; }
+        public LoyaltyCardId? CardId { get; set; }
         
         /// <summary>
         /// The number of points to add.
@@ -57,7 +57,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The store where the points are being added.
         /// </summary>
-        public StoreId StoreId { get; set; }
+        public StoreId? StoreId { get; set; }
         
         /// <summary>
         /// The staff member adding the points (optional).
@@ -67,7 +67,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The POS transaction ID (optional).
         /// </summary>
-        public string PosTransactionId { get; set; }
+        public string? PosTransactionId { get; set; }
     }
     
     /// <summary>
@@ -78,17 +78,17 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The ID of the loyalty card.
         /// </summary>
-        public LoyaltyCardId CardId { get; set; }
+        public LoyaltyCardId? CardId { get; set; }
         
         /// <summary>
         /// The ID of the reward to redeem.
         /// </summary>
-        public RewardId RewardId { get; set; }
+        public RewardId? RewardId { get; set; }
         
         /// <summary>
         /// The store where the reward is being redeemed.
         /// </summary>
-        public StoreId StoreId { get; set; }
+        public StoreId? StoreId { get; set; }
         
         /// <summary>
         /// The staff member processing the redemption (optional).
@@ -98,7 +98,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// Additional redemption data (optional).
         /// </summary>
-        public RedeemRequestData RedemptionData { get; set; }
+        public RedeemRequestData? RedemptionData { get; set; }
     }
     
     /// <summary>
@@ -109,7 +109,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// Optional customer notes or special instructions.
         /// </summary>
-        public string CustomerNotes { get; set; }
+        public string? CustomerNotes { get; set; }
         
         /// <summary>
         /// Optional flag to indicate if this is a digital redemption.

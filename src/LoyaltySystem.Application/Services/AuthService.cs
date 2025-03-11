@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
@@ -38,18 +39,18 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Authenticates a user and returns a JWT token.
         /// </summary>
-        public async Task<Result<AuthResponseDto>> AuthenticateAsync(string username, string password)
+        public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string username, string password)
         {
             var user = await _userRepository.GetByUsernameAsync(username);
             
             if (user == null)
-                return Result<AuthResponseDto>.Failure("Invalid username or password");
+                return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
                 
             if (user.Status != UserStatus.Active)
-                return Result<AuthResponseDto>.Failure("User account is not active");
+                return OperationResult<AuthResponseDto>.FailureResult("User account is not active");
                 
             if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-                return Result<AuthResponseDto>.Failure("Invalid username or password");
+                return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
                 
             // Record login
             user.RecordLogin();
@@ -58,27 +59,27 @@ namespace LoyaltySystem.Application.Services
             // Generate token
             var token = GenerateJwtToken(user);
             
-            return Result<AuthResponseDto>.Success(new AuthResponseDto
+            return OperationResult<AuthResponseDto>.SuccessResult(new AuthResponseDto
             {
                 Token = token,
-                User = MapToDto(user)
+                User = MapUserToDto(user)
             });
         }
 
         /// <summary>
         /// Registers a new user.
         /// </summary>
-        public async Task<Result<UserDto>> RegisterAsync(RegisterUserDto registerDto)
+        public async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerDto)
         {
             // Check if username already exists
             var existingUsername = await _userRepository.GetByUsernameAsync(registerDto.Username);
             if (existingUsername != null)
-                return Result<UserDto>.Failure("Username already exists");
+                return OperationResult<UserDto>.FailureResult("Username already exists");
                 
             // Check if email already exists
             var existingEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
             if (existingEmail != null)
-                return Result<UserDto>.Failure("Email already exists");
+                return OperationResult<UserDto>.FailureResult("Email already exists");
                 
             // Create password hash
             CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
@@ -98,25 +99,25 @@ namespace LoyaltySystem.Application.Services
                 await _userRepository.AddAsync(user);
             });
             
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Updates a user's profile.
         /// </summary>
-        public async Task<Result<UserDto>> UpdateProfileAsync(UserId userId, UpdateProfileDto updateDto)
+        public async Task<OperationResult<UserDto>> UpdateProfileAsync(UserId userId, UpdateProfileDto updateDto)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
             // Check if email is changing and already exists
             if (updateDto.Email != user.Email)
             {
                 var existingEmail = await _userRepository.GetByEmailAsync(updateDto.Email);
                 if (existingEmail != null)
-                    return Result<UserDto>.Failure("Email already exists");
+                    return OperationResult<UserDto>.FailureResult("Email already exists");
                     
                 user.UpdateEmail(updateDto.Email);
             }
@@ -125,7 +126,7 @@ namespace LoyaltySystem.Application.Services
             if (!string.IsNullOrEmpty(updateDto.NewPassword))
             {
                 if (!VerifyPasswordHash(updateDto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
-                    return Result<UserDto>.Failure("Current password is incorrect");
+                    return OperationResult<UserDto>.FailureResult("Current password is incorrect");
                     
                 CreatePasswordHash(updateDto.NewPassword, out string passwordHash, out string passwordSalt);
                 user.UpdatePassword(passwordHash, passwordSalt);
@@ -133,86 +134,86 @@ namespace LoyaltySystem.Application.Services
             
             await _userRepository.UpdateAsync(user);
             
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Gets a user by ID.
         /// </summary>
-        public async Task<Result<UserDto>> GetUserByIdAsync(UserId userId)
+        public async Task<OperationResult<UserDto>> GetUserByIdAsync(UserId userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Gets a user by customer ID.
         /// </summary>
-        public async Task<Result<UserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
+        public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
         {
             var user = await _userRepository.GetByCustomerIdAsync(customerId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Adds a role to a user.
         /// </summary>
-        public async Task<Result<UserDto>> AddRoleAsync(UserId userId, RoleType role)
+        public async Task<OperationResult<UserDto>> AddRoleAsync(UserId userId, RoleType role)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
             user.AddRole(role);
             await _userRepository.AddRoleAsync(userId, role);
             
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Removes a role from a user.
         /// </summary>
-        public async Task<Result<UserDto>> RemoveRoleAsync(UserId userId, RoleType role)
+        public async Task<OperationResult<UserDto>> RemoveRoleAsync(UserId userId, RoleType role)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
             user.RemoveRole(role);
             await _userRepository.RemoveRoleAsync(userId, role);
             
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         /// <summary>
         /// Links a user to a customer.
         /// </summary>
-        public async Task<Result<UserDto>> LinkCustomerAsync(UserId userId, CustomerId customerId)
+        public async Task<OperationResult<UserDto>> LinkCustomerAsync(UserId userId, CustomerId customerId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
             if (user == null)
-                return Result<UserDto>.Failure("User not found");
+                return OperationResult<UserDto>.FailureResult("User not found");
                 
             // Check if customer already linked to a user
             var existingUser = await _userRepository.GetByCustomerIdAsync(customerId);
             if (existingUser != null && existingUser.Id != userId)
-                return Result<UserDto>.Failure("Customer already linked to another user");
+                return OperationResult<UserDto>.FailureResult("Customer already linked to another user");
                 
             user.LinkToCustomer(customerId);
             await _userRepository.UpdateAsync(user);
             
-            return Result<UserDto>.Success(MapToDto(user));
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
         }
 
         #region Helper Methods
@@ -247,52 +248,43 @@ namespace LoyaltySystem.Application.Services
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"]
+                    SecurityAlgorithms.HmacSha256Signature)
             };
             
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
 
-        private static void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
+        private bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
         {
-            using (var hmac = new HMACSHA512())
-            {
-                passwordSalt = Convert.ToBase64String(hmac.Key);
-                passwordHash = Convert.ToBase64String(
-                    hmac.ComputeHash(Encoding.UTF8.GetBytes(password))
-                );
-            }
-        }
-
-        private static bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
-        {
-            var saltBytes = Convert.FromBase64String(storedSalt);
-            
-            using (var hmac = new HMACSHA512(saltBytes))
-            {
-                var computedHash = Convert.ToBase64String(
-                    hmac.ComputeHash(Encoding.UTF8.GetBytes(password))
-                );
+            using var hmac = new HMACSHA512(Convert.FromBase64String(storedSalt));
+            var computedHash = Convert.ToBase64String(
+                hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
                 
-                return computedHash == storedHash;
-            }
+            return computedHash == storedHash;
         }
 
-        private static UserDto MapToDto(User user)
+        private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
+        {
+            using var hmac = new HMACSHA512();
+            
+            passwordSalt = Convert.ToBase64String(hmac.Key);
+            passwordHash = Convert.ToBase64String(
+                hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
+        }
+
+        private UserDto MapUserToDto(User user)
         {
             return new UserDto
             {
                 Id = user.Id,
                 Username = user.Username,
                 Email = user.Email,
-                CustomerId = user.CustomerId,
                 Status = user.Status.ToString(),
-                Roles = user.Roles.Select(r => r.Role.ToString()).ToList(),
+                CustomerId = user.CustomerId,
                 CreatedAt = user.CreatedAt,
-                LastLoginAt = user.LastLoginAt
+                LastLoginAt = user.LastLoginAt,
+                Roles = user.Roles.Select(r => r.Role.ToString()).ToList()
             };
         }
 

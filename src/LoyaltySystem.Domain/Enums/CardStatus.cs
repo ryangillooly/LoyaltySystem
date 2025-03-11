@@ -8,16 +8,16 @@ namespace LoyaltySystem.Domain.Enums
         /// <summary>
         /// Card is active and can be used for transactions.
         /// </summary>
-        Active = 1,
+        Active,
         
         /// <summary>
         /// Card has expired and cannot be used.
         /// </summary>
-        Expired = 2,
+        Expired,
         
         /// <summary>
         /// Card has been suspended by staff and cannot be used.
         /// </summary>
-        Suspended = 3
+        Suspended
     }
 } 

@@ -1,0 +1,6 @@
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.csproj.AssemblyReference.cache
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.GeneratedMSBuildEditorConfig.editorconfig
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.AssemblyInfoInputs.cache
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.AssemblyInfo.cs
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.csproj.CoreCompileInputs.cache
+/Users/ryan.gillooly/Documents/GitHub/LoyaltySystem/src/LoyaltySystem.Application/obj/Debug/net8.0/LoyaltySystem.Application.sourcelink.json

@@ -28,6 +28,16 @@ namespace LoyaltySystem.Domain.Enums
         /// <summary>
         /// Voiding previously issued points.
         /// </summary>
-        PointsVoid = 5
+        PointsVoid = 5,
+        
+        /// <summary>
+        /// Points expired.
+        /// </summary>
+        PointsExpired = 6,
+        
+        /// <summary>
+        /// Points adjusted.
+        /// </summary>
+        PointsAdjusted = 7
     }
 } 

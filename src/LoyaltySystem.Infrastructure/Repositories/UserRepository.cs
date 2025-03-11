@@ -9,6 +9,7 @@ using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
+using LoyaltySystem.Infrastructure.Data.Extensions;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
@@ -31,7 +32,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by ID.
         /// </summary>
-        public async Task<User> GetByIdAsync(UserId id)
+        public async Task<User?> GetByIdAsync(UserId id)
         {
             const string sql = @"
                 SELECT 
@@ -58,7 +59,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by username.
         /// </summary>
-        public async Task<User> GetByUsernameAsync(string username)
+        public async Task<User?> GetByUsernameAsync(string username)
         {
             const string sql = @"
                 SELECT 
@@ -84,7 +85,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by email.
         /// </summary>
-        public async Task<User> GetByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email)
         {
             const string sql = @"
                 SELECT 
@@ -145,7 +146,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by customer ID.
         /// </summary>
-        public async Task<User> GetByCustomerIdAsync(CustomerId customerId)
+        public async Task<User?> GetByCustomerIdAsync(CustomerId customerId)
         {
             const string sql = @"
                 SELECT 
@@ -202,9 +203,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     }, transaction);
                     
                     // Add roles
-                    foreach (var role in user.Roles)
+                    foreach (var userRole in user.Roles)
                     {
-                        await AddRoleInternalAsync(user.Id, role.Role, transaction);
+                        await AddRoleInternalAsync(user.Id, userRole.Role, transaction);
                     }
                     
                     transaction.Commit();
@@ -258,7 +259,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             await AddRoleInternalAsync(userId, role, null);
         }
 
-        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction transaction = null)
+        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction? transaction = null)
         {
             const string sql = @"
                 INSERT INTO user_roles (user_id, role, created_at)

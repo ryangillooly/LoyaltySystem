@@ -1,0 +1,23 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using LoyaltySystem.Domain.Entities;
+using LoyaltySystem.Domain.Common;
+
+namespace LoyaltySystem.Domain.Repositories
+{
+    public interface ICustomerRepository
+    {
+        Task<Customer?> GetByIdAsync(CustomerId id);
+        Task<IEnumerable<Customer>> GetAllAsync(int page, int pageSize);
+        Task<int> GetTotalCountAsync();
+        Task<IEnumerable<Customer>> SearchAsync(string query, int page, int pageSize);
+        Task<Customer> AddAsync(Customer customer);
+        Task UpdateAsync(Customer customer);
+        Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end);
+        Task<int> GetCustomersWithCardsCountAsync();
+        Task<Dictionary<string, int>> GetAgeGroupsAsync();
+        Task<Dictionary<string, int>> GetGenderDistributionAsync();
+        Task<IEnumerable<KeyValuePair<string, int>>> GetTopLocationsAsync(int limit);
+    }
+} 

@@ -74,7 +74,7 @@ namespace LoyaltySystem.Domain.Entities
                 throw new ArgumentOutOfRangeException(nameof(expirationMonth), "Month must be between 1 and 12");
 
             HasExpiration = true;
-            ExpirationType = ExpirationType.Yearly;
+            ExpirationType = ExpirationType.Years;
             ExpirationValue = 1;
             ExpiresOnSpecificDate = true;
             ExpirationDay = expirationDay;

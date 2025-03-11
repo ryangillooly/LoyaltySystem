@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Domain.Repositories
 {
@@ -14,17 +15,17 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets a loyalty program by its ID.
         /// </summary>
-        Task<LoyaltyProgram> GetByIdAsync(Guid id);
+        Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id);
         
         /// <summary>
         /// Gets loyalty programs for a specific brand.
         /// </summary>
-        Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(Guid brandId);
+        Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId);
         
         /// <summary>
         /// Gets active loyalty programs for a specific brand.
         /// </summary>
-        Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(Guid brandId);
+        Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(BrandId brandId);
         
         /// <summary>
         /// Gets loyalty programs by type.
@@ -44,17 +45,17 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets the rewards for a specific program.
         /// </summary>
-        Task<IEnumerable<Reward>> GetRewardsForProgramAsync(Guid programId);
+        Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId);
         
         /// <summary>
         /// Gets active rewards for a specific program.
         /// </summary>
-        Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(Guid programId);
+        Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId);
         
         /// <summary>
         /// Gets a specific reward.
         /// </summary>
-        Task<Reward> GetRewardByIdAsync(Guid rewardId);
+        Task<Reward> GetRewardByIdAsync(RewardId rewardId);
         
         /// <summary>
         /// Adds a new reward.

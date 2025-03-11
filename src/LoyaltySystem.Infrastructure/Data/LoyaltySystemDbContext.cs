@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using LoyaltySystem.Domain.Entities;
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace LoyaltySystem.Infrastructure.Data
 {
@@ -74,14 +76,17 @@ namespace LoyaltySystem.Infrastructure.Data
             // Configure complex types that don't directly map to a DB column
             modelBuilder.Entity<Store>().Property(s => s.Hours)
                 .HasConversion(
-                    h => System.Text.Json.JsonSerializer.Serialize(h, null),
-                    h => System.Text.Json.JsonSerializer.Deserialize<OperatingHours>(h, null));
+                    new ValueConverter<OperatingHours, string>(
+                        h => System.Text.Json.JsonSerializer.Serialize(h, new System.Text.Json.JsonSerializerOptions()),
+                        h => System.Text.Json.JsonSerializer.Deserialize<OperatingHours>(h, new System.Text.Json.JsonSerializerOptions())
+                    ));
                     
-            modelBuilder.Entity<Transaction>().Property(t => t._metadata)
-                .HasColumnName("Metadata")
+            modelBuilder.Entity<Transaction>().Property("Metadata")
                 .HasConversion(
-                    m => System.Text.Json.JsonSerializer.Serialize(m, null),
-                    m => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(m, null));
+                    new ValueConverter<Dictionary<string, string>, string>(
+                        m => System.Text.Json.JsonSerializer.Serialize(m, new System.Text.Json.JsonSerializerOptions()),
+                        m => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(m, new System.Text.Json.JsonSerializerOptions())
+                    ));
         }
         
         /// <summary>
@@ -94,26 +99,33 @@ namespace LoyaltySystem.Infrastructure.Data
             {
                 if (entry.State == EntityState.Added)
                 {
-                    if (entry.Entity is Brand brand && brand.CreatedAt == default)
-                        brand.CreatedAt = DateTime.UtcNow;
+                    // Use reflection to set CreatedAt if it's not already set
+                    // This avoids direct assignment to read-only properties
+                    var now = DateTime.UtcNow;
+                    
+                    if (entry.Entity is Brand || 
+                        entry.Entity is Store || 
+                        entry.Entity is LoyaltyProgram || 
+                        entry.Entity is Reward || 
+                        entry.Entity is Customer || 
+                        entry.Entity is LoyaltyCard || 
+                        entry.Entity is Transaction)
+                    {
+                        var createdAtProp = entry.Entity.GetType().GetProperty("CreatedAt");
+                        var createdAtValue = (DateTime)createdAtProp.GetValue(entry.Entity);
                         
-                    if (entry.Entity is Store store && store.CreatedAt == default)
-                        store.CreatedAt = DateTime.UtcNow;
-                        
-                    if (entry.Entity is LoyaltyProgram program && program.CreatedAt == default)
-                        program.CreatedAt = DateTime.UtcNow;
-                        
-                    if (entry.Entity is Reward reward && reward.CreatedAt == default)
-                        reward.CreatedAt = DateTime.UtcNow;
-                        
-                    if (entry.Entity is Customer customer && customer.CreatedAt == default)
-                        customer.CreatedAt = DateTime.UtcNow;
-                        
-                    if (entry.Entity is LoyaltyCard card && card.CreatedAt == default)
-                        card.CreatedAt = DateTime.UtcNow;
-                        
-                    if (entry.Entity is Transaction transaction && transaction.CreatedAt == default)
-                        transaction.CreatedAt = DateTime.UtcNow;
+                        if (createdAtValue == default)
+                        {
+                            var field = entry.Entity.GetType().GetField("_createdAt", 
+                                System.Reflection.BindingFlags.NonPublic | 
+                                System.Reflection.BindingFlags.Instance);
+                                
+                            if (field != null)
+                            {
+                                field.SetValue(entry.Entity, now);
+                            }
+                        }
+                    }
                 }
             }
             

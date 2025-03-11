@@ -13,17 +13,17 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The unique identifier of the user.
         /// </summary>
-        public UserId Id { get; set; }
+        public UserId? Id { get; set; }
         
         /// <summary>
         /// The username.
         /// </summary>
-        public string Username { get; set; }
+        public string? Username { get; set; }
         
         /// <summary>
         /// The user's email address.
         /// </summary>
-        public string Email { get; set; }
+        public string? Email { get; set; }
         
         /// <summary>
         /// The customer ID associated with this user, if any.
@@ -33,7 +33,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The user's status.
         /// </summary>
-        public string Status { get; set; }
+        public string? Status { get; set; }
         
         /// <summary>
         /// The roles assigned to this user.
@@ -60,13 +60,13 @@ namespace LoyaltySystem.Application.DTOs
         /// The username or email.
         /// </summary>
         [Required]
-        public string Username { get; set; }
+        public string? Username { get; set; }
         
         /// <summary>
         /// The password.
         /// </summary>
         [Required]
-        public string Password { get; set; }
+        public string? Password { get; set; }
     }
     
     /// <summary>
@@ -77,12 +77,12 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The JWT token.
         /// </summary>
-        public string Token { get; set; }
+        public string? Token { get; set; }
         
         /// <summary>
         /// Information about the authenticated user.
         /// </summary>
-        public UserDto User { get; set; }
+        public UserDto? User { get; set; }
     }
     
     /// <summary>
@@ -95,27 +95,27 @@ namespace LoyaltySystem.Application.DTOs
         /// </summary>
         [Required]
         [StringLength(50, MinimumLength = 3)]
-        public string Username { get; set; }
+        public string? Username { get; set; }
         
         /// <summary>
         /// The user's email address.
         /// </summary>
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public string? Email { get; set; }
         
         /// <summary>
         /// The password.
         /// </summary>
         [Required]
         [StringLength(100, MinimumLength = 6)]
-        public string Password { get; set; }
+        public string? Password { get; set; }
         
         /// <summary>
         /// The password confirmation.
         /// </summary>
         [Compare("Password")]
-        public string ConfirmPassword { get; set; }
+        public string? ConfirmPassword { get; set; }
     }
     
     /// <summary>
@@ -127,24 +127,24 @@ namespace LoyaltySystem.Application.DTOs
         /// The user's email address.
         /// </summary>
         [EmailAddress]
-        public string Email { get; set; }
+        public string? Email { get; set; }
         
         /// <summary>
         /// The current password (required if changing password).
         /// </summary>
-        public string CurrentPassword { get; set; }
+        public string? CurrentPassword { get; set; }
         
         /// <summary>
         /// The new password (optional).
         /// </summary>
         [StringLength(100, MinimumLength = 6)]
-        public string NewPassword { get; set; }
+        public string? NewPassword { get; set; }
         
         /// <summary>
         /// The new password confirmation.
         /// </summary>
         [Compare("NewPassword")]
-        public string ConfirmNewPassword { get; set; }
+        public string? ConfirmNewPassword { get; set; }
     }
     
     /// <summary>
@@ -156,13 +156,13 @@ namespace LoyaltySystem.Application.DTOs
         /// The user ID.
         /// </summary>
         [Required]
-        public string UserId { get; set; }
+        public string? UserId { get; set; }
         
         /// <summary>
         /// The role to add or remove.
         /// </summary>
         [Required]
-        public string Role { get; set; }
+        public string? Role { get; set; }
     }
     
     /// <summary>
@@ -174,12 +174,12 @@ namespace LoyaltySystem.Application.DTOs
         /// The user ID.
         /// </summary>
         [Required]
-        public string UserId { get; set; }
+        public string? UserId { get; set; }
         
         /// <summary>
         /// The customer ID.
         /// </summary>
         [Required]
-        public string CustomerId { get; set; }
+        public string? CustomerId { get; set; }
     }
 } 
