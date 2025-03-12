@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Common;
 using System;
 using System.Collections.Generic;
 
@@ -10,7 +11,7 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
-        public Guid Id { get; private set; }
+        public CustomerId Id { get; private set; }
         public string Name { get; private set; }
         public string Email { get; private set; }
         public string Phone { get; private set; }
@@ -33,6 +34,7 @@ namespace LoyaltySystem.Domain.Entities
             string name,
             string email,
             string phone,
+            CustomerId? customerId = null,
             bool marketingConsent = false)
         {
             // Validate required fields
@@ -42,7 +44,7 @@ namespace LoyaltySystem.Domain.Entities
             if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
                 throw new ArgumentException("Invalid email format", nameof(email));
 
-            Id = Guid.NewGuid();
+            Id = customerId ?? new CustomerId();
             Name = name;
             Email = email;
             Phone = phone;

@@ -56,12 +56,10 @@ namespace LoyaltySystem.Application.Services
                 var customerId = EntityId.Parse<CustomerId>(id);
                 var customer = await _customerRepository.GetByIdAsync(customerId);
 
-                if (customer == null)
-                {
-                    return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
-                }
+                return customer == null 
+                    ? OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found") 
+                    : OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
 
-                return OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
             }
             catch (Exception ex)
             {
@@ -96,18 +94,21 @@ namespace LoyaltySystem.Application.Services
         {
             try
             {
-                var customerId = EntityId.New<CustomerId>();
-                
+                // Validate email format
+                if (!IsValidEmail(dto.Email))
+                    return OperationResult<CustomerDto>.FailureResult("Invalid email format");
+                    
                 // Assuming the Customer constructor takes these parameters
                 var customer = new Customer(
                     dto.Name,
                     dto.Email,
                     dto.Phone,
+                    null,
                     false // marketingConsent default value
                 );
 
                 await _unitOfWork.BeginTransactionAsync();
-                var newCustomer = await _customerRepository.AddAsync(customer);
+                var newCustomer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
                 await _unitOfWork.CommitTransactionAsync();
 
                 return OperationResult<CustomerDto>.SuccessResult(MapToDto(newCustomer));
@@ -127,16 +128,9 @@ namespace LoyaltySystem.Application.Services
                 var customer = await _customerRepository.GetByIdAsync(customerId);
 
                 if (customer == null)
-                {
                     return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
-                }
 
-                customer.Update(
-                    dto.Name,
-                    dto.Email,
-                    dto.Phone,
-                    false // marketingConsent default value
-                );
+                customer.Update(dto.Name, dto.Email, dto.Phone, false);
 
                 await _unitOfWork.BeginTransactionAsync();
                 await _customerRepository.UpdateAsync(customer);
@@ -284,22 +278,35 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        private CustomerDto MapToDto(Customer customer)
+        private static CustomerDto MapToDto(Customer customer)
         {
             return new CustomerDto
             {
-                Id = customer.Id.ToString(),
+                Id = customer.Id,
                 Name = customer.Name,
                 Email = customer.Email,
                 Phone = customer.Phone,
                 CreatedAt = customer.CreatedAt
             };
         }
+
+        private static bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     public class CustomerDto
     {
-        public string Id { get; set; } = string.Empty;
+        public CustomerId Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;

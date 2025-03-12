@@ -52,7 +52,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(CustomerId id)
+        public async Task<IActionResult> GetById([FromRoute] CustomerId id)
         {
             _logger.LogInformation("Admin requesting customer by ID: {CustomerId}", id);
             
@@ -114,7 +114,7 @@ namespace LoyaltySystem.Admin.API.Controllers
                 return BadRequest(result.Errors);
             }
             
-            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id.ToString() }, result.Data);
         }
 
         [HttpPut("{id}")]
