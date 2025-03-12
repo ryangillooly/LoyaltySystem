@@ -17,6 +17,12 @@ using LoyaltySystem.Shared.API.Middleware;
 using Microsoft.Extensions.Hosting;
 using LoyaltySystem.Shared.API.Settings;
 using LoyaltySystem.Shared.API.Services;
+using System.Text.Json.Serialization;
+using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Shared.API.Serialization;
+using LoyaltySystem.Shared.API.ModelBinding;
+using LoyaltySystem.Shared.API.Attributes;
+using LoyaltySystem.Infrastructure.Data.TypeHandlers;
 
 namespace LoyaltySystem.Shared.API.Configuration;
 
@@ -32,7 +38,29 @@ public static class ApiConfiguration
         builder.Services.Configure<JwtSettings>(jwtSection);
         var jwtSettings = jwtSection.Get<JwtSettings>();
         
-        builder.Services.AddControllers();
+        // Configure controllers with JSON options for EntityId serialization
+        builder.Services.AddControllers(options => 
+            {
+                // Add model binder provider for EntityId types
+                options.ModelBinderProviders.Insert(0, new ModelBinding.EntityIdModelBinderProvider());
+            })
+            .AddJsonOptions(options => 
+            {
+                // Register converters for all EntityId types
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<CustomerId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<BrandId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<StoreId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<LoyaltyProgramId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<LoyaltyCardId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<RewardId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<TransactionId>());
+                options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserRoleId>());
+                
+                // Use enum string names instead of integer values
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
+            
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.Configure<PostgresqlSettings>(postgresSection);
         
@@ -65,6 +93,9 @@ public static class ApiConfiguration
                     new string[] {}
                 }
             });
+            
+            // Add the EntityId format documentation filter
+            c.OperationFilter<Attributes.EntityIdFormatOperationFilter>();
         });
         
         // Add JWT Authentication
@@ -120,6 +151,9 @@ public static class ApiConfiguration
         builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
         builder.Services.AddScoped<IStoreRepository, StoreRepository>();
 
+        // Initialize Dapper type handlers for EntityId types
+        TypeHandlerConfig.Initialize();
+
         // Add Unit of Work
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -142,6 +176,9 @@ public static class ApiConfiguration
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+            
+            // Initialize the entity ID utility for development mode
+            LoyaltySystem.Shared.API.Utilities.EntityIdUtility.Initialize();
         }
 
         app.UseHttpsRedirection();

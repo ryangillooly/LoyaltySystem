@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using LoyaltySystem.Domain.Repositories;
@@ -10,6 +11,11 @@ namespace LoyaltySystem.Application.Interfaces
     /// </summary>
     public interface IUnitOfWork : IDisposable
     {
+        /// <summary>
+        /// Gets the current active transaction, if any.
+        /// </summary>
+        IDbTransaction CurrentTransaction { get; }
+        
         /// <summary>
         /// Gets the brand repository.
         /// </summary>

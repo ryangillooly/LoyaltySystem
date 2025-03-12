@@ -21,6 +21,14 @@ namespace LoyaltySystem.Infrastructure.Data
         private ILoyaltyProgramRepository _loyaltyProgramRepository;
         private ILoyaltyCardRepository _loyaltyCardRepository;
         private ITransactionRepository _transactionRepository;
+        private ICustomerRepository _customerRepository;
+        private IUserRepository _userRepository;
+        private IStoreRepository _storeRepository;
+        
+        /// <summary>
+        /// Gets the current active transaction, if any.
+        /// </summary>
+        public IDbTransaction CurrentTransaction => _transaction;
         
         /// <summary>
         /// Brand repository instance.

@@ -10,6 +10,7 @@ using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
+using LoyaltySystem.Infrastructure.Data.TypeHandlers;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
@@ -20,17 +21,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
     {
         private readonly IDatabaseConnection _dbConnection;
 
+        static LoyaltyCardRepository()
+        {
+            // Initialize type handlers from centralized configuration
+            TypeHandlerConfig.Initialize();
+        }
+
         public LoyaltyCardRepository(IDatabaseConnection dbConnection)
         {
             _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
-            
-            // Register type handlers for our custom ID types
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<LoyaltyCardId>());
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<LoyaltyProgramId>());
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<CustomerId>());
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<StoreId>());
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<RewardId>());
-            SqlMapper.AddTypeHandler(new EntityIdTypeHandler<TransactionId>());
         }
         
         /// <summary>
@@ -49,7 +48,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 WHERE c.id = @Id";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { Id = id.Value });
+            var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { Id = id });
             
             if (card != null)
             {
@@ -371,28 +370,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 transaction.CreatedAt,
                 Metadata = transaction.Metadata
             }, dbTransaction);
-        }
-    }
-
-    /// <summary>
-    /// Type handler for EntityId types.
-    /// </summary>
-    public class EntityIdTypeHandler<T> : SqlMapper.TypeHandler<T> where T : EntityId, new()
-    {
-        public override void SetValue(IDbDataParameter parameter, T? value)
-        {
-            parameter.Value = value?.Value;
-        }
-
-        public override T? Parse(object? value)
-        {
-            if (value is null) return null;
-            
-            var result = new T();
-            // Use reflection to set the _value field since there's no SetValue method
-            typeof(T).GetField("_value", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.SetValue(result, value);
-            return result;
         }
     }
 } 

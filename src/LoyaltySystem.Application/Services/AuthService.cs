@@ -101,7 +101,7 @@ namespace LoyaltySystem.Application.Services
             
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                await _userRepository.AddAsync(user);
+                await _userRepository.AddAsync(user, _unitOfWork.CurrentTransaction);
             });
             
             return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
@@ -110,7 +110,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Updates a user's profile.
         /// </summary>
-        public async Task<OperationResult<UserDto>> UpdateProfileAsync(UserId userId, UpdateProfileDto updateDto)
+        public async Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
@@ -145,7 +145,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Gets a user by ID.
         /// </summary>
-        public async Task<OperationResult<UserDto>> GetUserByIdAsync(UserId userId)
+        public async Task<OperationResult<UserDto>> GetUserByIdAsync(string userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
@@ -158,7 +158,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Gets a user by customer ID.
         /// </summary>
-        public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
+        public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(string customerId)
         {
             var user = await _userRepository.GetByCustomerIdAsync(customerId);
             
@@ -171,7 +171,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Adds a role to a user.
         /// </summary>
-        public async Task<OperationResult<UserDto>> AddRoleAsync(UserId userId, RoleType role)
+        public async Task<OperationResult<UserDto>> AddRoleAsync(string userId, RoleType role)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
@@ -187,7 +187,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Removes a role from a user.
         /// </summary>
-        public async Task<OperationResult<UserDto>> RemoveRoleAsync(UserId userId, RoleType role)
+        public async Task<OperationResult<UserDto>> RemoveRoleAsync(string userId, RoleType role)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
@@ -203,7 +203,7 @@ namespace LoyaltySystem.Application.Services
         /// <summary>
         /// Links a user to a customer.
         /// </summary>
-        public async Task<OperationResult<UserDto>> LinkCustomerAsync(UserId userId, CustomerId customerId)
+        public async Task<OperationResult<UserDto>> LinkCustomerAsync(string userId, string customerId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
@@ -212,7 +212,7 @@ namespace LoyaltySystem.Application.Services
                 
             // Check if customer already linked to a user
             var existingUser = await _userRepository.GetByCustomerIdAsync(customerId);
-            if (existingUser != null && existingUser.Id != userId)
+            if (existingUser is { } && existingUser.Id.ToString() != userId)
                 return OperationResult<UserDto>.FailureResult("Customer already linked to another user");
                 
             user.LinkToCustomer(customerId);
@@ -277,11 +277,11 @@ namespace LoyaltySystem.Application.Services
         {
             return new UserDto
             {
-                Id = user.Id,
+                Id = user.Id.ToString(),
                 Username = user.Username,
                 Email = user.Email,
                 Status = user.Status.ToString(),
-                CustomerId = user.CustomerId,
+                CustomerId = user.CustomerId?.ToString(),
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
                 Roles = user.Roles.Select(r => r.Role.ToString()).ToList()

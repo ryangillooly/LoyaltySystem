@@ -13,7 +13,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The unique identifier of the user.
         /// </summary>
-        public UserId? Id { get; set; }
+        public string? Id { get; set; }
         
         /// <summary>
         /// The username.
@@ -28,7 +28,7 @@ namespace LoyaltySystem.Application.DTOs
         /// <summary>
         /// The customer ID associated with this user, if any.
         /// </summary>
-        public CustomerId? CustomerId { get; set; }
+        public string? CustomerId { get; set; }
         
         /// <summary>
         /// The user's status.

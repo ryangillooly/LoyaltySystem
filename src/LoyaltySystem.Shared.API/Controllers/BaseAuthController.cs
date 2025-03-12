@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Shared.API.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -70,20 +71,14 @@ namespace LoyaltySystem.Shared.API.Controllers
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _logger.LogInformation("Raw user ID from claim: {RawUserId}", userIdString);
             
-            // Create UserId from the raw GUID string (without prefix)
-            UserId userId;
-            if (Guid.TryParse(userIdString, out var userGuid))
+            // Convert the string ID (with prefix) to a UserId object
+            if (string.IsNullOrEmpty(userIdString) || !UserId.TryParse<UserId>(userIdString, out var userId))
             {
-                userId = new UserId(userGuid);
-                _logger.LogInformation("Parsed user ID from claim: {UserId}", userId);
-            }
-            else
-            {
-                _logger.LogWarning("Invalid user ID format in claim: {InvalidId}", userIdString);
-                return BadRequest(new { message = "Invalid user identity in token" });
+                _logger.LogWarning("Invalid user ID in token: {UserId}", userIdString);
+                return Unauthorized(new { message = "Invalid user identification" });
             }
             
-            var result = await _authService.GetUserByIdAsync(userId);
+            var result = await _authService.GetUserByIdAsync(userId.ToString());
             
             if (!result.Success)
             {
@@ -98,10 +93,18 @@ namespace LoyaltySystem.Shared.API.Controllers
         [HttpPut("profile")]
         public virtual async Task<IActionResult> UpdateProfile(UpdateProfileDto updateRequest)
         {
-            var userId = UserId.Parse<UserId>(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            // Convert the string ID (with prefix) to a UserId object
+            if (string.IsNullOrEmpty(userIdString) || !UserId.TryParse<UserId>(userIdString, out var userId))
+            {
+                _logger.LogWarning("Invalid user ID in token: {UserId}", userIdString);
+                return Unauthorized(new { message = "Invalid user identification" });
+            }
+            
             _logger.LogInformation("Profile update request for user ID: {UserId}", userId);
             
-            var result = await _authService.UpdateProfileAsync(userId, updateRequest);
+            var result = await _authService.UpdateProfileAsync(userId.ToString(), updateRequest);
             
             if (!result.Success)
             {
@@ -113,7 +116,7 @@ namespace LoyaltySystem.Shared.API.Controllers
             return Ok(result.Data);
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [HttpGet("users/{id}")]
         public virtual async Task<IActionResult> GetUserById(string id)
         {
@@ -125,7 +128,7 @@ namespace LoyaltySystem.Shared.API.Controllers
                 return BadRequest(new { message = "Invalid user ID format" });
             }
             
-            var result = await _authService.GetUserByIdAsync(userId);
+            var result = await _authService.GetUserByIdAsync(userId.ToString());
             
             if (!result.Success)
             {
@@ -134,6 +137,41 @@ namespace LoyaltySystem.Shared.API.Controllers
             }
             
             return Ok(result.Data);
+        }
+        
+        /// <summary>
+        /// Gets the current user's ID from claims
+        /// </summary>
+        protected UserId GetCurrentUserId()
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString) || !UserId.TryParse<UserId>(userIdString, out var userId))
+            {
+                _logger.LogWarning("Invalid or missing user ID in claims: {ClaimValue}", userIdString);
+                return null;
+            }
+            
+            return userId;
+        }
+        
+        /// <summary>
+        /// Gets the current user's customer ID from claims, if available
+        /// </summary>
+        protected CustomerId GetCurrentCustomerId()
+        {
+            var customerIdString = User.FindFirstValue("CustomerId");
+            if (string.IsNullOrEmpty(customerIdString))
+            {
+                return null;
+            }
+            
+            if (!CustomerId.TryParse<CustomerId>(customerIdString, out var customerId))
+            {
+                _logger.LogWarning("Invalid customer ID format in claims: {ClaimValue}", customerIdString);
+                return null;
+            }
+            
+            return customerId;
         }
     }
 } 

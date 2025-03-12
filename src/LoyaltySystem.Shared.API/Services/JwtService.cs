@@ -96,7 +96,7 @@ public class JwtService : IJwtService
             _logger.LogInformation("Generated JWT token for user {UserId} with roles: {Roles}", 
                 userId, string.Join(", ", roles));
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return tokenHandler.WriteToken(token);
         }
         catch (Exception ex)
         {

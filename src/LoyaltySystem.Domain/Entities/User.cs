@@ -37,7 +37,7 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
-        public CustomerId? CustomerId { get; private set; }
+        public string? CustomerId { get; private set; }
         public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
         
         public void UpdateEmail(string email)
@@ -68,7 +68,7 @@ namespace LoyaltySystem.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
         
-        public void LinkToCustomer(CustomerId customerId)
+        public void LinkToCustomer(string customerId)
         {
             CustomerId = customerId;
             UpdatedAt = DateTime.UtcNow;
