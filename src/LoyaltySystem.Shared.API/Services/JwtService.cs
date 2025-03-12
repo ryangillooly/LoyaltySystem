@@ -149,7 +149,7 @@ public class JwtService : IJwtService
     }
 
     /// <summary>
-    /// Extracts the user ID from a token
+    /// Gets the user ID from a JWT token
     /// </summary>
     public Guid? GetUserIdFromToken(string token)
     {
@@ -159,13 +159,23 @@ public class JwtService : IJwtService
             return null;
         }
 
+        // Try to get the user ID from the sub claim
         var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
         {
-            return null;
+            return userId;
+        }
+        
+        // If sub claim wasn't found or valid, try the nameidentifier claim
+        var nameIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(nameIdClaim) && Guid.TryParse(nameIdClaim, out var nameId))
+        {
+            return nameId;
         }
 
-        return userId;
+        // No valid user ID found
+        _logger.LogWarning("No valid user ID found in token");
+        return null;
     }
 
     /// <summary>
