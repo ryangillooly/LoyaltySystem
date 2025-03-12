@@ -46,7 +46,7 @@ public class JwtService : IJwtService
     /// Generates a JWT token for the specified user
     /// </summary>
     public string GenerateToken(
-        Guid userId, 
+        string userId, 
         string username, 
         string email, 
         IEnumerable<string> roles,
@@ -60,8 +60,8 @@ public class JwtService : IJwtService
             // Create standard claims
             var claims = new List<Claim>
             {
-                new (ClaimTypes.NameIdentifier, userId.ToString()),
-                new (JwtRegisteredClaimNames.Sub, userId.ToString()), // Subject claim
+                new (ClaimTypes.NameIdentifier, userId),
+                new (JwtRegisteredClaimNames.Sub, userId), // Subject claim
                 new (JwtRegisteredClaimNames.Email, email),
                 new (ClaimTypes.Email, email), // Include both formats for compatibility
                 new (ClaimTypes.Name, username),

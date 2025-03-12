@@ -242,7 +242,7 @@ namespace LoyaltySystem.Application.Services
                 
             // Use the JwtService to generate the token
             return _jwtService.GenerateToken(
-                user.Id.Value,
+                user.Id.ToString(),
                 user.Username,
                 user.Email,
                 roles,

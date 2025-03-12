@@ -139,9 +139,6 @@ namespace LoyaltySystem.Shared.API.Controllers
             return Ok(result.Data);
         }
         
-        /// <summary>
-        /// Gets the current user's ID from claims
-        /// </summary>
         protected UserId GetCurrentUserId()
         {
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -154,9 +151,6 @@ namespace LoyaltySystem.Shared.API.Controllers
             return userId;
         }
         
-        /// <summary>
-        /// Gets the current user's customer ID from claims, if available
-        /// </summary>
         protected CustomerId GetCurrentCustomerId()
         {
             var customerIdString = User.FindFirstValue("CustomerId");

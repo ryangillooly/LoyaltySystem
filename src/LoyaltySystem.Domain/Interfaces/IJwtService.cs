@@ -5,7 +5,7 @@ namespace LoyaltySystem.Domain.Interfaces;
 public interface IJwtService
 {
     string GenerateToken(
-        Guid userId, 
+        string userId, 
         string username, 
         string email, 
         IEnumerable<string> roles, 

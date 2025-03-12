@@ -14,6 +14,18 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Explicitly exclude Debug directories and all related files
+**/[Dd]ebug/
+**/[Dd]ebug/**/*
+**/obj/[Dd]ebug/
+**/obj/[Dd]ebug/**/*
+**/*.[Dd]ebug.*
+**/*.csproj.FileListAbsolute.txt
+**/*.AssemblyInfoInputs.cache
+**/*.AssemblyInfo.cs
+**/*.cache
+**/*.CopyComplete
+
 # Visual Studio / Rider
 .vs/
 .idea/
