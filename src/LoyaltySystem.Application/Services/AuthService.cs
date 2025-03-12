@@ -14,6 +14,8 @@ using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Domain.Interfaces;
 
 namespace LoyaltySystem.Application.Services
 {
@@ -25,15 +27,18 @@ namespace LoyaltySystem.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IJwtService _jwtService;
 
         public AuthService(
             IUserRepository userRepository,
             IConfiguration configuration,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IJwtService jwtService)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
         }
 
         /// <summary>
@@ -220,50 +225,45 @@ namespace LoyaltySystem.Application.Services
 
         private string GenerateJwtToken(User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"]);
-            
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email)
-            };
-            
-            // Add roles as claims
-            foreach (var role in user.Roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
-            }
+            // Create additional claims if needed
+            var additionalClaims = new Dictionary<string, string>();
             
             // Add customer ID claim if it exists
             if (user.CustomerId != null)
             {
-                claims.Add(new Claim("CustomerId", user.CustomerId.ToString()));
+                additionalClaims.Add("CustomerId", user.CustomerId.ToString());
+                additionalClaims.Add("UserId", user.Id.ToString());
             }
             
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
-            
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            // Get the user's primary role (or default if none)
+            var roles = user.Roles.Any() 
+                ? user.Roles.Select(r => r.Role.ToString()).ToList() 
+                : new List<string>{ "User" };
+                
+            // Use the JwtService to generate the token
+            return _jwtService.GenerateToken(
+                user.Id.Value,
+                user.Username,
+                user.Email,
+                roles,
+                additionalClaims
+            );
         }
 
         private bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
         {
-            using var hmac = new HMACSHA512(Convert.FromBase64String(storedSalt));
+            // Convert the salt back to bytes
+            byte[] saltBytes = Convert.FromBase64String(storedSalt);
+    
+            // Use the salt to initialize the HMAC
+            using var hmac = new HMACSHA512(saltBytes);
+    
+            // Compute the hash from the password
             var computedHash = Convert.ToBase64String(
                 hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
-                
+        
             return computedHash == storedHash;
         }
-
         private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
         {
             using var hmac = new HMACSHA512();

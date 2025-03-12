@@ -342,38 +342,34 @@ namespace LoyaltySystem.Application.Services
                     return OperationResult<TransactionDto>.FailureResult("Reward has expired");
                 }
 
-                // Check if card has enough points/stamps
-                if (reward.RequiredValue > 0 && card.PointsBalance < reward.RequiredValue)
+                // Check if card has enough points/stamps based on card type
+                if (card.Type == LoyaltyProgramType.Points && card.PointsBalance < reward.RequiredValue)
                 {
                     return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredValue}, Available: {card.PointsBalance}");
                 }
-
-                /*
-                if (reward.RequiredStamps > 0 && card.StampsCollected < reward.RequiredStamps)
+                else if (card.Type == LoyaltyProgramType.Stamp && card.StampsCollected < reward.RequiredValue)
                 {
-                    return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredStamps}, Available: {card.StampsCollected}");
+                    return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredValue}, Available: {card.StampsCollected}");
                 }
-                */
 
-                // Create transaction
+                // Create transaction with the appropriate deduction values based on card type
                 var transaction = new Transaction(
                     cardId.Value,
                     TransactionType.RewardRedemption,
                     rewardId: rewardId.Value,
-                    quantity: reward.RequiredStamps > 0 ? -reward.RequiredStamps : null,
-                    pointsAmount: reward.RequiredPoints > 0 ? -reward.RequiredPoints : null,
+                    quantity: card.Type == LoyaltyProgramType.Stamp ? -reward.RequiredValue : null,
+                    pointsAmount: card.Type == LoyaltyProgramType.Points ? -reward.RequiredValue : null,
                     storeId: storeId.Value,
                     staffId: staffId);
 
                 // Update card
-                if (reward.RequiredPoints > 0)
+                if (card.Type == LoyaltyProgramType.Points)
                 {
-                    card.PointsBalance -= reward.RequiredPoints;
+                    card.PointsBalance -= reward.RequiredValue;
                 }
-
-                if (reward.RequiredStamps > 0)
+                else if (card.Type == LoyaltyProgramType.Stamp)
                 {
-                    card.StampsCollected -= reward.RequiredStamps;
+                    card.StampsCollected -= reward.RequiredValue;
                 }
 
                 card.UpdatedAt = DateTime.UtcNow;
@@ -496,7 +492,7 @@ namespace LoyaltySystem.Application.Services
                 var transactions = await _unitOfWork.TransactionRepository.GetByProgramIdAsync(programId);
                 
                 // Get rewards for the program
-                var rewards = await _unitOfWork.RewardRepository.GetByProgramIdAsync(programId);
+                var rewards = await _programRepository.GetRewardsForProgramAsync(programId);
                 
                 // Build analytics
                 var analytics = new DTOs.ProgramAnalyticsDto

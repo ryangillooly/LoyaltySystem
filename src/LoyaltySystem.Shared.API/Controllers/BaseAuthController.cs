@@ -67,8 +67,21 @@ namespace LoyaltySystem.Shared.API.Controllers
         [HttpGet("profile")]
         public virtual async Task<IActionResult> GetProfile()
         {
-            var userId = UserId.Parse<UserId>(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            _logger.LogInformation("Profile request for user ID: {UserId}", userId);
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _logger.LogInformation("Raw user ID from claim: {RawUserId}", userIdString);
+            
+            // Create UserId from the raw GUID string (without prefix)
+            UserId userId;
+            if (Guid.TryParse(userIdString, out var userGuid))
+            {
+                userId = new UserId(userGuid);
+                _logger.LogInformation("Parsed user ID from claim: {UserId}", userId);
+            }
+            else
+            {
+                _logger.LogWarning("Invalid user ID format in claim: {InvalidId}", userIdString);
+                return BadRequest(new { message = "Invalid user identity in token" });
+            }
             
             var result = await _authService.GetUserByIdAsync(userId);
             

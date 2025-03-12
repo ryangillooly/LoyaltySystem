@@ -12,7 +12,7 @@ namespace LoyaltySystem.Admin.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
     public class CustomersController : ControllerBase
     {
         private readonly CustomerService _customerService;
@@ -118,7 +118,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCustomer(CustomerId id, [FromBody] UpdateCustomerRequest request)
+        public async Task<IActionResult> UpdateCustomer([FromRoute] CustomerId id, [FromBody] UpdateCustomerRequest request)
         {
             _logger.LogInformation("Admin updating customer ID: {CustomerId}", id);
             
@@ -165,7 +165,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPost("{id}/enroll")]
-        public async Task<IActionResult> EnrollCustomerInProgram(CustomerId id, [FromBody] EnrollCustomerRequest request)
+        public async Task<IActionResult> EnrollCustomerInProgram([FromRoute] CustomerId id, [FromBody] EnrollCustomerRequest request)
         {
             _logger.LogInformation("Admin enrolling customer ID: {CustomerId} in program ID: {ProgramId}", 
                 id, request.ProgramId);

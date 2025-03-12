@@ -63,10 +63,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    u.id AS Id, u.username AS Username, u.email AS Email, 
-                    u.password_hash AS PasswordHash, u.password_salt AS PasswordSalt, 
-                    u.customer_id AS CustomerId, u.status::int AS Status, 
-                    u.created_at AS CreatedAt, u.updated_at AS UpdatedAt, 
+                    u.id AS Id, 
+                    u.username AS Username, 
+                    u.email AS Email, 
+                    u.password_hash AS PasswordHash, 
+                    u.password_salt AS PasswordSalt, 
+                    u.customer_id AS CustomerId, 
+                    CAST(u.status AS INT) AS Status, 
+                    u.created_at AS CreatedAt, 
+                    u.updated_at AS UpdatedAt, 
                     u.last_login_at AS LastLoginAt
                 FROM users u
                 WHERE u.username = @Username";
@@ -244,7 +249,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.PasswordHash,
                 user.PasswordSalt,
                 CustomerId = user.CustomerId?.Value,
-                Status = user.Status.ToString(),
+                Status = (int) user.Status,
                 user.UpdatedAt,
                 user.LastLoginAt
             });

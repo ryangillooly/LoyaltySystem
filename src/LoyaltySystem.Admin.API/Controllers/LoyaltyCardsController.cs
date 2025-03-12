@@ -93,7 +93,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPut("{id}/status")]
-        public async Task<IActionResult> UpdateCardStatus(LoyaltyCardId id, [FromBody] UpdateCardStatusRequest request)
+        public async Task<IActionResult> UpdateCardStatus([FromRoute] LoyaltyCardId id, [FromBody] UpdateCardStatusRequest request)
         {
             _logger.LogInformation("Admin updating loyalty card status for ID: {CardId} to {Status}", 
                 id, request.Status);

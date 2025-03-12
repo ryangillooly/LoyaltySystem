@@ -138,7 +138,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProgram(LoyaltyProgramId id, [FromBody] UpdateProgramRequest request)
+        public async Task<IActionResult> UpdateProgram([FromRoute] LoyaltyProgramId id, [FromBody] UpdateProgramRequest request)
         {
             _logger.LogInformation("Admin updating loyalty program ID: {ProgramId}", id);
             
@@ -170,7 +170,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPost("{id}/rewards")]
-        public async Task<IActionResult> AddReward(LoyaltyProgramId id, [FromBody] CreateRewardRequest request)
+        public async Task<IActionResult> AddReward([FromRoute] LoyaltyProgramId id, [FromBody] CreateRewardRequest request)
         {
             _logger.LogInformation("Admin adding reward to program ID: {ProgramId}", id);
             
@@ -239,10 +239,9 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPut("{id}/rewards/{rewardId}")]
-        public async Task<IActionResult> UpdateReward(LoyaltyProgramId id, Guid rewardId, [FromBody] UpdateRewardRequest request)
+        public async Task<IActionResult> UpdateReward([FromRoute] LoyaltyProgramId id, [FromRoute] Guid rewardId, [FromBody] UpdateRewardRequest request)
         {
-            _logger.LogInformation("Admin updating reward ID: {RewardId} for program ID: {ProgramId}", 
-                rewardId, id);
+            _logger.LogInformation("Admin updating reward ID: {RewardId} in program ID: {ProgramId}", rewardId, id);
             
             // First verify reward exists and belongs to this program
             var getResult = await _programService.GetRewardByIdAsync(rewardId.ToString());

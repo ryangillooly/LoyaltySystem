@@ -2,8 +2,8 @@ namespace LoyaltySystem.Domain.Enums
 {
     public enum UserStatus
     {
-        Active,
-        Inactive,
-        Locked
+        Active = 1,
+        Inactive = 2,
+        Locked = 3
     }
 } 

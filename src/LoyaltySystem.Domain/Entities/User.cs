@@ -11,7 +11,7 @@ namespace LoyaltySystem.Domain.Entities
         private readonly List<UserRole> _roles = new();
         
         // For EF Core
-        private User() : base(new UserId(Guid.NewGuid())) { }
+        private User() { }
         
         public User(
             string username,
