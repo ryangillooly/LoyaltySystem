@@ -15,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Xunit;
 
-namespace LoyaltySystem.Admin.API.Tests.Services
+namespace LoyaltySystem.Shared.API.Tests.Services
 {
     public class JwtServiceTests
     {
