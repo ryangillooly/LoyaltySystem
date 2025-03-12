@@ -14,6 +14,31 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Enhanced exclusions for Debug folders and build outputs - more comprehensive
+[Bb]in/[Dd]ebug*/
+**/[Bb]in/[Dd]ebug*/
+**/[Bb]in/[Dd]ebug/**/*
+[Oo]bj/[Dd]ebug*/
+**/[Oo]bj/[Dd]ebug*/
+**/[Oo]bj/[Dd]ebug/**/*
+**/obj/**/*.cache
+**/bin/**/*.dll
+**/bin/**/*.pdb
+**/bin/**/*.xml
+**/obj/**/*.dll
+**/obj/**/*.pdb
+**/obj/**/*.xml
+**/obj/Debug/net*/
+**/obj/Debug/net*/**/*
+**/bin/Debug/net*/
+**/bin/Debug/net*/**/*
+**/*.csproj.nuget.dgspec.json
+**/*.csproj.nuget.g.props
+**/*.csproj.nuget.g.targets
+**/*.assets.cache
+**/*.dll.config
+**/*.exe.config
+
 # Explicitly exclude Debug directories and all related files
 **/[Dd]ebug/
 **/[Dd]ebug/**/*
@@ -207,3 +232,7 @@ secrets.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Explicitly exclude specific files
+src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.tx
+src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.txt
