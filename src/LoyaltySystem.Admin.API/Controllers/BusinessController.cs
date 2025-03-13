@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {
@@ -15,21 +11,18 @@ namespace LoyaltySystem.Admin.API.Controllers
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class BusinessController : ControllerBase
     {
-        private readonly BusinessService _businessService;
-        private readonly BrandService _brandService;
-        private readonly StoreService _storeService;
-        private readonly LoyaltyProgramService _programService;
+        private readonly IBusinessService _businessService;
+        private readonly IStoreService _storeService;
+        private readonly ILoyaltyProgramService _programService;
         private readonly ILogger<BusinessController> _logger;
 
         public BusinessController(
-            BusinessService businessService,
-            BrandService brandService,
-            StoreService storeService,
-            LoyaltyProgramService programService,
+            IBusinessService businessService,
+            IStoreService storeService,
+            ILoyaltyProgramService programService,
             ILogger<BusinessController> logger)
         {
             _businessService = businessService ?? throw new ArgumentNullException(nameof(businessService));
-            _brandService = brandService ?? throw new ArgumentNullException(nameof(brandService));
             _storeService = storeService ?? throw new ArgumentNullException(nameof(storeService));
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

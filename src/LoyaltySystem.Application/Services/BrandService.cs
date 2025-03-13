@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
@@ -10,7 +7,7 @@ using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Application.Services
 {
-    public class BrandService
+    public class BrandService : IBrandService
     {
         private readonly IBrandRepository _brandRepository;
         private readonly IUnitOfWork _unitOfWork;

@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Common;
 using System;
 
 namespace LoyaltySystem.Domain.Entities
@@ -7,8 +8,8 @@ namespace LoyaltySystem.Domain.Entities
     /// </summary>
     public class Reward
     {
-        public Guid Id { get; private set; }
-        public Guid ProgramId { get; private set; }
+        public RewardId Id { get; private set; }
+        public LoyaltyProgramId ProgramId { get; private set; }
         public string Title { get; private set; }
         public string Description { get; private set; }
         public int RequiredValue { get; private set; }
@@ -24,8 +25,8 @@ namespace LoyaltySystem.Domain.Entities
         // Private constructor for EF Core
         private Reward() { }
 
-        public Reward(
-            Guid programId,
+        public Reward
+            (LoyaltyProgramId programId,
             string title,
             string description,
             int requiredValue,
@@ -45,7 +46,7 @@ namespace LoyaltySystem.Domain.Entities
             if (validFrom.HasValue && validTo.HasValue && validFrom.Value > validTo.Value)
                 throw new ArgumentException("Valid from date must be before valid to date");
 
-            Id = Guid.NewGuid();
+            Id = new RewardId();
             ProgramId = programId;
             Title = title;
             Description = description;

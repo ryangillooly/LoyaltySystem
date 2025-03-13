@@ -9,7 +9,7 @@ public class StoreDto
     public string Name { get; set; } = string.Empty;
     public Address Address { get; set; }
     public ContactInfo ContactInfo { get; set; }
-    public OperatingHours OperatingHours { get; private set; }
+    public OperatingHours OperatingHours { get; set; }
     public GeoLocation Location { get; set; }
     public string BrandId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }

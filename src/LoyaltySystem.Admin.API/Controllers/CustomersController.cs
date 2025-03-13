@@ -1,13 +1,11 @@
-using System;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {
@@ -16,13 +14,13 @@ namespace LoyaltySystem.Admin.API.Controllers
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class CustomersController : ControllerBase
     {
-        private readonly CustomerService _customerService;
-        private readonly LoyaltyCardService _cardService;
+        private readonly ICustomerService _customerService;
+        private readonly ILoyaltyCardService _cardService;
         private readonly ILogger<CustomersController> _logger;
 
         public CustomersController(
-            CustomerService customerService,
-            LoyaltyCardService cardService,
+            ICustomerService customerService,
+            ILoyaltyCardService cardService,
             ILogger<CustomersController> logger)
         {
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));

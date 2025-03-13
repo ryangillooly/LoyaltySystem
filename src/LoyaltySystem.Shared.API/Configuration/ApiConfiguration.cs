@@ -147,6 +147,7 @@ public static class ApiConfiguration
         // Add repositories
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
+        builder.Services.AddScoped<ILoyaltyRewardsRepository, LoyaltyRewardsRepository>();
         builder.Services.AddScoped<ILoyaltyProgramRepository, LoyaltyProgramRepository>();
         builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
         builder.Services.AddScoped<IBrandRepository, BrandRepository>();
@@ -157,13 +158,14 @@ public static class ApiConfiguration
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add application services
-        builder.Services.AddScoped<AuthService>();
-        builder.Services.AddScoped<LoyaltyCardService>();
-        builder.Services.AddScoped<LoyaltyProgramService>();
-        builder.Services.AddScoped<BusinessService>();
-        builder.Services.AddScoped<BrandService>();
-        builder.Services.AddScoped<StoreService>();
-        builder.Services.AddScoped<CustomerService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<ILoyaltyCardService, LoyaltyCardService>();
+        builder.Services.AddScoped<ILoyaltyRewardsService, LoyaltyRewardsService>();
+        builder.Services.AddScoped<ILoyaltyProgramService, LoyaltyProgramService>();
+        builder.Services.AddScoped<IBusinessService, BusinessService>();
+        builder.Services.AddScoped<IBrandService, BrandService>();
+        builder.Services.AddScoped<IStoreService, StoreService>();
+        builder.Services.AddScoped<ICustomerService, CustomerService>();
 
         // Add event handling
         builder.Services.AddScoped<IEventPublisher, ConsoleEventPublisher>();

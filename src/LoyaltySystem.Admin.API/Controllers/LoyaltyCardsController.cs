@@ -16,13 +16,13 @@ namespace LoyaltySystem.Admin.API.Controllers
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class LoyaltyCardsController : ControllerBase
     {
-        private readonly LoyaltyProgramService _programService;
+        private readonly ILoyaltyProgramService _programService;
         private readonly ILogger _logger;
         private readonly ILoyaltyCardService _loyaltyCardService;
 
         public LoyaltyCardsController(
-            LoyaltyCardService loyaltyCardService,
-            LoyaltyProgramService programService,
+            ILoyaltyCardService loyaltyCardService,
+            ILoyaltyProgramService programService,
             ILogger<LoyaltyCardsController> logger)
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));

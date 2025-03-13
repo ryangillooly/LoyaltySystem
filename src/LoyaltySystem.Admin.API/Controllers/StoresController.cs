@@ -1,11 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {

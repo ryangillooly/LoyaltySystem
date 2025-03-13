@@ -10,7 +10,7 @@ using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Application.Services
 {
-    public class CustomerService
+    public class CustomerService : ICustomerService
     {
         private readonly ICustomerRepository _customerRepository;
         private readonly IStoreRepository _storeRepository;
@@ -330,16 +330,5 @@ namespace LoyaltySystem.Application.Services
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public DateTime SignupDate { get; set; }
-    }
-
-    public class StoreDto
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public Address Address { get; set; } 
-        public ContactInfo ContactInfo { get; set; } 
-        public GeoLocation Location { get; set; }
-        public OperatingHours OperatingHours { get; set; }
-        public string BrandId { get; set; } = string.Empty;
     }
 } 

@@ -1,18 +1,13 @@
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
-using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Staff.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Staff,Admin")]
+    [Authorize(Roles = "SuperAdmin,Staff,Admin")]
     public class StoreController : ControllerBase
     {
         private readonly StoreService _storeService;
@@ -99,59 +94,6 @@ namespace LoyaltySystem.Staff.API.Controllers
             var activePrograms = result.Data.FindAll(p => p.IsActive);
             
             return Ok(activePrograms);
-        }
-
-        [HttpGet("current/rewards")]
-        public async Task<IActionResult> GetStoreRewards()
-        {
-            string storeIdClaim = User.FindFirstValue("StoreId");
-            if (string.IsNullOrEmpty(storeIdClaim))
-            {
-                _logger.LogWarning("Staff user does not have a store assigned");
-                return BadRequest("No store assigned to your account");
-            }
-
-            Guid storeId;
-            if (!Guid.TryParse(storeIdClaim, out storeId))
-            {
-                _logger.LogWarning("Invalid store ID format in claim: {StoreId}", storeIdClaim);
-                return BadRequest("Invalid store ID format");
-            }
-
-            _logger.LogInformation("Staff fetching rewards for store ID: {StoreId}", storeId);
-            
-            // First get the store to check the brand ID
-            var storeResult = await _storeService.GetStoreByIdAsync(storeId.ToString());
-            if (!storeResult.Success)
-            {
-                _logger.LogWarning("Get store failed for ID: {StoreId} - {Error}", storeId, storeResult.Errors);
-                return NotFound("Store not found");
-            }
-            
-            var programsResult = await _programService.GetProgramsByBrandIdAsync(storeResult.Data.BrandId);
-            if (!programsResult.Success)
-            {
-                _logger.LogWarning("Get brand programs failed for brand ID: {BrandId} - {Error}", 
-                    storeResult.Data.BrandId, programsResult.Errors);
-                return NotFound(programsResult.Errors);
-            }
-            
-            // Collect all active rewards from all active programs
-            var rewards = new List<RewardDto>();
-            foreach (var program in programsResult.Data.Where(p => p.IsActive))
-            {
-                var rewardsResult = await _programService.GetRewardsByProgramIdAsync(program.Id.ToString());
-                if (rewardsResult.Success)
-                {
-                    // Only add active rewards - use foreach loop instead of AddRange to avoid ambiguity
-                    foreach (var reward in rewardsResult.Data.Where(r => r.IsActive))
-                    {
-                        rewards.Add(reward);
-                    }
-                }
-            }
-            
-            return Ok(rewards);
         }
 
         [HttpGet("current/transactions")]

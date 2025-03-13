@@ -22,7 +22,7 @@ namespace LoyaltySystem.Application.Services
     /// <summary>
     /// Service for authentication and user management.
     /// </summary>
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;

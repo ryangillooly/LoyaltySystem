@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
@@ -13,7 +10,7 @@ namespace LoyaltySystem.Application.Services
     /// <summary>
     /// Service for managing businesses in the loyalty system.
     /// </summary>
-    public class BusinessService
+    public class BusinessService : IBusinessService
     {
         private readonly IBusinessRepository _businessRepository;
         private readonly IBrandRepository _brandRepository;

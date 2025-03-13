@@ -1,14 +1,11 @@
-using System;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
 using LoyaltySystem.Shared.API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {
@@ -16,7 +13,7 @@ namespace LoyaltySystem.Admin.API.Controllers
     [Route("api/[controller]")]
     public class AuthController : BaseAuthController
     {
-        public AuthController(AuthService authService, ILogger<AuthController> logger)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
             : base(authService, logger)
         {
         }

@@ -1,13 +1,13 @@
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Domain.Common;
-using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
+using LoyaltySystem.Domain.Repositories;
 
 namespace LoyaltySystem.Application.Services
 {
-    public class StoreService
+    public class StoreService : IStoreService
     {
         private readonly IStoreRepository _storeRepository;
         private readonly IBrandRepository _brandRepository;

@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Shared.API.Utilities;
@@ -15,10 +16,10 @@ namespace LoyaltySystem.Shared.API.Controllers
     [Route("api/[controller]")]
     public abstract class BaseAuthController : ControllerBase
     {
-        protected readonly AuthService _authService;
+        protected readonly IAuthService _authService;
         protected readonly ILogger _logger;
 
-        protected BaseAuthController(AuthService authService, ILogger logger)
+        protected BaseAuthController(IAuthService authService, ILogger logger)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -1,11 +1,9 @@
-using System;
-using System.Threading.Tasks;
+
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {
@@ -14,11 +12,11 @@ namespace LoyaltySystem.Admin.API.Controllers
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class BrandsController : ControllerBase
     {
-        private readonly BrandService _brandService;
+        private readonly IBrandService _brandService;
         private readonly ILogger<BrandsController> _logger;
 
         public BrandsController(
-            BrandService brandService,
+            IBrandService brandService,
             ILogger<BrandsController> logger)
         {
             _brandService = brandService ?? throw new ArgumentNullException(nameof(brandService));

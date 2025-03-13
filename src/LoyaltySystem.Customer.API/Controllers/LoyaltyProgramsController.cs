@@ -1,14 +1,9 @@
-using System;
+using LoyaltySystem.Application.Interfaces;
 using System.Security.Claims;
-using System.Threading.Tasks;
-using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System.Linq;
 
 namespace LoyaltySystem.Customer.API.Controllers
 {
@@ -17,16 +12,19 @@ namespace LoyaltySystem.Customer.API.Controllers
     [Authorize]
     public class LoyaltyProgramsController : ControllerBase
     {
-        private readonly LoyaltyProgramService _programService;
+        private readonly ILoyaltyProgramService _programService;
+        private readonly ILoyaltyRewardsService _rewardsService;
         private readonly BrandService _brandService;
         private readonly ILogger<LoyaltyProgramsController> _logger;
 
         public LoyaltyProgramsController(
-            LoyaltyProgramService programService,
+            ILoyaltyProgramService programService,
+            ILoyaltyRewardsService rewardsService,
             BrandService brandService,
             ILogger<LoyaltyProgramsController> logger)
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
+            _rewardsService = rewardsService ?? throw new ArgumentNullException(nameof(rewardsService));
             _brandService = brandService ?? throw new ArgumentNullException(nameof(brandService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -162,7 +160,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             }
             
             // Only return active rewards for customers
-            var result = await _programService.GetRewardsByProgramIdAsync(id.ToString());
+            var result = await _rewardsService.GetRewardsByProgramIdAsync(id.ToString());
             
             if (!result.Success)
             {
@@ -202,7 +200,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             }
             
             // Get all rewards for the program
-            var rewardsResult = await _programService.GetRewardsByProgramIdAsync(id.ToString());
+            var rewardsResult = await _rewardsService.GetRewardsByProgramIdAsync(id.ToString());
             
             if (!rewardsResult.Success)
             {
