@@ -48,7 +48,7 @@ namespace LoyaltySystem.Domain.ValueObjects
             int enrollmentBonusPoints = 0)
         {
             if (pointsPerPound <= 0)
-                throw new ArgumentException("Points per dollar must be greater than zero", nameof(pointsPerPound));
+                throw new ArgumentException("Points per pound must be greater than zero", nameof(pointsPerPound));
 
             if (minimumPointsForRedemption < 0)
                 throw new ArgumentException("Minimum points for redemption cannot be negative", nameof(minimumPointsForRedemption));

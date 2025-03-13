@@ -581,8 +581,8 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
     {
         var a = new LoyaltyProgram
         {
-            Id = new LoyaltyProgramId(dto.Id),
-            BrandId = new BrandId(dto.BrandId),
+            Id = new LoyaltyProgramId(EntityId.Parse<LoyaltyProgramId>(dto.Id)),
+            BrandId = new BrandId(EntityId.Parse<BrandId>(dto.BrandId)),
             Name = dto.Name,
             Description = dto.Description,
             Type = dto.Type,

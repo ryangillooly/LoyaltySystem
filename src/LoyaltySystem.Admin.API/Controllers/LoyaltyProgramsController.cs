@@ -87,6 +87,7 @@ namespace LoyaltySystem.Admin.API.Controllers
             try
             {
                 var result = await _programService.CreateProgramAsync(dto);
+                
                 return result.Success
                     ? CreatedAtAction(nameof(GetProgram), new { id = result.Data.Id }, result.Data)
                     : BadRequest(result.Errors);
