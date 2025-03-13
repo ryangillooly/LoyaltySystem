@@ -462,34 +462,40 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
 
     public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int limit = 50)
     {
-        // Retrieve programs with type as text, then map to the appropriate enum value in code
-        const string sql = @"
+        // Define a local record for database results mapping
+        var sql = @"
             SELECT 
-                id AS Id,
+                id,
                 brand_id AS BrandId,
-                name AS Name,
-                type AS TypeText,
+                name,
+                description,
+                type,
                 stamp_threshold AS StampThreshold,
                 points_conversion_rate AS PointsConversionRate,
                 daily_stamp_limit AS DailyStampLimit,
                 minimum_transaction_amount AS MinimumTransactionAmount,
                 is_active AS IsActive,
                 created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                updated_at AS UpdatedAt,
+                enrollment_bonus_points AS EnrollmentBonusPoints,
+                terms_and_conditions AS TermsAndConditions,
+                start_date AS StartDate,
+                end_date AS EndDate
             FROM loyalty_programs 
             ORDER BY created_at DESC
             LIMIT @Limit OFFSET @Skip";
 
         var parameters = new { Skip = skip, Limit = limit };
         var dbConnection = await _dbConnection.GetConnectionAsync();
+        
+        // Query using dynamic to get raw data without mapping issues
         var dtos = await dbConnection.QueryAsync<LoyaltyProgramDto>(sql, parameters);
 
         return dtos.Select(CreateProgramFromDto).ToList();
     }
-    
-    private static LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto)
-    {
-        return new LoyaltyProgram
+
+    public LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto) =>
+        new ()
         {
             Id = EntityId.Parse<LoyaltyProgramId>(dto.Id),
             BrandId = EntityId.Parse<BrandId>(dto.BrandId),
@@ -502,14 +508,13 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
             PointsConfig = dto.PointsConfig.ToPointsConfig(),
             DailyStampLimit = dto.DailyStampLimit,
             MinimumTransactionAmount = dto.MinimumTransactionAmount,
+            IsActive = dto.IsActive,
             HasTiers = dto.HasTiers,
             TermsAndConditions = dto.TermsAndConditions,
             EnrollmentBonusPoints = dto.EnrollmentBonusPoints,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
-            IsActive = dto.IsActive,
             CreatedAt = dto.CreatedAt,
-            UpdatedAt = dto.UpdatedAt,
+            UpdatedAt = dto.UpdatedAt
         };
-    }
 }

@@ -301,6 +301,11 @@ CREATE TABLE IF NOT EXISTS loyalty_programs (
     daily_stamp_limit INTEGER NULL,
     minimum_transaction_amount NUMERIC(18, 2) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    description VARCHAR(255) NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    terms_and_conditions VARCHAR(255) NULL,
+    
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_loyalty_programs_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE,
