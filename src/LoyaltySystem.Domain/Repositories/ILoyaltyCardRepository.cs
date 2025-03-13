@@ -4,14 +4,18 @@ using System.Threading.Tasks;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Common;
+using System.Data;
 
 namespace LoyaltySystem.Domain.Repositories
 {
     /// <summary>
     /// Repository interface for the LoyaltyCard aggregate.
     /// </summary>
-    public interface ILoyaltyCardRepository
-    {
+    public interface ILoyaltyCardRepository {
+        Task<IEnumerable<LoyaltyCard>> GetAllAsync(int skip = 0, int limit = 50);
+
+        Task<int> GetTotalCountAsync();
+        
         /// <summary>
         /// Gets a loyalty card by its ID.
         /// </summary>
@@ -36,11 +40,11 @@ namespace LoyaltySystem.Domain.Repositories
         /// Gets a loyalty card by its QR code.
         /// </summary>
         Task<LoyaltyCard> GetByQrCodeAsync(string qrCode);
-        
+
         /// <summary>
         /// Adds a new loyalty card.
         /// </summary>
-        Task AddAsync(LoyaltyCard card);
+        Task AddAsync(LoyaltyCard card, IDbTransaction transaction = null);
         
         /// <summary>
         /// Updates an existing loyalty card.

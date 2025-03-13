@@ -41,30 +41,5 @@ namespace LoyaltySystem.Domain.Repositories
         /// Updates an existing brand.
         /// </summary>
         Task UpdateAsync(Brand brand);
-        
-        /// <summary>
-        /// Gets all stores for a brand.
-        /// </summary>
-        Task<IEnumerable<Store>> GetStoresForBrandAsync(Guid brandId);
-        
-        /// <summary>
-        /// Gets a specific store.
-        /// </summary>
-        Task<Store> GetStoreByIdAsync(Guid storeId);
-        
-        /// <summary>
-        /// Adds a new store.
-        /// </summary>
-        Task AddStoreAsync(Store store);
-        
-        /// <summary>
-        /// Updates an existing store.
-        /// </summary>
-        Task UpdateStoreAsync(Store store);
-        
-        /// <summary>
-        /// Gets stores near a location with optional distance constraint.
-        /// </summary>
-        Task<IEnumerable<Store>> GetStoresNearLocationAsync(double latitude, double longitude, double maxDistanceKm);
     }
 } 

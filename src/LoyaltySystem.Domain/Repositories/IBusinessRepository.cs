@@ -61,7 +61,7 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets businesses by name (partial match).
         /// </summary>
-        Task<IEnumerable<Business>> SearchByNameAsync(string nameQuery, int page = 1, int pageSize = 20);
+        Task<IEnumerable<Business>> SearchByNameAsync(string nameQuery, int skip = 0, int limit = 20);
         
         /// <summary>
         /// Gets all brands for a business.

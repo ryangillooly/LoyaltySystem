@@ -12,32 +12,32 @@ namespace LoyaltySystem.Domain.Entities
         // This field is exposed for Entity Framework Core
         internal Dictionary<string, string> _metadata;
 
-        public Guid Id { get; private set; }
-        public Guid CardId { get; private set; }
-        public TransactionType Type { get; private set; }
-        public Guid? RewardId { get; private set; }
-        public int? Quantity { get; private set; }
-        public decimal? PointsAmount { get; private set; }
-        public decimal? TransactionAmount { get; private set; }
-        public Guid StoreId { get; private set; }
-        public Guid? StaffId { get; private set; }
-        public string PosTransactionId { get; private set; }
-        public DateTime Timestamp { get; private set; }
-        public DateTime CreatedAt { get; private set; }
+        public Guid Id { get; set; }
+        public Guid CardId { get; set; }
+        public TransactionType Type { get; set; }
+        public Guid? RewardId { get; set; }
+        public int? Quantity { get; set; }
+        public decimal? PointsAmount { get; set; }
+        public decimal? TransactionAmount { get; set; }
+        public Guid StoreId { get; set; }
+        public Guid? StaffId { get; set; }
+        public string PosTransactionId { get; set; }
+        public DateTime Timestamp { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         // Navigation properties
         public virtual LoyaltyCard Card { get; private set; }
         public virtual Store Store { get; private set; }
         public virtual Reward Reward { get; private set; }
         
-        // Metadata access
-        public IReadOnlyDictionary<string, string> Metadata => _metadata;
-
-        // Private constructor for EF Core
-        private Transaction()
+        public IReadOnlyDictionary<string, string> Metadata
         {
-            _metadata = new Dictionary<string, string>();
+            get => _metadata;
+            set => _metadata = value as Dictionary<string, string>;
         }
+        
+        public Transaction() =>
+            _metadata = new Dictionary<string, string>();
 
         public Transaction(
             Guid cardId,

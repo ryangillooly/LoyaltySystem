@@ -19,6 +19,7 @@ using LoyaltySystem.Shared.API.Settings;
 using LoyaltySystem.Shared.API.Services;
 using System.Text.Json.Serialization;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Infrastructure.Json;
 using LoyaltySystem.Shared.API.Serialization;
 using LoyaltySystem.Shared.API.ModelBinding;
 using LoyaltySystem.Shared.API.Attributes;
@@ -46,6 +47,7 @@ public static class ApiConfiguration
             .AddJsonOptions(options => 
             {
                 // Register converters for all EntityId types
+                options.JsonSerializerOptions.Converters.Add(new OperatingHoursConverter());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserId>());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<CustomerId>());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<BrandId>());

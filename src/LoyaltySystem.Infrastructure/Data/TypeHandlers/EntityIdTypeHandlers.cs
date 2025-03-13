@@ -128,6 +128,9 @@ namespace LoyaltySystem.Infrastructure.Data.TypeHandlers
                 SqlMapper.AddTypeHandler(new CustomerIdStringHandler());
                 SqlMapper.AddTypeHandler(new UserStatusTypeHandler());
                 
+                // Register OperatingHours handler
+                SqlMapper.AddTypeHandler(new OperatingHoursTypeHandler());
+                
                 _initialized = true;
             }
         }

@@ -4,6 +4,8 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
@@ -11,521 +13,503 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
 
-namespace LoyaltySystem.Infrastructure.Repositories
+namespace LoyaltySystem.Infrastructure.Repositories;
+
+/// <summary>
+/// Repository implementation for LoyaltyProgram entities using Dapper.
+/// </summary>
+public class LoyaltyProgramRepository : ILoyaltyProgramRepository 
 {
-    /// <summary>
-    /// Repository implementation for LoyaltyProgram entities using Dapper.
-    /// </summary>
-    public class LoyaltyProgramRepository : ILoyaltyProgramRepository
+    private readonly IDatabaseConnection _dbConnection;
+
+    public LoyaltyProgramRepository(IDatabaseConnection dbConnection)
     {
-        private readonly IDatabaseConnection _dbConnection;
+        _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
+    }
 
-        public LoyaltyProgramRepository(IDatabaseConnection dbConnection)
+    public async Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                brand_id AS BrandId,
+                name AS Name,
+                type::text AS Type,
+                stamp_threshold AS StampThreshold,
+                points_conversion_rate AS PointsConversionRate,
+                daily_stamp_limit AS DailyStampLimit,
+                minimum_transaction_amount AS MinimumTransactionAmount,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM loyalty_programs 
+            WHERE id = @Id";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { Id = id.Value };
+        var program = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgram>(sql, parameters);
+
+        if (program != null)
         {
-            _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
+            await LoadRewardsForProgram(program);
         }
-        
-        public async Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id)
+
+        return program;
+    }
+
+    public async Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                brand_id AS BrandId,
+                name AS Name,
+                type::text AS Type,
+                stamp_threshold AS StampThreshold,
+                points_conversion_rate AS PointsConversionRate,
+                daily_stamp_limit AS DailyStampLimit,
+                minimum_transaction_amount AS MinimumTransactionAmount,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM loyalty_programs 
+            WHERE brand_id = @BrandId
+            ORDER BY created_at DESC";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { BrandId = brandId.Value };
+        var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+        foreach (var program in programs)
         {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    brand_id AS BrandId,
-                    name AS Name,
-                    type::text AS Type,
-                    stamp_threshold AS StampThreshold,
-                    points_conversion_rate AS PointsConversionRate,
-                    daily_stamp_limit AS DailyStampLimit,
-                    minimum_transaction_amount AS MinimumTransactionAmount,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM loyalty_programs 
-                WHERE id = @Id";
+            await LoadRewardsForProgram(program);
+        }
 
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { Id = id.Value };
-            var program = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgram>(sql, parameters);
+        return programs;
+    }
 
-            if (program != null)
+    public async Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(BrandId brandId)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                brand_id AS BrandId,
+                name AS Name,
+                type::text AS Type,
+                stamp_threshold AS StampThreshold,
+                points_conversion_rate AS PointsConversionRate,
+                daily_stamp_limit AS DailyStampLimit,
+                minimum_transaction_amount AS MinimumTransactionAmount,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM loyalty_programs 
+            WHERE brand_id = @BrandId AND is_active = @IsActive
+            ORDER BY created_at DESC";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { BrandId = brandId.Value, IsActive = true };
+        var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+        foreach (var program in programs)
+        {
+            await LoadRewardsForProgram(program);
+        }
+
+        return programs;
+    }
+
+    public async Task<int> GetCountByTypeAsync(LoyaltyProgramType type)
+    {
+        const string sql = @"
+            SELECT COUNT(*)
+            FROM loyalty_programs
+            WHERE type = @Type::loyalty_program_type
+        ";
+
+        var connection = await _dbConnection.GetConnectionAsync();
+        return await connection.ExecuteScalarAsync<int>(sql, new { Type = type.ToString() });
+    }
+
+    public async Task<IEnumerable<LoyaltyProgram>> GetByTypeAsync(LoyaltyProgramType type, int skip, int take)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                brand_id AS BrandId,
+                name AS Name,
+                (type::text)::int AS Type,
+                stamp_threshold AS StampThreshold,
+                points_conversion_rate AS PointsConversionRate,
+                daily_stamp_limit AS DailyStampLimit,
+                minimum_transaction_amount AS MinimumTransactionAmount,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM loyalty_programs 
+            WHERE type = @Type::loyalty_program_type
+            ORDER BY created_at DESC
+            LIMIT @Take OFFSET @Skip";
+
+        var parameters = new { Type = type.ToString(), Skip = skip, Take = take };
+        var connection = await _dbConnection.GetConnectionAsync();
+        var programs = await connection.QueryAsync<LoyaltyProgram>(sql, parameters);
+
+        // Load rewards for each program
+        foreach (var program in programs)
+        {
+            await LoadRewardsForProgram(program);
+        }
+
+        return programs;
+    }
+
+    public async Task<LoyaltyProgram> AddAsync(LoyaltyProgram program, IDbTransaction transaction = null)
+    {
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+
+        // Track whether we created the transaction or are using an existing one
+        bool ownsTransaction = transaction == null;
+
+        // If no transaction was provided, create one
+        transaction ??= dbConnection.BeginTransaction();
+
+        try
+        {
+            await dbConnection.ExecuteAsync(@"
+                INSERT INTO 
+                    loyalty_programs 
+                        (id, brand_id, name, type, stamp_threshold, points_conversion_rate,
+                        daily_stamp_limit, minimum_transaction_amount, is_active, created_at, updated_at) 
+                    VALUES 
+                        (@Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
+                        @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @CreatedAt, @UpdatedAt)
+                ",
+                new
+                {
+                    program.Id,
+                    program.BrandId,
+                    program.Name,
+                    Type = program.Type.ToString(),
+                    program.StampThreshold,
+                    program.PointsConversionRate,
+                    program.DailyStampLimit,
+                    program.MinimumTransactionAmount,
+                    program.IsActive,
+                    program.CreatedAt,
+                    program.UpdatedAt
+                },
+                transaction
+            );
+
+            if (program.ExpirationPolicy != null)
             {
-                await LoadRewardsForProgram(program);
+                await dbConnection.ExecuteAsync(@"
+                    INSERT INTO 
+                        program_expiration_policies 
+                            (program_id, has_expiration, expiration_type, expiration_value,
+                            expires_on_specific_date, expiration_day, expiration_month) 
+                        VALUES 
+                            (@ProgramId, @HasExpiration, @ExpirationType::expiration_type, @ExpirationValue,
+                            @ExpiresOnSpecificDate, @ExpirationDay, @ExpirationMonth)
+                    ",
+                    new
+                    {
+                        ProgramId = program.Id,
+                        program.ExpirationPolicy.HasExpiration,
+                        ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(),
+                        program.ExpirationPolicy.ExpirationValue,
+                        program.ExpirationPolicy.ExpiresOnSpecificDate,
+                        program.ExpirationPolicy.ExpirationDay,
+                        program.ExpirationPolicy.ExpirationMonth
+                    },
+                    transaction
+                );
             }
+
+            // Add any rewards
+            foreach (var reward in program.Rewards)
+            {
+                await AddRewardAsync(reward, transaction);
+            }
+
+            if (ownsTransaction)
+                transaction.Commit();
 
             return program;
         }
-        
-        public async Task<IEnumerable<LoyaltyProgram>> GetByBrandIdAsync(BrandId brandId)
+        catch (Exception ex)
         {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    brand_id AS BrandId,
-                    name AS Name,
-                    type::text AS Type,
-                    stamp_threshold AS StampThreshold,
-                    points_conversion_rate AS PointsConversionRate,
-                    daily_stamp_limit AS DailyStampLimit,
-                    minimum_transaction_amount AS MinimumTransactionAmount,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM loyalty_programs 
-                WHERE brand_id = @BrandId
-                ORDER BY created_at DESC";
+            if (ownsTransaction)
+                transaction.Rollback();
 
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { BrandId = brandId.Value };
-            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
-
-            foreach (var program in programs)
-            {
-                await LoadRewardsForProgram(program);
-            }
-
-            return programs;
+            throw new Exception($"Error adding program: {ex.Message}", ex);
         }
-        
-        public async Task<IEnumerable<LoyaltyProgram>> GetActiveByBrandIdAsync(BrandId brandId)
+        finally
         {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    brand_id AS BrandId,
-                    name AS Name,
-                    type::text AS Type,
-                    stamp_threshold AS StampThreshold,
-                    points_conversion_rate AS PointsConversionRate,
-                    daily_stamp_limit AS DailyStampLimit,
-                    minimum_transaction_amount AS MinimumTransactionAmount,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM loyalty_programs 
-                WHERE brand_id = @BrandId AND is_active = @IsActive
-                ORDER BY created_at DESC";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { BrandId = brandId.Value, IsActive = true };
-            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
-
-            foreach (var program in programs)
-            {
-                await LoadRewardsForProgram(program);
-            }
-
-            return programs;
-        }
-
-        public async Task<int> GetCountByTypeAsync(LoyaltyProgramType type)
-        {
-            const string sql = @"
-                SELECT COUNT(*)
-                FROM loyalty_programs
-                WHERE type = @Type::loyalty_program_type
-            ";
-        
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.ExecuteScalarAsync<int>(sql, new { Type = type.ToString() });
-        }
-        
-        public async Task<IEnumerable<LoyaltyProgram>> GetByTypeAsync(LoyaltyProgramType type, int page, int pageSize)
-        {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    brand_id AS BrandId,
-                    name AS Name,
-                    (type::text)::int AS Type,
-                    stamp_threshold AS StampThreshold,
-                    points_conversion_rate AS PointsConversionRate,
-                    daily_stamp_limit AS DailyStampLimit,
-                    minimum_transaction_amount AS MinimumTransactionAmount,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM loyalty_programs 
-                WHERE type = @Type::loyalty_program_type
-                ORDER BY created_at DESC
-                LIMIT @Take OFFSET @Skip";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var skip = (page - 1) * pageSize;
-            var parameters = new { 
-                Type = type.ToString().ToLower(), 
-                Skip = skip,
-                Take = pageSize 
-            };
-            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
-
-            foreach (var program in programs)
-            {
-                await LoadRewardsForProgram(program);
-            }
-
-            return programs;
-        }
-
-        public async Task AddAsync(LoyaltyProgram program)
-        {
-            const string insertProgramSql = @"
-                INSERT INTO loyalty_programs (
-                    id, brand_id, name, type, stamp_threshold, points_conversion_rate,
-                    daily_stamp_limit, minimum_transaction_amount, is_active, created_at, updated_at
-                ) VALUES (
-                    @Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
-                    @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @CreatedAt, @UpdatedAt
-                )";
-                
-            const string insertExpirationSql = @"
-                INSERT INTO program_expiration_policies (
-                    program_id, has_expiration, expiration_type, expiration_value,
-                    expires_on_specific_date, expiration_day, expiration_month
-                ) VALUES (
-                    @ProgramId, @HasExpiration, @ExpirationType::expiration_type, @ExpirationValue,
-                    @ExpiresOnSpecificDate, @ExpirationDay, @ExpirationMonth
-                )";
-
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            using (var transaction = await connection.BeginTransactionAsync())
-            {
-                try
-                {
-                    await connection.ExecuteAsync(insertProgramSql, new
-                    {
-                        program.Id,
-                        program.BrandId,
-                        program.Name,
-                        Type = program.Type.ToString(),
-                        program.StampThreshold,
-                        program.PointsConversionRate,
-                        program.DailyStampLimit,
-                        program.MinimumTransactionAmount,
-                        program.IsActive,
-                        program.CreatedAt,
-                        program.UpdatedAt
-                    }, transaction);
-                    
-                    if (program.ExpirationPolicy != null)
-                    {
-                        await connection.ExecuteAsync(insertExpirationSql, new 
-                        { 
-                            ProgramId = program.Id, 
-                            program.ExpirationPolicy.HasExpiration, 
-                            ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(), 
-                            program.ExpirationPolicy.ExpirationValue,
-                            program.ExpirationPolicy.ExpiresOnSpecificDate,
-                            program.ExpirationPolicy.ExpirationDay,
-                            program.ExpirationPolicy.ExpirationMonth
-                        }, transaction);
-                    }
-                    
-                    // Add any rewards
-                    foreach (var reward in program.Rewards)
-                    {
-                        await AddRewardAsync(reward, transaction);
-                    }
-                    
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-            }
-        }
-
-        public async Task UpdateAsync(LoyaltyProgram program)
-        {
-            const string updateProgramSql = @"
-                UPDATE loyalty_programs
-                SET name = @Name, 
-                    stamp_threshold = @StampThreshold, 
-                    points_conversion_rate = @PointsConversionRate,
-                    daily_stamp_limit = @DailyStampLimit, 
-                    minimum_transaction_amount = @MinimumTransactionAmount, 
-                    is_active = @IsActive,
-                    updated_at = @UpdatedAt
-                WHERE id = @Id";
-                
-            const string updateExpirationSql = @"
-                UPDATE program_expiration_policies
-                SET has_expiration = @HasExpiration,
-                    expiration_type = @ExpirationType::expiration_type,
-                    expiration_value = @ExpirationValue,
-                    expires_on_specific_date = @ExpiresOnSpecificDate,
-                    expiration_day = @ExpirationDay,
-                    expiration_month = @ExpirationMonth
-                WHERE program_id = @ProgramId";
-
-            var connection = await _dbConnection.GetConnectionAsync();
-            
-            using (var transaction = await connection.BeginTransactionAsync())
-            {
-                try
-                {
-                    await connection.ExecuteAsync(updateProgramSql, new
-                    {
-                        program.Id,
-                        program.Name,
-                        program.StampThreshold,
-                        program.PointsConversionRate,
-                        program.DailyStampLimit,
-                        program.MinimumTransactionAmount,
-                        program.IsActive,
-                        program.UpdatedAt
-                    }, transaction);
-                    
-                    if (program.ExpirationPolicy != null)
-                    {
-                        await connection.ExecuteAsync(updateExpirationSql, new 
-                        { 
-                            ProgramId = program.Id, 
-                            program.ExpirationPolicy.HasExpiration, 
-                            ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(), 
-                            program.ExpirationPolicy.ExpirationValue,
-                            program.ExpirationPolicy.ExpiresOnSpecificDate,
-                            program.ExpirationPolicy.ExpirationDay,
-                            program.ExpirationPolicy.ExpirationMonth
-                        }, transaction);
-                    }
-                    
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-            }
-        }
-
-        public async Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId)
-        {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    program_id AS ProgramId,
-                    title AS Title,
-                    description AS Description,
-                    required_value AS RequiredValue,
-                    valid_from AS ValidFrom,
-                    valid_to AS ValidTo,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM rewards 
-                WHERE program_id = @ProgramId
-                ORDER BY required_value";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { ProgramId = programId.Value };
-            var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
-
-            return rewards;
-        }
-
-        public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
-        {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    program_id AS ProgramId,
-                    title AS Title,
-                    description AS Description,
-                    required_value AS RequiredValue,
-                    valid_from AS ValidFrom,
-                    valid_to AS ValidTo,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM rewards 
-                WHERE program_id = @ProgramId AND is_active = @IsActive
-                ORDER BY required_value";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { ProgramId = programId.Value, IsActive = true };
-            var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
-
-            return rewards;
-        }
-
-        public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
-        {
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    program_id AS ProgramId,
-                    title AS Title,
-                    description AS Description,
-                    required_value AS RequiredValue,
-                    valid_from AS ValidFrom,
-                    valid_to AS ValidTo,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM rewards 
-                WHERE id = @Id";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { Id = rewardId.Value };
-            var reward = await dbConnection.QuerySingleOrDefaultAsync<Reward>(sql, parameters);
-
-            return reward;
-        }
-
-        public async Task AddRewardAsync(Reward reward)
-        {
-            var connection = await _dbConnection.GetConnectionAsync();
-            await AddRewardAsync(reward, null);
-        }
-
-        public async Task UpdateRewardAsync(Reward reward)
-        {
-            const string sql = @"
-                UPDATE rewards
-                SET title = @Title,
-                    description = @Description,
-                    required_value = @RequiredValue,
-                    valid_from = @ValidFrom,
-                    valid_to = @ValidTo,
-                    is_active = @IsActive,
-                    updated_at = @UpdatedAt
-                WHERE id = @Id";
-
-            var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(sql, new
-            {
-                reward.Id,
-                reward.Title,
-                reward.Description,
-                reward.RequiredValue,
-                reward.ValidFrom,
-                reward.ValidTo,
-                reward.IsActive,
-                reward.UpdatedAt
-            });
-        }
-
-        private async Task LoadRewardsForProgram(LoyaltyProgram program)
-        {
-            var rewards = await GetRewardsForProgramAsync(new LoyaltyProgramId(program.Id));
-            foreach (var reward in rewards)
-            {
-                program.AddReward(reward);
-            }
-        }
-
-        private async Task AddRewardAsync(Reward reward, IDbTransaction? transaction = null)
-        {
-            const string sql = @"
-                INSERT INTO rewards (
-                    id, program_id, title, description, required_value,
-                    valid_from, valid_to, is_active, created_at, updated_at
-                ) VALUES (
-                    @Id, @ProgramId, @Title, @Description, @RequiredValue,
-                    @ValidFrom, @ValidTo, @IsActive, @CreatedAt, @UpdatedAt
-                )";
-
-            var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(sql, new
-            {
-                reward.Id,
-                reward.ProgramId,
-                reward.Title,
-                reward.Description,
-                reward.RequiredValue,
-                reward.ValidFrom,
-                reward.ValidTo,
-                reward.IsActive,
-                reward.CreatedAt,
-                reward.UpdatedAt
-            }, transaction);
-        }
-
-        public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int take = 100)
-        {
-            // Retrieve programs with type as text, then map to the appropriate enum value in code
-            const string sql = @"
-                SELECT 
-                    id AS Id,
-                    brand_id AS BrandId,
-                    name AS Name,
-                    type AS TypeText,
-                    stamp_threshold AS StampThreshold,
-                    points_conversion_rate AS PointsConversionRate,
-                    daily_stamp_limit AS DailyStampLimit,
-                    minimum_transaction_amount AS MinimumTransactionAmount,
-                    is_active AS IsActive,
-                    created_at AS CreatedAt,
-                    updated_at AS UpdatedAt
-                FROM loyalty_programs 
-                ORDER BY created_at DESC
-                LIMIT @Take OFFSET @Skip";
-
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var parameters = new { Skip = skip, Take = take };
-            
-            // Use a dynamic query to get raw data
-            var results = await dbConnection.QueryAsync<dynamic>(sql, parameters);
-            var programs = new List<LoyaltyProgram>();
-            
-            foreach (var row in results)
-            {
-                // Map the typeText to the enum value
-                LoyaltyProgramType programType;
-                string typeText = row.TypeText?.ToString()?.ToLower();
-                
-                if (typeText == "stamp")
-                {
-                    programType = LoyaltyProgramType.Stamp;
-                }
-                else if (typeText == "points")
-                {
-                    programType = LoyaltyProgramType.Points;
-                }
-                else
-                {
-                    // Default fallback
-                    programType = LoyaltyProgramType.Stamp;
-                }
-                
-                // Create the program with the correct type
-                var program = new LoyaltyProgram(
-                    Guid.Parse(row.BrandId.ToString()),
-                    row.Name.ToString(),
-                    programType,
-                    row.StampThreshold,
-                    row.PointsConversionRate,
-                    row.DailyStampLimit,
-                    row.MinimumTransactionAmount,
-                    null // No ExpirationPolicy available from database query
-                );
-                
-                // Set additional properties using reflection as they are private setters
-                typeof(LoyaltyProgram)
-                    .GetProperty("Id")
-                    ?.SetValue(program, new LoyaltyProgramId(Guid.Parse(row.Id.ToString())));
-                
-                typeof(LoyaltyProgram)
-                    .GetProperty("IsActive")
-                    ?.SetValue(program, row.IsActive);
-                
-                typeof(LoyaltyProgram)
-                    .GetProperty("CreatedAt")
-                    ?.SetValue(program, row.CreatedAt);
-                
-                typeof(LoyaltyProgram)
-                    .GetProperty("UpdatedAt")
-                    ?.SetValue(program, row.UpdatedAt);
-                
-                programs.Add(program);
-                await LoadRewardsForProgram(program);
-            }
-
-            return programs;
+            if (ownsTransaction && transaction != null)
+                transaction.Dispose();
         }
     }
-} 
+
+    public async Task UpdateAsync(LoyaltyProgram program)
+    {
+        const string updateProgramSql = @"
+            UPDATE loyalty_programs
+            SET name = @Name, 
+                stamp_threshold = @StampThreshold, 
+                points_conversion_rate = @PointsConversionRate,
+                daily_stamp_limit = @DailyStampLimit, 
+                minimum_transaction_amount = @MinimumTransactionAmount, 
+                is_active = @IsActive,
+                updated_at = @UpdatedAt
+            WHERE id = @Id";
+
+        const string updateExpirationSql = @"
+            UPDATE program_expiration_policies
+            SET has_expiration = @HasExpiration,
+                expiration_type = @ExpirationType::expiration_type,
+                expiration_value = @ExpirationValue,
+                expires_on_specific_date = @ExpiresOnSpecificDate,
+                expiration_day = @ExpirationDay,
+                expiration_month = @ExpirationMonth
+            WHERE program_id = @ProgramId";
+
+        var connection = await _dbConnection.GetConnectionAsync();
+
+        using (var transaction = await connection.BeginTransactionAsync())
+        {
+            try
+            {
+                await connection.ExecuteAsync(updateProgramSql, new
+                {
+                    program.Id,
+                    program.Name,
+                    program.StampThreshold,
+                    program.PointsConversionRate,
+                    program.DailyStampLimit,
+                    program.MinimumTransactionAmount,
+                    program.IsActive,
+                    program.UpdatedAt
+                }, transaction);
+
+                if (program.ExpirationPolicy != null)
+                {
+                    await connection.ExecuteAsync(updateExpirationSql, new
+                    {
+                        ProgramId = program.Id,
+                        program.ExpirationPolicy.HasExpiration,
+                        ExpirationType = program.ExpirationPolicy.ExpirationType.ToString(),
+                        program.ExpirationPolicy.ExpirationValue,
+                        program.ExpirationPolicy.ExpiresOnSpecificDate,
+                        program.ExpirationPolicy.ExpirationDay,
+                        program.ExpirationPolicy.ExpirationMonth
+                    }, transaction);
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+
+    public async Task<IEnumerable<Reward>> GetRewardsForProgramAsync(LoyaltyProgramId programId)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                program_id AS ProgramId,
+                title AS Title,
+                description AS Description,
+                required_value AS RequiredValue,
+                valid_from AS ValidFrom,
+                valid_to AS ValidTo,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM rewards 
+            WHERE program_id = @ProgramId
+            ORDER BY required_value";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { ProgramId = programId.Value };
+        var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
+
+        return rewards;
+    }
+
+    public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                program_id AS ProgramId,
+                title AS Title,
+                description AS Description,
+                required_value AS RequiredValue,
+                valid_from AS ValidFrom,
+                valid_to AS ValidTo,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM rewards 
+            WHERE program_id = @ProgramId AND is_active = @IsActive
+            ORDER BY required_value";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { ProgramId = programId.Value, IsActive = true };
+        var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
+
+        return rewards;
+    }
+
+    public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                program_id AS ProgramId,
+                title AS Title,
+                description AS Description,
+                required_value AS RequiredValue,
+                valid_from AS ValidFrom,
+                valid_to AS ValidTo,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM rewards 
+            WHERE id = @Id";
+
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var parameters = new { Id = rewardId.Value };
+        var reward = await dbConnection.QuerySingleOrDefaultAsync<Reward>(sql, parameters);
+
+        return reward;
+    }
+
+    public async Task AddRewardAsync(Reward reward)
+    {
+        var connection = await _dbConnection.GetConnectionAsync();
+        await AddRewardAsync(reward, null);
+    }
+
+    public async Task UpdateRewardAsync(Reward reward)
+    {
+        const string sql = @"
+            UPDATE rewards
+            SET title = @Title,
+                description = @Description,
+                required_value = @RequiredValue,
+                valid_from = @ValidFrom,
+                valid_to = @ValidTo,
+                is_active = @IsActive,
+                updated_at = @UpdatedAt
+            WHERE id = @Id";
+
+        var connection = await _dbConnection.GetConnectionAsync();
+        await connection.ExecuteAsync(sql, new
+        {
+            reward.Id,
+            reward.Title,
+            reward.Description,
+            reward.RequiredValue,
+            reward.ValidFrom,
+            reward.ValidTo,
+            reward.IsActive,
+            reward.UpdatedAt
+        });
+    }
+
+    private async Task LoadRewardsForProgram(LoyaltyProgram program)
+    {
+        var rewards = await GetRewardsForProgramAsync(new LoyaltyProgramId(program.Id));
+        foreach (var reward in rewards)
+        {
+            program.AddReward(reward);
+        }
+    }
+
+    private async Task AddRewardAsync(Reward reward, IDbTransaction? transaction = null)
+    {
+        const string sql = @"
+            INSERT INTO rewards (
+                id, program_id, title, description, required_value,
+                valid_from, valid_to, is_active, created_at, updated_at
+            ) VALUES (
+                @Id, @ProgramId, @Title, @Description, @RequiredValue,
+                @ValidFrom, @ValidTo, @IsActive, @CreatedAt, @UpdatedAt
+            )";
+
+        var connection = await _dbConnection.GetConnectionAsync();
+        await connection.ExecuteAsync(sql, new
+        {
+            reward.Id,
+            reward.ProgramId,
+            reward.Title,
+            reward.Description,
+            reward.RequiredValue,
+            reward.ValidFrom,
+            reward.ValidTo,
+            reward.IsActive,
+            reward.CreatedAt,
+            reward.UpdatedAt
+        }, transaction);
+    }
+
+    public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int limit = 50)
+    {
+        // Retrieve programs with type as text, then map to the appropriate enum value in code
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                brand_id AS BrandId,
+                name AS Name,
+                type AS TypeText,
+                stamp_threshold AS StampThreshold,
+                points_conversion_rate AS PointsConversionRate,
+                daily_stamp_limit AS DailyStampLimit,
+                minimum_transaction_amount AS MinimumTransactionAmount,
+                is_active AS IsActive,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM loyalty_programs 
+            ORDER BY created_at DESC
+            LIMIT @Limit OFFSET @Skip";
+
+        var parameters = new { Skip = skip, Limit = limit };
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var dtos = await dbConnection.QueryAsync<LoyaltyProgramDto>(sql, parameters);
+
+        return dtos.Select(CreateProgramFromDto).ToList();
+    }
+    
+    private static LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto)
+    {
+        return new LoyaltyProgram
+        {
+            Id = EntityId.Parse<LoyaltyProgramId>(dto.Id),
+            BrandId = EntityId.Parse<BrandId>(dto.BrandId),
+            Name = dto.Name,
+            Description = dto.Description,
+            Type = dto.Type,
+            ExpirationPolicy = dto.ExpirationPolicy.ToExpirationPolicy(),
+            StampThreshold = dto.StampThreshold,
+            PointsConversionRate = dto.PointsConversionRate,
+            PointsConfig = dto.PointsConfig.ToPointsConfig(),
+            DailyStampLimit = dto.DailyStampLimit,
+            MinimumTransactionAmount = dto.MinimumTransactionAmount,
+            HasTiers = dto.HasTiers,
+            TermsAndConditions = dto.TermsAndConditions,
+            EnrollmentBonusPoints = dto.EnrollmentBonusPoints,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            IsActive = dto.IsActive,
+            CreatedAt = dto.CreatedAt,
+            UpdatedAt = dto.UpdatedAt,
+        };
+    }
+}

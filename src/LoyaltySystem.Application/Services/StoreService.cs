@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Domain.Common;
-using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Domain.Entities;
 
 namespace LoyaltySystem.Application.Services
 {
@@ -34,12 +30,10 @@ namespace LoyaltySystem.Application.Services
                 var storeId = EntityId.Parse<StoreId>(id);
                 var store = await _storeRepository.GetByIdAsync(storeId);
 
-                if (store == null)
-                {
-                    return OperationResult<StoreDto>.FailureResult($"Store with ID {id} not found");
-                }
+                return store == null
+                    ? OperationResult<StoreDto>.FailureResult($"Store with ID {id} not found") 
+                    : OperationResult<StoreDto>.SuccessResult(MapToDto(store));
 
-                return OperationResult<StoreDto>.SuccessResult(MapToDto(store));
             }
             catch (Exception ex)
             {
@@ -47,20 +41,13 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        public async Task<OperationResult<PagedResult<StoreDto>>> GetAllStoresAsync(int page, int pageSize)
+        public async Task<OperationResult<PagedResult<StoreDto>>> GetAllStoresAsync(int skip, int limit)
         {
             try
             {
-                var stores = await _storeRepository.GetAllAsync(page, pageSize);
-                var storeDtos = new List<StoreDto>();
-
-                foreach (var store in stores)
-                {
-                    storeDtos.Add(MapToDto(store));
-                }
-
-                var totalCount = storeDtos.Count; // This is not accurate, but we don't have a count method in the repository
-                var result = new PagedResult<StoreDto>(storeDtos, totalCount, page, pageSize);
+                var stores = await _storeRepository.GetAllAsync(skip, limit);
+                var storeDtos = stores.Select(MapToDto).ToList();
+                var result = new PagedResult<StoreDto>(storeDtos, storeDtos.Count, skip, limit);
 
                 return OperationResult<PagedResult<StoreDto>>.SuccessResult(result);
             }
@@ -99,9 +86,7 @@ namespace LoyaltySystem.Application.Services
                 var brand = await _brandRepository.GetByIdAsync(brandId);
 
                 if (brand == null)
-                {
-                    return OperationResult<StoreDto>.FailureResult($"Brand with ID {dto.BrandId} not found");
-                }
+                    return OperationResult<StoreDto>.FailureResult($"Brand with Id {dto.BrandId} not found");
 
                 var address = new Address(
                     dto.Address.Line1,
@@ -122,21 +107,23 @@ namespace LoyaltySystem.Application.Services
                     dto.Location.Latitude,
                     dto.Location.Longitude
                 );
-
+                
                 var store = new Store(
-                    brandId.Value,
+                    brandId.ToString(),
                     dto.Name,
                     address,
                     location,
-                    new OperatingHours(new Dictionary<DayOfWeek, TimeRange>()),
-                    dto.ContactInfo.Email
+                    dto.OperatingHours,
+                    contactInfo
                 );
 
-                await _unitOfWork.BeginTransactionAsync();
-                var newStore = await _storeRepository.AddAsync(store);
-                await _unitOfWork.CommitTransactionAsync();
-
-                return OperationResult<StoreDto>.SuccessResult(MapToDto(newStore));
+                // Use ExecuteInTransactionAsync to handle the transaction properly
+                return await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    // Pass the current transaction to the repository method
+                    await _storeRepository.AddAsync(store, _unitOfWork.CurrentTransaction);
+                    return OperationResult<StoreDto>.SuccessResult(MapToDto(store));
+                });
             }
             catch (Exception ex)
             {
@@ -190,7 +177,7 @@ namespace LoyaltySystem.Application.Services
                     address,
                     location,
                     new OperatingHours(new Dictionary<DayOfWeek, TimeRange>()),
-                    dto.ContactInfo.Email
+                    contactInfo
                 );
 
                 await _unitOfWork.BeginTransactionAsync();
@@ -287,13 +274,13 @@ namespace LoyaltySystem.Application.Services
 
                 var hoursDto = new OperatingHoursDto
                 {
-                    Monday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Monday)),
-                    Tuesday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Tuesday)),
-                    Wednesday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Wednesday)),
-                    Thursday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Thursday)),
-                    Friday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Friday)),
-                    Saturday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Saturday)),
-                    Sunday = MapDayHoursToDto(store.Hours.GetHoursForDay(DayOfWeek.Sunday))
+                    Monday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Monday)),
+                    Tuesday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Tuesday)),
+                    Wednesday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Wednesday)),
+                    Thursday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Thursday)),
+                    Friday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Friday)),
+                    Saturday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Saturday)),
+                    Sunday = MapDayHoursToDto(store.OperatingHours.GetHoursForDay(DayOfWeek.Sunday))
                 };
 
                 return OperationResult<OperatingHoursDto>.SuccessResult(hoursDto);
@@ -356,42 +343,42 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        private StoreDto MapToDto(Store store)
-        {
-            return new StoreDto
+        private static StoreDto MapToDto(Store store) =>
+            new ()
             {
                 Id = store.Id.ToString(),
                 Name = store.Name,
-                Address = new DTOs.AddressDto
-                {
-                    Line1 = store.Address.Line1,
-                    Line2 = store.Address.Line2,
-                    City = store.Address.City,
-                    State = store.Address.State,
-                    PostalCode = store.Address.PostalCode,
-                    Country = store.Address.Country
-                },
-                ContactInfo = new DTOs.ContactInfoDto
-                {
-                    Email = store.ContactInfo ?? string.Empty,
-                    Phone = string.Empty,
-                    Website = string.Empty
-                },
-                Location = new GeoLocationDto
-                {
-                    Latitude = store.Location.Latitude,
-                    Longitude = store.Location.Longitude
-                },
-                BrandId = store.Brand.Id.ToString(),
-                BrandName = store.Brand.Name
+                Address = new Address
+                (
+                    store.Address.Line1,
+                    store.Address.Line2,
+                    store.Address.City,
+                    store.Address.State,
+                    store.Address.PostalCode,
+                    store.Address.Country
+                ),
+                ContactInfo = new ContactInfo(store.ContactInfo.Email, store.ContactInfo.Phone, store.ContactInfo.Website),
+                Location = new GeoLocation(store.Location.Latitude, store.Location.Longitude),
+                OperatingHours = new OperatingHours(
+                    new Dictionary<DayOfWeek, TimeRange>
+                    {
+                        { DayOfWeek.Monday,    store.OperatingHours.GetHoursForDay(DayOfWeek.Monday)},
+                        { DayOfWeek.Tuesday,   store.OperatingHours.GetHoursForDay(DayOfWeek.Tuesday)},
+                        { DayOfWeek.Wednesday, store.OperatingHours.GetHoursForDay(DayOfWeek.Wednesday)},
+                        { DayOfWeek.Thursday,  store.OperatingHours.GetHoursForDay(DayOfWeek.Thursday)},
+                        { DayOfWeek.Friday,    store.OperatingHours.GetHoursForDay(DayOfWeek.Friday)},
+                        { DayOfWeek.Saturday,  store.OperatingHours.GetHoursForDay(DayOfWeek.Saturday)},
+                        { DayOfWeek.Sunday,    store.OperatingHours.GetHoursForDay(DayOfWeek.Sunday)}
+                    }
+                ),
+                BrandId = store.BrandId.ToString()
             };
-        }
 
-        private DayHoursDto MapDayHoursToDto(TimeRange timeRange)
+        private static DayHours MapDayHoursToDto(TimeRange timeRange)
         {
             if (timeRange == null)
             {
-                return new DayHoursDto
+                return new DayHours
                 {
                     IsOpen = false,
                     OpenTime = null,
@@ -399,7 +386,7 @@ namespace LoyaltySystem.Application.Services
                 };
             }
             
-            return new DayHoursDto
+            return new DayHours
             {
                 IsOpen = true,
                 OpenTime = timeRange.OpenTime,

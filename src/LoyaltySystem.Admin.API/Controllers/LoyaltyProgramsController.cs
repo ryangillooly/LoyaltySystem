@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace LoyaltySystem.Admin.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/loyaltyprograms")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class LoyaltyProgramsController : ControllerBase
     {
@@ -22,262 +25,164 @@ namespace LoyaltySystem.Admin.API.Controllers
             LoyaltyProgramService programService,
             ILogger<LoyaltyProgramsController> logger)
         {
-            _programService = programService ?? throw new ArgumentNullException(nameof(programService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _programService = programService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllPrograms([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string brandId = null)
+        public async Task<IActionResult> GetPrograms([FromQuery] string brandId = null, [FromQuery] string type = null, [FromQuery] int skip = 0, [FromQuery] int limit = 50)
         {
-            _logger.LogInformation("Admin requesting all loyalty programs (page {Page}, size {PageSize})", 
-                page, pageSize);
-            
-            if (page < 1 || pageSize < 1 || pageSize > 100)
+            try
             {
-                return BadRequest("Invalid pagination parameters");
+                if (!string.IsNullOrEmpty(brandId))
+                {
+                    var result = await _programService.GetProgramsByBrandIdAsync(brandId);
+                    return result.Success
+                        ? Ok(result.Data)
+                        : BadRequest(result.Errors);
+                }
+                
+                if (!string.IsNullOrEmpty(type))
+                {
+                    var result = await _programService.GetProgramsByTypeAsync(type, skip, limit);
+                    return result.Success
+                        ? Ok(result.Data)
+                        : BadRequest(result.Errors);
+                }
+                else
+                {
+                    var result = await _programService.GetAllProgramsAsync(null, skip, limit);
+                    return result.Success
+                        ? Ok(result.Data)
+                        : BadRequest(result.Errors);
+                }
             }
-            
-            var result = await _programService.GetAllProgramsAsync(brandId, page, pageSize);
-            
-            if (!result.Success)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Get all loyalty programs failed - {Error}", result.Errors);
-                return BadRequest(result.Errors);
+                _logger.LogError(ex, "Error retrieving loyalty programs");
+                return StatusCode(500, "An error occurred while retrieving loyalty programs");
             }
-            
-            return Ok(result.Data);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(LoyaltyProgramId id)
+        public async Task<IActionResult> GetProgram(string id)
         {
-            _logger.LogInformation("Admin requesting loyalty program by ID: {ProgramId}", id);
-            
-            var result = await _programService.GetProgramByIdAsync(id.ToString());
-            
-            if (!result.Success)
+            try
             {
-                _logger.LogWarning("Get loyalty program failed for ID: {ProgramId} - {Error}", id, result.Errors);
-                return NotFound(result.Errors);
+                var result = await _programService.GetProgramByIdAsync(id);
+                return result.Success
+                    ? Ok(result.Data)
+                    : NotFound(result.Errors);
             }
-            
-            return Ok(result.Data);
-        }
-
-        [HttpGet("brand/{brandId}")]
-        public async Task<IActionResult> GetByBrandId(Guid brandId)
-        {
-            _logger.LogInformation("Admin requesting loyalty programs for brand ID: {BrandId}", brandId);
-            
-            var result = await _programService.GetProgramsByBrandIdAsync(brandId.ToString());
-            
-            if (!result.Success)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Get brand loyalty programs failed for brand ID: {BrandId} - {Error}", 
-                    brandId, result.Errors);
-                return NotFound(result.Errors);
+                _logger.LogError(ex, "Error retrieving loyalty program");
+                return StatusCode(500, "An error occurred while retrieving the loyalty program");
             }
-            
-            return Ok(result.Data);
-        }
-
-        [HttpGet("type/{type}")]
-        public async Task<IActionResult> GetByType(string type, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-        {
-            _logger.LogInformation("Admin requesting loyalty programs of type: {Type} (page {Page}, size {PageSize})", 
-                type, page, pageSize);
-            
-            if (page < 1 || pageSize < 1 || pageSize > 100)
-            {
-                return BadRequest("Invalid pagination parameters");
-            }
-            
-            var result = await _programService.GetProgramsByTypeAsync(type, page, pageSize);
-            
-            if (!result.Success)
-            {
-                _logger.LogWarning("Get loyalty programs by type failed for type: {Type} - {Error}", 
-                    type, result.Errors);
-                return BadRequest(result.Errors);
-            }
-            
-            return Ok(result.Data);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateProgram([FromBody] CreateProgramRequest request)
+        public async Task<IActionResult> CreateProgram([FromBody] CreateLoyaltyProgramDto dto)
         {
-            _logger.LogInformation("Admin creating loyalty program for brand ID: {BrandId}", request.BrandId);
-            
-            var createDto = new CreateLoyaltyProgramDto
+            try
             {
-                BrandId = request.BrandId.ToString(),
-                Name = request.Name,
-                Type = Enum.Parse<LoyaltyProgramType>(request.Type),
-                StampThreshold = request.ExpirationPolicy?.PeriodMonths,
-                PointsConversionRate = null,
-                DailyStampLimit = null,
-                MinimumTransactionAmount = null,
-                HasExpiration = request.ExpirationPolicy != null,
-                ExpiresOnSpecificDate = request.ExpirationPolicy?.ExpirationDate != null,
-                ExpirationType = null,
-                ExpirationValue = null,
-                ExpirationDay = request.ExpirationPolicy?.ExpirationDate?.Day,
-                ExpirationMonth = request.ExpirationPolicy?.ExpirationDate?.Month
-            };
-            
-            var result = await _programService.CreateProgramAsync(createDto);
-            
-            if (!result.Success)
-            {
-                _logger.LogWarning("Admin create loyalty program failed - {Error}", result.Errors);
-                return BadRequest(result.Errors);
+                var result = await _programService.CreateProgramAsync(dto);
+                return result.Success
+                    ? CreatedAtAction(nameof(GetProgram), new { id = result.Data.Id }, result.Data)
+                    : BadRequest(result.Errors);
             }
-            
-            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating loyalty program");
+                return StatusCode(500, "An error occurred while creating the loyalty program");
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProgram([FromRoute] LoyaltyProgramId id, [FromBody] UpdateProgramRequest request)
+        public async Task<IActionResult> UpdateProgram(string id, [FromBody] UpdateLoyaltyProgramDto dto)
         {
-            _logger.LogInformation("Admin updating loyalty program ID: {ProgramId}", id);
-            
-            var updateDto = new UpdateLoyaltyProgramDto
+            try
             {
-                Name = request.Name,
-                StampThreshold = null,
-                PointsConversionRate = null,
-                DailyStampLimit = null,
-                MinimumTransactionAmount = null,
-                HasExpiration = request.ExpirationPolicy != null,
-                ExpiresOnSpecificDate = request.ExpirationPolicy?.ExpirationDate != null,
-                ExpirationType = null,
-                ExpirationValue = null,
-                ExpirationDay = request.ExpirationPolicy?.ExpirationDate?.Day,
-                ExpirationMonth = request.ExpirationPolicy?.ExpirationDate?.Month
-            };
-            
-            var result = await _programService.UpdateProgramAsync(id.ToString(), updateDto);
-            
-            if (!result.Success)
-            {
-                _logger.LogWarning("Admin update loyalty program failed for ID: {ProgramId} - {Error}", 
-                    id, result.Errors);
-                return BadRequest(result.Errors);
+                var result = await _programService.UpdateProgramAsync(id, dto);
+                return result.Success
+                    ? Ok(result.Data)
+                    : BadRequest(result.Errors);
             }
-            
-            return Ok(result.Data);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating loyalty program");
+                return StatusCode(500, "An error occurred while updating the loyalty program");
+            }
         }
 
-        [HttpPost("{id}/rewards")]
-        public async Task<IActionResult> AddReward([FromRoute] LoyaltyProgramId id, [FromBody] CreateRewardRequest request)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProgram(string id)
         {
-            _logger.LogInformation("Admin adding reward to program ID: {ProgramId}", id);
-            
-            var createDto = new CreateRewardDto
+            try
             {
-                Title = request.Name,
-                Description = request.Description,
-                RequiredPoints = request.RequiredPoints ?? 0,
-                RequiredStamps = request.RequiredStamps ?? 0,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate
-            };
-            
-            var result = await _programService.CreateRewardAsync(id.ToString(), createDto);
-            
-            if (!result.Success)
-            {
-                _logger.LogWarning("Admin add reward failed for program ID: {ProgramId} - {Error}", 
-                    id, result.Errors);
-                return BadRequest(result.Errors);
+                var result = await _programService.DeleteProgramAsync(id);
+                return result.Success
+                    ? NoContent()
+                    : BadRequest(result.Errors);
             }
-            
-            return CreatedAtAction(nameof(GetReward), new { id = id, rewardId = result.Data.Id }, result.Data);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting loyalty program");
+                return StatusCode(500, "An error occurred while deleting the loyalty program");
+            }
         }
 
-        [HttpGet("{id}/rewards")]
-        public async Task<IActionResult> GetRewards(LoyaltyProgramId id)
+        [HttpPost("{programId}/rewards")]
+        public async Task<IActionResult> AddReward(string programId, [FromBody] CreateRewardDto dto)
         {
-            _logger.LogInformation("Admin requesting rewards for program ID: {ProgramId}", id);
-            
-            var result = await _programService.GetRewardsByProgramIdAsync(id.ToString());
-            
-            if (!result.Success)
+            try
             {
-                _logger.LogWarning("Get program rewards failed for program ID: {ProgramId} - {Error}", 
-                    id, result.Errors);
-                return NotFound(result.Errors);
+                var result = await _programService.AddRewardToProgramAsync(programId, dto);
+                return result.Success
+                    ? Created($"/api/admin/loyalty-programs/{programId}/rewards/{result.Data.Id}", result.Data)
+                    : BadRequest(result.Errors);
             }
-            
-            return Ok(result.Data);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding reward to loyalty program");
+                return StatusCode(500, "An error occurred while adding the reward");
+            }
         }
 
-        [HttpGet("{id}/rewards/{rewardId}")]
-        public async Task<IActionResult> GetReward(LoyaltyProgramId id, Guid rewardId)
+        [HttpPut("{programId}/rewards/{rewardId}")]
+        public async Task<IActionResult> UpdateReward(string programId, string rewardId, [FromBody] UpdateRewardDto dto)
         {
-            _logger.LogInformation("Admin requesting reward ID: {RewardId} for program ID: {ProgramId}", 
-                rewardId, id);
-            
-            var result = await _programService.GetRewardByIdAsync(rewardId.ToString());
-            
-            if (!result.Success)
+            try
             {
-                _logger.LogWarning("Get reward failed for ID: {RewardId} - {Error}", rewardId, result.Errors);
-                return NotFound(result.Errors);
+                dto.Id = rewardId;
+                dto.ProgramId = programId;
+                var result = await _programService.UpdateRewardAsync(dto);
+                return result.Success
+                    ? Ok(result.Data)
+                    : BadRequest(result.Errors);
             }
-            
-            // Verify reward belongs to this program
-            if (result.Data.ProgramId != id.ToString())
+            catch (Exception ex)
             {
-                _logger.LogWarning("Reward ID: {RewardId} does not belong to program ID: {ProgramId}", 
-                    rewardId, id);
-                return NotFound();
+                _logger.LogError(ex, "Error updating reward");
+                return StatusCode(500, "An error occurred while updating the reward");
             }
-            
-            return Ok(result.Data);
         }
 
-        [HttpPut("{id}/rewards/{rewardId}")]
-        public async Task<IActionResult> UpdateReward([FromRoute] LoyaltyProgramId id, [FromRoute] Guid rewardId, [FromBody] UpdateRewardRequest request)
+        [HttpDelete("{programId}/rewards/{rewardId}")]
+        public async Task<IActionResult> RemoveReward(string programId, string rewardId)
         {
-            _logger.LogInformation("Admin updating reward ID: {RewardId} in program ID: {ProgramId}", rewardId, id);
-            
-            // First verify reward exists and belongs to this program
-            var getResult = await _programService.GetRewardByIdAsync(rewardId.ToString());
-            if (!getResult.Success)
+            try
             {
-                _logger.LogWarning("Reward ID: {RewardId} not found", rewardId);
-                return NotFound();
+                var result = await _programService.RemoveRewardFromProgramAsync(programId, rewardId);
+                return result.Success
+                    ? NoContent()
+                    : BadRequest(new { error = result.Errors });
             }
-            
-            if (getResult.Data.ProgramId != id.ToString())
+            catch (Exception ex)
             {
-                _logger.LogWarning("Reward ID: {RewardId} does not belong to program ID: {ProgramId}", 
-                    rewardId, id);
-                return NotFound();
+                _logger.LogError(ex, "Error removing reward from loyalty program");
+                return StatusCode(500, "An error occurred while removing the reward");
             }
-            
-            var updateDto = new UpdateRewardDto
-            {
-                Title = request.Name,
-                Description = request.Description,
-                RequiredPoints = request.RequiredPoints ?? 0,
-                RequiredStamps = request.RequiredStamps ?? 0,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate
-            };
-            
-            var result = await _programService.UpdateRewardAsync(rewardId.ToString(), updateDto);
-            
-            if (!result.Success)
-            {
-                _logger.LogWarning("Admin update reward failed for ID: {RewardId} - {Error}", 
-                    rewardId, result.Errors);
-                return BadRequest(result.Errors);
-            }
-            
-            return Ok(result.Data);
         }
 
         [HttpGet("analytics")]
@@ -320,15 +225,27 @@ namespace LoyaltySystem.Admin.API.Controllers
             
             return Ok(result.Data);
         }
-    }
 
-    public class CreateProgramRequest
-    {
-        public Guid BrandId { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Type { get; set; }
-        public ExpirationPolicyDto ExpirationPolicy { get; set; }
+        public class CreateProgramDto
+        {
+            public Guid BrandId { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public string Type { get; set; }
+            public ExpirationPolicyRequestDto ExpirationPolicy { get; set; }
+        }
+        
+        public class ExpirationPolicyRequestDto
+        {
+            public bool HasExpiration { get; set; }
+            public bool ExpiresOnSpecificDate { get; set; }
+            public int? ExpirationType { get; set; }
+            public int? ExpirationValue { get; set; }
+            public int? ExpirationDay { get; set; }
+            public int? ExpirationMonth { get; set; }
+            public DateTime? ExpirationDate { get; set; }
+            public int? DurationInDays { get; set; }
+        }
     }
 
     public class UpdateProgramRequest
@@ -337,6 +254,17 @@ namespace LoyaltySystem.Admin.API.Controllers
         public string Description { get; set; }
         public bool IsActive { get; set; }
         public ExpirationPolicyDto ExpirationPolicy { get; set; }
+        public int? StampThreshold { get; set; }
+        public decimal? PointsConversionRate { get; set; }
+        public int? DailyStampLimit { get; set; }
+        public decimal? MinimumTransactionAmount { get; set; }
+        
+        // Points configuration
+        public PointsConfigDto PointsConfig { get; set; }
+        
+        // Tiers configuration
+        public List<TierDto> Tiers { get; set; }
+        public bool? HasTiers { get; set; }
     }
 
     public class CreateRewardRequest

@@ -60,15 +60,8 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 var businesses = await _businessRepository.GetAllAsync(skip, limit);
-                var businessDtos = new List<BusinessDto>();
-
-                foreach (var business in businesses)
-                {
-                    businessDtos.Add(MapToDto(business));
-                }
-
-                var totalCount = await _businessRepository.GetTotalCountAsync();
-                var result = new PagedResult<BusinessDto>(businessDtos, totalCount, skip, limit);
+                var businessDtos = businesses.Select(MapToDto).ToList();
+                var result = new PagedResult<BusinessDto>(businessDtos, businessDtos.Count, skip, limit);
 
                 return OperationResult<PagedResult<BusinessDto>>.SuccessResult(result);
             }

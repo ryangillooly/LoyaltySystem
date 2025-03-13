@@ -14,27 +14,31 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<Transaction> _transactions;
 
-        public LoyaltyCardId Id { get; private set; }
+        public LoyaltyCardId Id { get; set; }
         public LoyaltyProgramId ProgramId { get; set; }
         public CustomerId CustomerId { get; set; }
-        public LoyaltyProgramType Type { get; private set; }
+        public LoyaltyProgramType Type { get; set; }
         public int StampsCollected { get; set; }
         public decimal PointsBalance { get; set; }
         public CardStatus Status { get; set; }
-        public string QrCode { get; private set; }
+        public string QrCode { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? ExpiresAt { get; private set; }
+        public DateTime? ExpiresAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         // Navigation properties
-        public virtual LoyaltyProgram Program { get; private set; }
-        public virtual Customer Customer { get; private set; }
+        public virtual LoyaltyProgram Program { get; set; }
+        public virtual Customer Customer { get; set; }
         
         // Collection navigation property
-        public virtual IReadOnlyCollection<Transaction> Transactions => _transactions.AsReadOnly();
+        public virtual IReadOnlyCollection<Transaction> Transactions
+        {
+            get => _transactions.AsReadOnly();
+            set => throw new NotImplementedException();
+        }
 
         // Private constructor for EF Core
-        private LoyaltyCard()
+        public LoyaltyCard()
         {
             _transactions = new List<Transaction>();
         }

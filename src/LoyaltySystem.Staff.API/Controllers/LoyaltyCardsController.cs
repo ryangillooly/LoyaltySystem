@@ -135,11 +135,11 @@ namespace LoyaltySystem.Staff.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCard([FromBody] CreateCardRequest request)
+        public async Task<IActionResult> CreateCard([FromBody] CreateLoyaltyCardDto request)
         {
             _logger.LogInformation("Staff creating loyalty card for customer {CustomerId}", request.CustomerId);
             
-            var result = await _loyaltyCardService.CreateCardAsync(request.CustomerId, request.ProgramId);
+            var result = await _loyaltyCardService.CreateCardAsync(request);
             
             if (!result.Success)
             {

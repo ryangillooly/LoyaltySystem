@@ -1,3 +1,4 @@
+using LoyaltySystem.Application.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,25 @@ namespace LoyaltySystem.Application.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+
+        public async Task<OperationResult<PagedResult<LoyaltyCardDto>>> GetAllAsync(int skip, int limit)
+        {
+            try
+            {
+                var customers = await _cardRepository.GetAllAsync(skip, limit);
+                var totalCount = await _cardRepository.GetTotalCountAsync();
+
+                var customerDtos = customers.Select(MapToDto).ToList();
+
+                var result = new PagedResult<LoyaltyCardDto>(customerDtos, totalCount, skip, limit);
+
+                return OperationResult<PagedResult<LoyaltyCardDto>>.SuccessResult(result);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<PagedResult<LoyaltyCardDto>>.FailureResult($"Failed to get customers: {ex.Message}");
+            }
+        }
         public async Task<OperationResult<LoyaltyCardDto>> GetByIdAsync(LoyaltyCardId id)
         {
             try
@@ -102,26 +122,28 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        public async Task<OperationResult<LoyaltyCardDto>> CreateCardAsync(CustomerId customerId, LoyaltyProgramId programId)
+        public async Task<OperationResult<LoyaltyCardDto>> CreateCardAsync(CreateLoyaltyCardDto dto)
         {
+            var programId = EntityId.Parse<LoyaltyProgramId>(dto.ProgramId);
+            var customerId = EntityId.Parse<CustomerId>(dto.CustomerId);
             try
             {
                 // Check if customer exists
-                var customer = await _customerRepository.GetByIdAsync(customerId);
+                var customer = await _customerRepository.GetByIdAsync(new CustomerId(customerId));
                 if (customer == null)
                 {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Customer not found");
                 }
 
                 // Check if program exists
-                var program = await _programRepository.GetByIdAsync(programId);
+                var program = await _programRepository.GetByIdAsync(new LoyaltyProgramId(programId));
                 if (program == null)
                 {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Loyalty program not found");
                 }
 
                 // Check if customer already has a card for this program
-                var existingCards = await _cardRepository.GetByCustomerIdAsync(customerId);
+                var existingCards = await _cardRepository.GetByCustomerIdAsync(new CustomerId(customerId));
                 if (existingCards.Any(c => c.ProgramId == programId))
                 {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Customer already enrolled in this program");
@@ -138,7 +160,7 @@ namespace LoyaltySystem.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating card for customer {CustomerId} in program {ProgramId}", customerId, programId);
+                _logger.LogError(ex, "Error creating card for customer {CustomerId} in program {ProgramId}", dto.CustomerId, dto.ProgramId);
                 return OperationResult<LoyaltyCardDto>.FailureResult($"Error creating card: {ex.Message}");
             }
         }

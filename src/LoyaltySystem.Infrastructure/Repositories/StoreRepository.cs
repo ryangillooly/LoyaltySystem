@@ -1,478 +1,743 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
+using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Infrastructure.Data;
-using LoyaltySystem.Infrastructure.Data.Extensions;
+using LoyaltySystem.Infrastructure.Data.TypeHandlers;
+using LoyaltySystem.Infrastructure.Json;
+using System.Data;
+using System.Reflection;
+using System.Text.Json;
 
-namespace LoyaltySystem.Infrastructure.Repositories
+namespace LoyaltySystem.Infrastructure.Repositories;
+
+public class StoreRepository : IStoreRepository
 {
-    public class StoreRepository : IStoreRepository
+    private readonly IDatabaseConnection _dbConnection;
+    private readonly JsonSerializerOptions _jsonOptions;
+
+    public StoreRepository(IDatabaseConnection connection)
     {
-        private readonly IDatabaseConnection _connection;
-
-        public StoreRepository(IDatabaseConnection connection)
+        _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
+        TypeHandlerConfig.Initialize(); // Ensure type handlers are registered
+        
+        // Create JSON options with the OperatingHoursConverter
+        _jsonOptions = new JsonSerializerOptions
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            PropertyNameCaseInsensitive = true,
+        };
+        _jsonOptions.Converters.Add(new OperatingHoursConverter());
+    }
+
+    public async Task<Store?> GetByIdAsync(StoreId id)
+    {
+        const string sql = @"
+            SELECT 
+                -- Store Information
+                s.id, 
+                s.brand_id, 
+                s.name, 
+                s.created_at, 
+                s.updated_at,
+                
+                -- Store Address Information
+                a.line1, 
+                a.line2, 
+                a.city, 
+                a.state, 
+                a.postal_code, 
+                a.country,
+                ST_Y(a.location::geometry) AS latitude, 
+                ST_X(a.location::geometry) AS longitude,
+                
+                -- Opening Hours as JSONB
+                s.opening_hours,
+                
+                -- Store Contact Information
+                c.email,
+                c.phone,
+                c.website
+            FROM 
+                stores s                               LEFT JOIN 
+                store_addresses a ON s.id = a.store_id LEFT JOIN 
+                store_contacts c ON s.id = c.store_id
+            WHERE 
+                s.id = @Id";
+
+        var parameters = new { Id = id.Value };
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        
+        // Use dynamic query instead of strongly-typed DTO
+        var row = await dbConnection.QueryFirstOrDefaultAsync<dynamic>(sql, parameters);
+        
+        if (row == null)
+            return null;
+        
+        // Create address
+        var address = new Address(
+            row.line1?.ToString() ?? string.Empty,
+            row.line2?.ToString() ?? string.Empty,
+            row.city?.ToString() ?? string.Empty,
+            row.state?.ToString() ?? string.Empty,
+            row.postal_code?.ToString() ?? string.Empty,
+            row.country?.ToString() ?? string.Empty
+        );
+        
+        // Create geolocation
+        var location = new GeoLocation(
+            row.latitude != null ? (double)row.latitude : 0,
+            row.longitude != null ? (double)row.longitude : 0
+        );
+        
+        // Create contact info
+        var contactInfo = new ContactInfo(
+            row.email?.ToString() ?? string.Empty,
+            row.phone?.ToString() ?? string.Empty,
+            row.website?.ToString() ?? string.Empty
+        );
+        
+        // Parse opening hours from JSONB
+        var openingHoursJson = row.opening_hours?.ToString();
+        OperatingHours operatingHours;
+        
+        if (!string.IsNullOrEmpty(openingHoursJson))
+        {
+            // Use the JsonSerializer with our converter options
+            operatingHours = JsonSerializer.Deserialize<OperatingHours>(openingHoursJson, _jsonOptions);
         }
-
-        public async Task<Store?> GetByIdAsync(StoreId id)
+        else
         {
-            const string sql = @"
-                SELECT 
-                    s.id AS Id,
-                    s.name AS Name,
-                    s.address_id AS AddressId,
-                    s.contact_info AS ContactInfo,
-                    s.brand_id AS BrandId,
-                    s.created_at AS CreatedAt,
-                    s.updated_at AS UpdatedAt,
-                    a.id AS Id,
-                    a.line1 AS Line1,
-                    a.line2 AS Line2,
-                    a.city AS City,
-                    a.state AS State,
-                    a.postal_code AS PostalCode,
-                    a.country AS Country,
-                    a.created_at AS CreatedAt,
-                    a.updated_at AS UpdatedAt,
-                    b.id AS Id,
-                    b.name AS Name,
-                    b.category AS Category,
-                    b.logo AS Logo,
-                    b.description AS Description,
-                    b.created_at AS CreatedAt,
-                    b.updated_at AS UpdatedAt
-                FROM stores s
-                LEFT JOIN addresses a ON s.address_id = a.id
-                LEFT JOIN brands b ON s.brand_id = b.id
-                WHERE s.id = @Id";
+            // Default empty hours
+            operatingHours = new OperatingHours(new Dictionary<DayOfWeek, TimeRange>());
+        }
+        
+        // Create store
+        var store = new Store
+        {
+            Id = new StoreId(Guid.Parse(row.id.ToString())),
+            BrandId = new BrandId(Guid.Parse(row.brand_id.ToString())),
+            Name = row.name?.ToString() ?? string.Empty,
+            Address = address,
+            Location = location,
+            OperatingHours = operatingHours,
+            ContactInfo = contactInfo,
+            CreatedAt = row.created_at != null ? (DateTime)row.created_at : DateTime.UtcNow,
+            UpdatedAt = row.updated_at != null ? (DateTime)row.updated_at : DateTime.UtcNow
+        };
+        
+        return store;
+    }
 
-            var parameters = new { Id = id.Value };
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            
-            var stores = await dbConnection.QueryAsync<Store, Address, Brand, Store>(
-                sql,
-                (store, address, brand) =>
+    public async Task<IEnumerable<Store>> GetAllAsync(int skip = 0, int limit = 50)
+    {
+        const string sql = @"
+            SELECT 
+                -- Store Information
+                s.id, 
+                s.brand_id, 
+                s.name, 
+                s.created_at, 
+                s.updated_at,
+                
+                -- Store Address Information
+                a.line1, 
+                a.line2, 
+                a.city, 
+                a.state, 
+                a.postal_code, 
+                a.country,
+                ST_Y(a.location::geometry) AS latitude, 
+                ST_X(a.location::geometry) AS longitude,
+                
+                -- Opening Hours as JSONB
+                s.opening_hours,
+                
+                -- Store Contact Information
+                c.email,
+                c.phone,
+                c.website
+            FROM 
+                stores s                               LEFT JOIN 
+                store_addresses a ON s.id = a.store_id LEFT JOIN 
+                store_contacts c ON s.id = c.store_id
+            ORDER BY s.name
+            LIMIT @Limit OFFSET @Skip";
+        
+        var parameters = new { Skip = skip, Limit = limit };
+        var connection = await _dbConnection.GetConnectionAsync();
+        
+        // Option 1: Using Dapper's multi-mapping with custom handling for JSONB
+        var stores = new Dictionary<Guid, Store>();
+        
+        await connection.QueryAsync<dynamic>(sql, parameters)
+            .ContinueWith(t => 
+            {
+                foreach (var row in t.Result)
                 {
-                    if (address != null)
-                    {
-                        store.SetAddress(address);
-                    }
+                    var storeId = Guid.Parse(row.id.ToString());
                     
-                    return store;
-                },
-                parameters,
-                splitOn: "Id,Id"
-            );
-            
-            return stores.FirstOrDefault();
-        }
-
-        public async Task<IEnumerable<Store>> GetAllAsync(int page, int pageSize)
-        {
-            const string sql = @"
-                SELECT 
-                    s.id AS Id,
-                    s.name AS Name,
-                    s.address_id AS AddressId,
-                    s.contact_info AS ContactInfo,
-                    s.brand_id AS BrandId,
-                    s.created_at AS CreatedAt,
-                    s.updated_at AS UpdatedAt,
-                    a.id AS Id,
-                    a.line1 AS Line1,
-                    a.line2 AS Line2,
-                    a.city AS City,
-                    a.state AS State,
-                    a.postal_code AS PostalCode,
-                    a.country AS Country,
-                    a.created_at AS CreatedAt,
-                    a.updated_at AS UpdatedAt,
-                    b.id AS Id,
-                    b.name AS Name,
-                    b.category AS Category,
-                    b.logo AS Logo,
-                    b.description AS Description,
-                    b.created_at AS CreatedAt,
-                    b.updated_at AS UpdatedAt
-                FROM stores s
-                LEFT JOIN addresses a ON s.address_id = a.id
-                LEFT JOIN brands b ON s.brand_id = b.id
-                ORDER BY s.name
-                LIMIT @PageSize OFFSET @Offset";
-            
-            var parameters = new { Offset = (page - 1) * pageSize, PageSize = pageSize };
-            var dbConnection = await _connection.GetConnectionAsync();
-            
-            var stores = await dbConnection.QueryAsync<Store, Address, Brand, Store>(
-                sql,
-                (store, address, brand) =>
-                {
-                    if (address != null)
+                    if (!stores.TryGetValue(storeId, out Store? store))
                     {
-                        store.SetAddress(address);
-                    }
-                    
-                    return store;
-                },
-                parameters,
-                splitOn: "Id,Id"
-            );
-            
-            return stores;
-        }
-
-        public async Task<IEnumerable<Store>> GetByBrandIdAsync(BrandId brandId)
-        {
-            const string sql = @"
-                SELECT 
-                    s.id AS Id,
-                    s.name AS Name,
-                    s.address_id AS AddressId,
-                    s.contact_info AS ContactInfo,
-                    s.brand_id AS BrandId,
-                    s.created_at AS CreatedAt,
-                    s.updated_at AS UpdatedAt,
-                    a.id AS Id,
-                    a.line1 AS Line1,
-                    a.line2 AS Line2,
-                    a.city AS City,
-                    a.state AS State,
-                    a.postal_code AS PostalCode,
-                    a.country AS Country,
-                    a.created_at AS CreatedAt,
-                    a.updated_at AS UpdatedAt,
-                    b.id AS Id,
-                    b.name AS Name,
-                    b.category AS Category,
-                    b.logo AS Logo,
-                    b.description AS Description,
-                    b.created_at AS CreatedAt,
-                    b.updated_at AS UpdatedAt
-                FROM stores s
-                LEFT JOIN addresses a ON s.address_id = a.id
-                LEFT JOIN brands b ON s.brand_id = b.id
-                WHERE s.brand_id = @BrandId
-                ORDER BY s.name";
-            
-            var parameters = new { BrandId = brandId.Value };
-            var dbConnection = await _connection.GetConnectionAsync();
-            
-            var stores = await dbConnection.QueryAsync<Store, Address, Brand, Store>(
-                sql,
-                (store, address, brand) =>
-                {
-                    if (address != null)
-                    {
-                        store.SetAddress(address);
-                    }
-                    
-                    return store;
-                },
-                parameters,
-                splitOn: "Id,Id"
-            );
-            
-            return stores;
-        }
-
-        public async Task<Store> AddAsync(Store store)
-        {
-            // First insert the address
-            var addressId = Guid.NewGuid();
-            const string addressSql = @"
-                INSERT INTO addresses (id, line1, line2, city, state, postal_code, country, created_at, updated_at)
-                VALUES (@Id, @Line1, @Line2, @City, @State, @PostalCode, @Country, @CreatedAt, @UpdatedAt)
-                RETURNING *";
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            var addressParams = new
-            {
-                Id = addressId,
-                store.Address.Line1,
-                store.Address.Line2,
-                store.Address.City,
-                store.Address.State,
-                store.Address.PostalCode,
-                store.Address.Country,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            
-            var address = await dbConnection.QuerySingleAsync<Address>(addressSql, addressParams);
-            
-            // Finally insert the store
-            const string storeSql = @"
-                INSERT INTO stores (id, name, address_id, contact_info, brand_id, created_at, updated_at)
-                VALUES (@Id, @Name, @AddressId, @ContactInfo, @BrandId, @CreatedAt, @UpdatedAt)
-                RETURNING *";
-            
-            var storeParams = new
-            {
-                Id = store.Id,
-                store.Name,
-                AddressId = addressId,
-                store.ContactInfo,
-                BrandId = store.BrandId,
-                store.CreatedAt,
-                store.UpdatedAt
-            };
-            
-            var newStore = await dbConnection.QuerySingleAsync<Store>(storeSql, storeParams);
-            
-            // Set the address
-            newStore.SetAddress(address);
-            
-            return newStore;
-        }
-
-        public async Task UpdateAsync(Store store)
-        {
-            // Update address
-            const string addressSql = @"
-                UPDATE addresses
-                SET line1 = @Line1,
-                    line2 = @Line2,
-                    city = @City,
-                    state = @State,
-                    postal_code = @PostalCode,
-                    country = @Country,
-                    updated_at = @UpdatedAt
-                WHERE id = @Id";
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            
-            // Get the address ID from the database
-            const string getAddressIdSql = @"SELECT address_id FROM stores WHERE id = @Id";
-            var addressId = await dbConnection.ExecuteScalarAsync<Guid>(getAddressIdSql, new { Id = store.Id });
-            
-            var addressParams = new
-            {
-                Id = addressId,
-                store.Address.Line1,
-                store.Address.Line2,
-                store.Address.City,
-                store.Address.State,
-                store.Address.PostalCode,
-                store.Address.Country,
-                UpdatedAt = DateTime.UtcNow
-            };
-            
-            await dbConnection.ExecuteAsync(addressSql, addressParams);
-            
-            // Update store
-            const string storeSql = @"
-                UPDATE stores
-                SET name = @Name,
-                    contact_info = @ContactInfo,
-                    updated_at = @UpdatedAt
-                WHERE id = @Id";
-            
-            var storeParams = new
-            {
-                Id = store.Id,
-                store.Name,
-                store.ContactInfo,
-                UpdatedAt = DateTime.UtcNow
-            };
-            
-            await dbConnection.ExecuteAsync(storeSql, storeParams);
-        }
-
-        public async Task<IEnumerable<Store>> FindNearbyStoresAsync(double latitude, double longitude, double radiusKm)
-        {
-            // This is a simplified approach. In a real application, you would use a spatial database or a more sophisticated algorithm
-            const string sql = @"
-                SELECT 
-                    s.id AS Id,
-                    s.name AS Name,
-                    s.address_id AS AddressId,
-                    s.contact_info AS ContactInfo,
-                    s.brand_id AS BrandId,
-                    s.created_at AS CreatedAt,
-                    s.updated_at AS UpdatedAt,
-                    a.id AS Id,
-                    a.line1 AS Line1,
-                    a.line2 AS Line2,
-                    a.city AS City,
-                    a.state AS State,
-                    a.postal_code AS PostalCode,
-                    a.country AS Country,
-                    a.created_at AS CreatedAt,
-                    a.updated_at AS UpdatedAt,
-                    b.id AS Id,
-                    b.name AS Name,
-                    b.category AS Category,
-                    b.logo AS Logo,
-                    b.description AS Description,
-                    b.created_at AS CreatedAt,
-                    b.updated_at AS UpdatedAt,
-                    (6371 * acos(cos(radians(@Latitude)) * cos(radians(cast(json_extract(s.location::json, '$.Latitude') as float))) * 
-                    cos(radians(cast(json_extract(s.location::json, '$.Longitude') as float)) - radians(@Longitude)) + 
-                    sin(radians(@Latitude)) * sin(radians(cast(json_extract(s.location::json, '$.Latitude') as float))))) AS Distance
-                FROM stores s
-                LEFT JOIN addresses a ON s.address_id = a.id
-                LEFT JOIN brands b ON s.brand_id = b.id
-                HAVING Distance < @Radius
-                ORDER BY Distance";
-
-            var parameters = new { Latitude = latitude, Longitude = longitude, Radius = radiusKm };
-            
-            var storeDict = new Dictionary<Guid, Store>();
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            var stores = await dbConnection.QueryAsync<Store, Address, Brand, Store>(
-                sql,
-                (store, address, brand) =>
-                {
-                    if (!storeDict.TryGetValue(store.Id, out var existingStore))
-                    {
-                        existingStore = store;
-                        if (address != null)
+                        // Create address
+                        var address = new Address(
+                            row.line1?.ToString() ?? string.Empty,
+                            row.line2?.ToString() ?? string.Empty,
+                            row.city?.ToString() ?? string.Empty,
+                            row.state?.ToString() ?? string.Empty,
+                            row.postal_code?.ToString() ?? string.Empty,
+                            row.country?.ToString() ?? string.Empty
+                        );
+                        
+                        // Create geolocation
+                        var location = new GeoLocation(
+                            row.latitude  != null ? (double) row.latitude : 0,
+                            row.longitude != null ? (double) row.longitude : 0
+                        );
+                        
+                        // Create contact info
+                        var contactInfo = new ContactInfo(
+                            row.email?.ToString() ?? string.Empty,
+                            row.phone?.ToString() ?? string.Empty,
+                            row.website?.ToString() ?? string.Empty
+                        );
+                        
+                        // Parse opening hours from JSONB
+                        var openingHoursJson = row.opening_hours?.ToString();
+                        OperatingHours operatingHours;
+                        
+                        if (!string.IsNullOrEmpty(openingHoursJson))
                         {
-                            existingStore.SetAddress(address);
+                            // Use the JsonSerializer with our converter options
+                            operatingHours = JsonSerializer.Deserialize<OperatingHours>(openingHoursJson, _jsonOptions);
+                        }
+                        else
+                        {
+                            // Default empty hours
+                            operatingHours = new OperatingHours(new Dictionary<DayOfWeek, TimeRange>());
                         }
                         
-                        storeDict.Add(existingStore.Id, existingStore);
+                        // Create store with BrandId from string
+                        store = new Store
+                        {
+                            Id = new StoreId(storeId),
+                            BrandId = new BrandId(Guid.Parse(row.brand_id.ToString())),
+                            Name = row.name?.ToString() ?? string.Empty,
+                            Address = address,
+                            Location = location,
+                            OperatingHours = operatingHours,
+                            ContactInfo = contactInfo,
+                            CreatedAt = row.created_at != null ? (DateTime)row.created_at : DateTime.UtcNow,
+                            UpdatedAt = row.updated_at != null ? (DateTime)row.updated_at : DateTime.UtcNow
+                        };
+                        
+                        stores.Add(storeId, store);
                     }
-                    
-                    return existingStore;
-                },
-                parameters,
-                splitOn: "Id,Id"
-            );
-            
-            return storeDict.Values;
-        }
+                }
+            });
+        
+        return stores.Values;
+    }
 
-        public async Task<IEnumerable<Transaction>> GetTransactionsAsync(StoreId storeId, DateTime start, DateTime end, int page, int pageSize)
-        {
-            const string sql = @"
-                SELECT 
-                    t.id AS Id,
-                    t.card_id AS CardId,
-                    t.type::int AS Type,
-                    t.reward_id AS RewardId,
-                    t.quantity AS Quantity,
-                    t.points_amount AS PointsAmount,
-                    t.transaction_amount AS TransactionAmount,
-                    t.store_id AS StoreId,
-                    t.staff_id AS StaffId,
-                    t.pos_transaction_id AS PosTransactionId,
-                    t.timestamp AS Timestamp,
-                    t.created_at AS CreatedAt,
-                    t.metadata AS Metadata,
-                    lc.id AS Id,
-                    lc.program_id AS ProgramId,
-                    lc.customer_id AS CustomerId,
-                    lc.type::int AS Type,
-                    lc.stamps_collected AS StampsCollected,
-                    lc.points_balance AS PointsBalance,
-                    lc.status::int AS Status,
-                    lc.qr_code AS QrCode,
-                    lc.created_at AS CreatedAt,
-                    lc.expires_at AS ExpiresAt,
-                    lc.updated_at AS UpdatedAt,
-                    r.id AS Id,
-                    r.program_id AS ProgramId,
-                    r.title AS Title,
-                    r.description AS Description,
-                    r.required_value AS RequiredValue,
-                    r.valid_from AS ValidFrom,
-                    r.valid_to AS ValidTo,
-                    r.is_active AS IsActive,
-                    r.created_at AS CreatedAt,
-                    r.updated_at AS UpdatedAt
-                FROM transactions t
-                JOIN loyalty_cards lc ON t.card_id = lc.id
-                LEFT JOIN rewards r ON t.reward_id = r.id
-                WHERE t.store_id = @StoreId AND t.timestamp BETWEEN @Start AND @End
-                ORDER BY t.timestamp DESC
-                LIMIT @PageSize OFFSET @Offset";
+    public async Task<IEnumerable<Store>> GetByBrandIdAsync(BrandId brandId)
+    {
+        const string sql = @"
+            SELECT 
+                -- Store Information
+                s.id, 
+                s.brand_id, 
+                s.name, 
+                s.contact_info, 
+                s.created_at, 
+                s.updated_at,
+                
+                -- Store Address Information
+                a.line1, 
+                a.line2, 
+                a.city, 
+                a.state, 
+                a.postal_code, 
+                a.country,
+                
+                -- Store GeoLocation Information
+                g.latitude, 
+                g.longitude
+            FROM 
+                stores s                              LEFT JOIN 
+                store_addresses a ON s.id = a.store_id LEFT JOIN 
+                store_geo_locations g ON s.id = g.store_id
+            WHERE 
+                s.brand_id = @BrandId
+            ORDER BY 
+                s.name";
 
-            var parameters = new
+        var connection = await _dbConnection.GetConnectionAsync();
+        
+        var storeDictionary = new Dictionary<Guid, Store>();
+        
+        await connection.QueryAsync<StoreRecord, AddressRecord, GeoLocationRecord, Store>(
+            sql,
+            (storeRecord, addressRecord, locationRecord) =>
             {
-                StoreId = storeId.Value,
-                Start = start,
-                End = end,
-                Offset = (page - 1) * pageSize,
-                PageSize = pageSize
-            };
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            var transactions = await dbConnection.QueryAsync<Transaction, LoyaltyCard, Reward, Transaction>(
-                sql,
-                (transaction, loyaltyCard, reward) =>
+                if (!storeDictionary.TryGetValue(storeRecord.Id, out var existingStore))
                 {
-                    // Don't try to set properties directly, use methods if available
-                    return transaction;
-                },
-                parameters,
-                splitOn: "Id,Id"
-            );
+                    // Create address object
+                    var address = addressRecord != null ? new Address(
+                        addressRecord.Line1 ?? string.Empty,
+                        addressRecord.Line2 ?? string.Empty,
+                        addressRecord.City ?? string.Empty,
+                        addressRecord.State ?? string.Empty,
+                        addressRecord.PostalCode ?? string.Empty,
+                        addressRecord.Country ?? string.Empty
+                    ) : null;
+                    
+                    // Create location object
+                    var location = locationRecord != null ? new GeoLocation(
+                        locationRecord.Latitude,
+                        locationRecord.Longitude
+                    ) : null;
+                    
+                    // Create store
+                    existingStore = DomainMapper.MapToStore(storeRecord, address, location);
+                    storeDictionary.Add(existingStore.Id, existingStore);
+                }
+                
+                return existingStore;
+            },
+            new { BrandId = brandId.Value },
+            splitOn: "line1,latitude");
             
-            return transactions;
-        }
+        return storeDictionary.Values;
+    }
 
-        public async Task<int> GetTransactionCountAsync(StoreId storeId, DateTime start, DateTime end)
+    public async Task<Store> AddAsync(Store store, IDbTransaction transaction = null)
+    {
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        
+        // Track whether we created the transaction or are using an existing one
+        bool ownsTransaction = transaction == null;
+        
+        // If no transaction was provided, create one
+        transaction ??= dbConnection.BeginTransaction();
+
+        try
         {
-            const string sql = @"
-                SELECT COUNT(*)
-                FROM transactions
-                WHERE store_id = @StoreId AND timestamp BETWEEN @Start AND @End";
+            // Insert the main store record with opening hours as JSONB using our converter
+            await dbConnection.ExecuteAsync(@"
+                INSERT INTO stores 
+                    (id, brand_id, name, opening_hours, created_at, updated_at)
+                VALUES 
+                    (@StoreId, @BrandId, @Name, @OpeningHours::jsonb, @CreatedAt, @UpdatedAt)",
+                new
+                {
+                    StoreId = store.Id.Value,
+                    BrandId = store.BrandId.Value,
+                    store.Name,
+                    OpeningHours = JsonSerializer.Serialize(store.OperatingHours, _jsonOptions),
+                    store.CreatedAt,
+                    store.UpdatedAt
+                },
+                transaction);
 
-            var parameters = new { StoreId = storeId.Value, Start = start, End = end };
-            var dbConnection = await _connection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql, parameters);
+            // Insert address record if available
+            if (store.Address is { })
+            {
+                await dbConnection.ExecuteAsync(@"
+                    INSERT INTO store_addresses 
+                        (store_id, line1, line2, city, state, postal_code, country, location)
+                    VALUES 
+                        (@StoreId, @Line1, @Line2, @City, @State, @PostalCode, @Country, ST_SetSRID(ST_MakePoint(@Longitude, @Latitude), 4326)::geography)",
+                    new
+                    {
+                        StoreId = store.Id.Value,
+                        store.Address.Line1,
+                        store.Address.Line2,
+                        store.Address.City,
+                        store.Address.State,
+                        store.Address.PostalCode,
+                        store.Address.Country,
+                        store.Location.Longitude,
+                        store.Location.Latitude
+                    },
+                    transaction);
+            }
+            
+            // Insert contact information if available
+            if (store.ContactInfo is { })
+            {
+                await dbConnection.ExecuteAsync(@"
+                    INSERT INTO store_contacts
+                        (store_id, email, phone, website)
+                    VALUES
+                        (@StoreId, @Email, @Phone, @Website)",
+                    new
+                    {
+                        StoreId = store.Id.Value,
+                        store.ContactInfo.Email,
+                        store.ContactInfo.Phone,
+                        store.ContactInfo.Website
+                    },
+                    transaction);
+            }
+
+            if (ownsTransaction)
+                transaction.Commit();
+
+            return store;
         }
-
-        public async Task<int> GetTotalStampsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
+        catch (Exception ex)
         {
-            const string sql = @"
-                SELECT COALESCE(SUM(quantity), 0)
-                FROM transactions
-                WHERE store_id = @StoreId 
-                AND type = 'StampIssuance'::transaction_type 
-                AND timestamp BETWEEN @Start AND @End";
-
-            var parameters = new { StoreId = storeId.Value, Start = start, End = end };
-            var dbConnection = await _connection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql, parameters);
+            if (ownsTransaction)
+                transaction.Rollback();
+            
+            throw new Exception($"Error adding store: {ex.Message}", ex);
         }
-
-        public async Task<decimal> GetTotalPointsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
+        finally
         {
-            const string sql = @"
-                SELECT COALESCE(SUM(points_amount), 0)
-                FROM transactions
-                WHERE store_id = @StoreId 
-                AND type = 'PointsIssuance'::transaction_type 
-                AND timestamp BETWEEN @Start AND @End";
-
-            var parameters = new { StoreId = storeId.Value, Start = start, End = end };
-            var dbConnection = await _connection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<decimal>(sql, parameters);
-        }
-
-        public async Task<int> GetRedemptionCountAsync(StoreId storeId, DateTime start, DateTime end)
-        {
-            const string sql = @"
-                SELECT COUNT(*)
-                FROM transactions
-                WHERE store_id = @StoreId 
-                AND type = 'RewardRedemption'::transaction_type 
-                AND timestamp BETWEEN @Start AND @End";
-
-            var parameters = new { StoreId = storeId.Value, Start = start, End = end };
-            var dbConnection = await _connection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql, parameters);
+            if (ownsTransaction && transaction != null)
+                transaction.Dispose();
         }
     }
-} 
+
+    public async Task UpdateAsync(Store store)
+    {
+        var connection = await _dbConnection.GetConnectionAsync();
+        
+        using (var transaction = connection.BeginTransaction())
+        {
+            try
+            {
+                await connection.ExecuteAsync(@"
+                    UPDATE stores
+                    SET name = @Name, 
+                        contact_info = @ContactInfo, 
+                        updated_at = @UpdatedAt
+                    WHERE id = @Id",
+                    new
+                    {
+                        store.Id,
+                        store.Name,
+                        store.ContactInfo,
+                        store.UpdatedAt
+                    }, 
+                    transaction);
+                
+                if (store.Address != null)
+                {
+                    await connection.ExecuteAsync(@"
+                        UPDATE store_addresses
+                        SET line1 = @Line1, 
+                            line2 = @Line2, 
+                            city = @City, 
+                            state = @State, 
+                            postal_code = @PostalCode, 
+                            country = @Country
+                        WHERE store_id = @StoreId",
+                        new 
+                        { 
+                            StoreId = store.Id, 
+                            store.Address.Line1, 
+                            store.Address.Line2, 
+                            store.Address.City, 
+                            store.Address.State, 
+                            store.Address.PostalCode, 
+                            store.Address.Country 
+                        }, 
+                        transaction);
+                }
+                
+                if (store.Location != null)
+                {
+                    await connection.ExecuteAsync(@"
+                        UPDATE store_geo_locations
+                        SET latitude = @Latitude, 
+                            longitude = @Longitude
+                        WHERE store_id = @StoreId",
+                        new 
+                        { 
+                            StoreId = store.Id, 
+                            store.Location.Latitude, 
+                            store.Location.Longitude 
+                        }, 
+                        transaction);
+                }
+                
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+    }
+
+    public async Task<IEnumerable<Store>> FindNearbyStoresAsync(double latitude, double longitude, double radiusKm)
+    {
+        const string sql = @"
+            SELECT 
+                -- Store Information
+                s.id, 
+                s.brand_id, 
+                s.name, 
+                s.contact_info, 
+                s.created_at, 
+                s.updated_at,
+                
+                -- Store Address Information
+                a.line1, 
+                a.line2, 
+                a.city, 
+                a.state, 
+                a.postal_code, 
+                a.country,
+                
+                -- Store GeoLocation Information
+                g.latitude, 
+                g.longitude
+            FROM 
+                stores s                              LEFT JOIN 
+                store_addresses a ON s.id = a.store_id LEFT JOIN 
+                store_geo_locations g ON s.id = g.store_id
+            WHERE 
+                g.latitude IS NOT NULL AND g.longitude IS NOT NULL";
+
+        var connection = await _dbConnection.GetConnectionAsync();
+        
+        var stores = await connection.QueryAsync<StoreRecord, AddressRecord, GeoLocationRecord, Store>(
+            sql,
+            (storeRecord, addressRecord, locationRecord) =>
+            {
+                // Create address object
+                var address = addressRecord != null ? new Address(
+                    addressRecord.Line1 ?? string.Empty,
+                    addressRecord.Line2 ?? string.Empty,
+                    addressRecord.City ?? string.Empty,
+                    addressRecord.State ?? string.Empty,
+                    addressRecord.PostalCode ?? string.Empty,
+                    addressRecord.Country ?? string.Empty
+                ) : null;
+                
+                // Create location object
+                var location = locationRecord != null ? new GeoLocation(
+                    locationRecord.Latitude,
+                    locationRecord.Longitude
+                ) : null;
+                
+                // Create store
+                return DomainMapper.MapToStore(storeRecord, address, location);
+            },
+            splitOn: "line1,latitude");
+            
+        var targetLocation = new GeoLocation(latitude, longitude);
+        
+        return stores
+            .Where(s => radiusKm <= 0 || s.Location.DistanceToInKilometers(targetLocation) <= radiusKm)
+            .OrderBy(s => s.Location.DistanceToInKilometers(targetLocation))
+            .ToList();
+    }
+
+    public async Task<IEnumerable<Transaction>> GetTransactionsAsync(StoreId storeId, DateTime start, DateTime end, int skip = 0, int limit = 50)
+    {
+        const string sql = @"
+            SELECT 
+                id AS Id,
+                card_id AS CardId,
+                type::int AS Type,
+                reward_id AS RewardId,
+                quantity AS Quantity,
+                points_amount AS PointsAmount,
+                transaction_amount AS TransactionAmount,
+                store_id AS StoreId,
+                staff_id AS StaffId,
+                pos_transaction_id AS PosTransactionId,
+                timestamp AS Timestamp,
+                created_at AS CreatedAt,
+                metadata AS Metadata
+            FROM transactions
+            WHERE store_id = @StoreId
+            AND timestamp BETWEEN @Start AND @End
+            ORDER BY timestamp DESC
+            LIMIT @Limit OFFSET @Skip";
+
+        var parameters = new 
+        { 
+            StoreId = storeId.Value, 
+            Start = start, 
+            End = end, 
+            Skip = skip, 
+            Limit = limit 
+        };
+        
+        var connection = await _dbConnection.GetConnectionAsync();
+        return await connection.QueryAsync<Transaction>(sql, parameters);
+    }
+
+    public async Task<int> GetTransactionCountAsync(StoreId storeId, DateTime start, DateTime end)
+    {
+        // Implementation needed
+        return 0;
+    }
+
+    public async Task<int> GetTotalStampsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
+    {
+        // Implementation needed
+        return 0;
+    }
+
+    public async Task<decimal> GetTotalPointsIssuedAsync(StoreId storeId, DateTime start, DateTime end)
+    {
+        // Implementation needed
+        return 0;
+    }
+
+    public async Task<int> GetRedemptionCountAsync(StoreId storeId, DateTime start, DateTime end)
+    {
+        // Implementation needed
+        return 0;
+    }
+
+    // DTO records for database mapping
+    private class StoreRecord
+    {
+        public Guid Id { get; set; }
+        public Guid BrandId { get; set; }
+        public string Name { get; set; }
+        public string ContactInfo { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+    
+    private class AddressRecord
+    {
+        public string Line1 { get; set; }
+        public string Line2 { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
+        public string PostalCode { get; set; }
+        public string Country { get; set; }
+    }
+    
+    private class GeoLocationRecord
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+    
+    // Domain mapper for mapping from records to domain entities
+    private static class DomainMapper
+    {
+        public static Store MapToStore(StoreRecord record, Address address, GeoLocation location)
+        {
+            try
+            {
+                // Create a default OperatingHours if needed
+                var hours = new OperatingHours(new Dictionary<DayOfWeek, TimeRange>());
+                
+                // Use the specialized factory for Dapper materialization
+                return DapperEntityFactory.CreateStore(
+                    record.Id,
+                    record.BrandId,
+                    record.Name ?? string.Empty,
+                    address,
+                    location,
+                    hours,
+                    record.ContactInfo ?? string.Empty,
+                    record.CreatedAt,
+                    record.UpdatedAt
+                );
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error mapping store from record: {ex.Message}");
+                throw;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Special factory for Dapper materialization that creates domain entities with specific property values
+    /// directly from database records. This is used only for Dapper's multi-mapping functionality.
+    /// </summary>
+    internal static class DapperEntityFactory
+    {
+        /// <summary>
+        /// Creates a Store entity with specific property values directly from database records.
+        /// </summary>
+        public static Store CreateStore(
+            Guid id,
+            Guid brandId,
+            string name,
+            Address address,
+            GeoLocation location,
+            OperatingHours hours,
+            string contactInfo,
+            DateTime createdAt,
+            DateTime updatedAt)
+        {
+            try
+            {
+                // Use the parameterless private constructor
+                var store = (Store)Activator.CreateInstance(typeof(Store), true);
+                if (store == null)
+                {
+                    throw new InvalidOperationException("Failed to create Store instance using reflection");
+                }
+                
+                // Set all properties
+                SetProperty(store, "Id", id);
+                SetProperty(store, "BrandId", brandId);
+                SetProperty(store, "Name", name ?? string.Empty);
+                SetProperty(store, "Address", address);
+                SetProperty(store, "Location", location);
+                SetProperty(store, "Hours", hours);
+                SetProperty(store, "ContactInfo", contactInfo ?? string.Empty);
+                SetProperty(store, "CreatedAt", createdAt);
+                SetProperty(store, "UpdatedAt", updatedAt);
+                
+                return store;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error creating Store entity: {ex.Message}", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Helper method to set a property on an object using reflection
+        /// </summary>
+        private static void SetProperty(object target, string propertyName, object value)
+        {
+            var property = target.GetType().GetProperty(propertyName, 
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                
+            if (property == null)
+            {
+                throw new InvalidOperationException($"Property '{propertyName}' not found on type '{target.GetType().Name}'");
+            }
+            
+            if (!property.CanWrite)
+            {
+                throw new InvalidOperationException($"Property '{propertyName}' on type '{target.GetType().Name}' is read-only");
+            }
+            
+            property.SetValue(target, value);
+        }
+    }
+    
+    
+    private static Store MapFromDto(StoreDto dto) =>
+        new ()
+        {
+            Id = EntityId.Parse<StoreId>(dto.Id),
+            BrandId = EntityId.Parse<BrandId>(dto.BrandId),
+            Name = dto.Name,
+            Address = dto.Address,
+            Location = dto.Location,
+            ContactInfo = dto.ContactInfo,
+            OperatingHours = dto.OperatingHours,
+            CreatedAt = dto.CreatedAt,
+            UpdatedAt = dto.UpdatedAt,
+            
+        };
+}

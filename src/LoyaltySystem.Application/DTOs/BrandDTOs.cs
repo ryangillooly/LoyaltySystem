@@ -64,39 +64,12 @@ namespace LoyaltySystem.Application.DTOs
     /// </summary>
     public class CreateBrandDto
     {
-        /// <summary>
-        /// The name of the brand
-        /// </summary>
         public string Name { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// The category of the brand
-        /// </summary>
         public string Category { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// The logo URL for the brand
-        /// </summary>
         public string Logo { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// The description of the brand
-        /// </summary>
         public string Description { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// The contact information for the brand
-        /// </summary>
         public ContactInfoDto ContactInfo { get; set; } = new ();
-        
-        /// <summary>
-        /// The address of the brand headquarters
-        /// </summary>
         public AddressDto Address { get; set; } = new ();
-        
-        /// <summary>
-        /// The business ID that owns this brand
-        /// </summary>
         public string BusinessId { get; set; }
     }
 

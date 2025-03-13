@@ -32,17 +32,15 @@ namespace LoyaltySystem.Admin.API.Controllers
         /// Get all stores with pagination
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetAllStores([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetAllStores([FromQuery] int skip = 0, [FromQuery] int limit = 50)
         {
-            _logger.LogInformation("Admin requesting all stores (page {Page}, size {PageSize})", 
-                page, pageSize);
+            _logger.LogInformation("Admin requesting all stores (skip: {skip}, limit: {limit})", 
+                skip, limit);
             
-            if (page < 1 || pageSize < 1 || pageSize > 100)
-            {
+            if (limit < 1 || skip < 0)
                 return BadRequest("Invalid pagination parameters");
-            }
             
-            var result = await _storeService.GetAllStoresAsync(page, pageSize);
+            var result = await _storeService.GetAllStoresAsync(skip, limit);
             
             if (!result.Success)
             {

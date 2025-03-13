@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Common;
+using System.Data;
 
 namespace LoyaltySystem.Domain.Repositories
 {
@@ -40,7 +41,7 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Adds a new loyalty program.
         /// </summary>
-        Task AddAsync(LoyaltyProgram program);
+        Task<LoyaltyProgram> AddAsync(LoyaltyProgram program, IDbTransaction transaction = null);
         
         /// <summary>
         /// Updates an existing loyalty program.

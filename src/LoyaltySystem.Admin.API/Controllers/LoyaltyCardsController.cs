@@ -1,32 +1,53 @@
 using System;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Admin.API.Controllers
 {
-    [Authorize(Roles = "Admin")]
-    public class LoyaltyCardsController : BaseLoyaltyCardsController
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public class LoyaltyCardsController : ControllerBase
     {
         private readonly LoyaltyProgramService _programService;
+        private readonly ILogger _logger;
+        private readonly ILoyaltyCardService _loyaltyCardService;
 
         public LoyaltyCardsController(
             LoyaltyCardService loyaltyCardService,
             LoyaltyProgramService programService,
-            ILogger<LoyaltyCardsController> logger) 
-            : base(logger, loyaltyCardService)
+            ILogger<LoyaltyCardsController> logger)
         {
             _programService = programService ?? throw new ArgumentNullException(nameof(programService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loyaltyCardService = loyaltyCardService ?? throw new ArgumentNullException(nameof(loyaltyCardService));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllAsync([FromQuery] int skip = 0, [FromQuery] int limit = 50)
+        {
+            _logger.LogInformation("Admin requesting all loyalty cards");
+            
+            var result = await _loyaltyCardService.GetAllAsync(skip, limit);
+            
+            if (!result.Success)
+            {
+                _logger.LogWarning("Admin get loyalty cards failed: {Error}", result.Errors);
+                return NotFound(result.Errors);
+            }
+            
+            return Ok(result.Data);
+        }
+        
         // Admin can access any card without ownership checks
-        public override async Task<IActionResult> GetById(LoyaltyCardId id)
+        public async Task<IActionResult> GetById(LoyaltyCardId id)
         {
             _logger.LogInformation("Admin requesting loyalty card by ID: {CardId}", id);
             
@@ -42,7 +63,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         // Admin can access any customer's cards without ownership checks
-        public override async Task<IActionResult> GetByCustomerId(CustomerId customerId)
+        public async Task<IActionResult> GetByCustomerId(CustomerId customerId)
         {
             _logger.LogInformation("Admin requesting loyalty cards for customer ID: {CustomerId}", customerId);
             
@@ -59,7 +80,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpGet("program/{programId}")]
-        public override async Task<IActionResult> GetByProgramId(LoyaltyProgramId programId)
+        public async Task<IActionResult> GetByProgramId(LoyaltyProgramId programId)
         {
             _logger.LogInformation("Admin requesting loyalty cards for program ID: {ProgramId}", programId);
             
@@ -76,12 +97,12 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCard([FromBody] CreateCardRequest request)
+        public async Task<IActionResult> CreateCard([FromBody] CreateLoyaltyCardDto request)
         {
             _logger.LogInformation("Admin creating loyalty card for customer ID: {CustomerId} in program ID: {ProgramId}", 
                 request.CustomerId, request.ProgramId);
             
-            var result = await _loyaltyCardService.CreateCardAsync(request.CustomerId, request.ProgramId);
+            var result = await _loyaltyCardService.CreateCardAsync(request);
             
             if (!result.Success)
             {

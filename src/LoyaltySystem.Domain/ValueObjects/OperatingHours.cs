@@ -11,18 +11,18 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly Dictionary<DayOfWeek, TimeRange> _hours;
 
-        public IReadOnlyDictionary<DayOfWeek, TimeRange> Hours => _hours;
+        public IReadOnlyDictionary<DayOfWeek, TimeRange> Hours
+        {
+            get => _hours;
+            set => throw new NotImplementedException();
+        }
 
         // Private constructor for EF Core
-        private OperatingHours()
-        {
+        public OperatingHours() =>
             _hours = new Dictionary<DayOfWeek, TimeRange>();
-        }
 
-        public OperatingHours(Dictionary<DayOfWeek, TimeRange> hours)
-        {
+        public OperatingHours(Dictionary<DayOfWeek, TimeRange> hours) =>
             _hours = hours ?? new Dictionary<DayOfWeek, TimeRange>();
-        }
 
         /// <summary>
         /// Sets the operating hours for a specific day of the week.

@@ -10,9 +10,9 @@ namespace LoyaltySystem.Domain.Repositories
     public interface ICustomerRepository
     {
         Task<Customer?> GetByIdAsync(CustomerId id);
-        Task<IEnumerable<Customer>> GetAllAsync(int page, int pageSize);
+        Task<IEnumerable<Customer>> GetAllAsync(int skip = 0, int limit = 50);
         Task<int> GetTotalCountAsync();
-        Task<IEnumerable<Customer>> SearchAsync(string query, int page, int pageSize);
+        Task<IEnumerable<Customer>> SearchAsync(string query, int skip = 0, int limit = 50);
         Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null);
         Task UpdateAsync(Customer customer);
         Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end);

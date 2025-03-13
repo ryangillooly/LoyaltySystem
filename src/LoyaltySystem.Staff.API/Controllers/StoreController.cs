@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -136,14 +137,17 @@ namespace LoyaltySystem.Staff.API.Controllers
             }
             
             // Collect all active rewards from all active programs
-            var rewards = new List<RewardDto>();
+            var rewards = new List<LoyaltySystem.Application.DTOs.LoyaltyPrograms.RewardDto>();
             foreach (var program in programsResult.Data.Where(p => p.IsActive))
             {
                 var rewardsResult = await _programService.GetRewardsByProgramIdAsync(program.Id);
                 if (rewardsResult.Success)
                 {
-                    // Only add active rewards
-                    rewards.AddRange(rewardsResult.Data.Where(r => r.IsActive));
+                    // Only add active rewards - use foreach loop instead of AddRange to avoid ambiguity
+                    foreach (var reward in rewardsResult.Data.Where(r => r.IsActive))
+                    {
+                        rewards.Add(reward);
+                    }
                 }
             }
             

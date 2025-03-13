@@ -103,9 +103,10 @@ namespace LoyaltySystem.Customer.API.Controllers
             return Ok(result.Data);
         }
 
-        [HttpPost("enroll")]
-        public async Task<IActionResult> EnrollInProgram([FromBody] EnrollmentRequest request)
-        {
+        //[HttpPost("enroll")]
+        //public async Task<IActionResult> EnrollInProgram([FromBody] EnrollmentRequest request)
+        //{
+            /*
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
             {
@@ -143,7 +144,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             var customerIdObj = new CustomerId(Guid.Parse(customerId));
             var programIdObj = request.ProgramId ?? throw new InvalidOperationException("Program ID cannot be null");
             
-            var result = await _loyaltyCardService.CreateCardAsync(customerIdObj, programIdObj);
+            var result = await _loyaltyCardService.CreateCardAsync(re);
             
             if (!result.Success)
             {
@@ -151,9 +152,10 @@ namespace LoyaltySystem.Customer.API.Controllers
                     customerId, request.ProgramId, result.Errors);
                 return BadRequest(result.Errors);
             }
+            */
             
-            return CreatedAtAction(nameof(GetCardTransactions), new { id = result.Data.Id }, result.Data);
-        }
+            //return CreatedAtAction(nameof(GetCardTransactions), new { id = result.Data.Id }, result.Data);
+        //}
 
         [HttpGet("{id}/qr-code")]
         public async Task<IActionResult> GetCardQrCode(string id)

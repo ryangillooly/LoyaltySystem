@@ -47,9 +47,8 @@ namespace LoyaltySystem.Customer.API.Controllers
             _logger.LogInformation("Successful customer registration for user: {Username}", registerRequest.Username);
             return CreatedAtAction(nameof(GetProfile), null, result.Data);
         }
-
-        // Disable admin-only endpoints
-        [Authorize(Roles = "Admin")]
+        
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [HttpGet("users/{id}")]
         public override async Task<IActionResult> GetUserById(string id)
         {

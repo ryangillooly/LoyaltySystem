@@ -74,7 +74,7 @@ namespace LoyaltySystem.Infrastructure.Data
             modelBuilder.Entity<LoyaltyProgram>().OwnsOne(p => p.ExpirationPolicy);
             
             // Configure complex types that don't directly map to a DB column
-            modelBuilder.Entity<Store>().Property(s => s.Hours)
+            modelBuilder.Entity<Store>().Property(s => s.OperatingHours)
                 .HasConversion(
                     new ValueConverter<OperatingHours, string>(
                         h => System.Text.Json.JsonSerializer.Serialize(h, new System.Text.Json.JsonSerializerOptions()),

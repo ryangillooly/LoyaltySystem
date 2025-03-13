@@ -28,20 +28,16 @@ namespace LoyaltySystem.Application.Services
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
-        public async Task<OperationResult<PagedResult<CustomerDto>>> GetAllCustomersAsync(int page, int pageSize)
+        public async Task<OperationResult<PagedResult<CustomerDto>>> GetAllAsync(int skip, int limit)
         {
             try
             {
-                var customers = await _customerRepository.GetAllAsync(page, pageSize);
+                var customers = await _customerRepository.GetAllAsync(skip, limit);
                 var totalCount = await _customerRepository.GetTotalCountAsync();
 
-                var customerDtos = new List<CustomerDto>();
-                foreach (var customer in customers)
-                {
-                    customerDtos.Add(MapToDto(customer));
-                }
+                var customerDtos = customers.Select(MapToDto).ToList();
 
-                var result = new PagedResult<CustomerDto>(customerDtos, totalCount, page, pageSize);
+                var result = new PagedResult<CustomerDto>(customerDtos, totalCount, skip, limit);
 
                 return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);
             }
@@ -247,28 +243,27 @@ namespace LoyaltySystem.Application.Services
                     {
                         Id = store.Id.ToString(),
                         Name = store.Name,
-                        Address = new DTOs.AddressDto
-                        {
-                            Line1 = store.Address.Line1,
-                            Line2 = store.Address.Line2,
-                            City = store.Address.City,
-                            State = store.Address.State,
-                            PostalCode = store.Address.PostalCode,
-                            Country = store.Address.Country
-                        },
-                        ContactInfo = new DTOs.ContactInfoDto
-                        {
-                            Email = store.ContactInfo ?? string.Empty,
-                            Phone = string.Empty,
-                            Website = string.Empty
-                        },
-                        Location = new DTOs.GeoLocationDto
-                        {
-                            Latitude = store.Location.Latitude,
-                            Longitude = store.Location.Longitude
-                        },
-                        BrandId = store.Brand.Id.ToString(),
-                        BrandName = store.Brand.Name
+                        Address = new Address
+                        (
+                            store.Address.Line1,
+                            store.Address.Line2,
+                            store.Address.City,
+                            store.Address.State,
+                            store.Address.PostalCode,
+                            store.Address.Country
+                        ),
+                        ContactInfo = new ContactInfo
+                        (
+                             store.ContactInfo.Email,
+                             store.ContactInfo.Phone,
+                             store.ContactInfo.Website
+                        ),
+                        Location = new GeoLocation
+                        (
+                            store.Location.Latitude,
+                            store.Location.Longitude
+                        ),
+                        BrandId = store.Brand.Id.ToString()
                     });
                 }
 
@@ -341,10 +336,10 @@ namespace LoyaltySystem.Application.Services
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public DTOs.AddressDto Address { get; set; } = new DTOs.AddressDto();
-        public DTOs.ContactInfoDto ContactInfo { get; set; } = new DTOs.ContactInfoDto();
-        public DTOs.GeoLocationDto Location { get; set; } = new DTOs.GeoLocationDto();
+        public Address Address { get; set; } 
+        public ContactInfo ContactInfo { get; set; } 
+        public GeoLocation Location { get; set; }
+        public OperatingHours OperatingHours { get; set; }
         public string BrandId { get; set; } = string.Empty;
-        public string BrandName { get; set; } = string.Empty;
     }
 } 

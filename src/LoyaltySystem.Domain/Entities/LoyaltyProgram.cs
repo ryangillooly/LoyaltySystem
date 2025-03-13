@@ -1,8 +1,6 @@
 using LoyaltySystem.Domain.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Domain.Entities
 {
@@ -10,53 +8,65 @@ namespace LoyaltySystem.Domain.Entities
     /// Represents a loyalty program offered by a brand.
     /// This is an Aggregate Root.
     /// </summary>
-    public class LoyaltyProgram
+    public sealed class LoyaltyProgram
     {
-        private readonly List<Reward> _rewards;
-
-        public LoyaltyProgramId Id { get; private set; }
-        public Guid BrandId { get; private set; }
-        public string Name { get; private set; }
-        public LoyaltyProgramType Type { get; private set; }
+        private readonly List<Reward> _rewards = new ();
+        private readonly List<LoyaltyTier> _tiers = new ();
+        
+        public LoyaltyProgramId Id { get; set; }
+        public BrandId BrandId { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public LoyaltyProgramType Type { get; set; }
+        public ExpirationPolicy ExpirationPolicy { get; set; }
         
         // For stamp-based programs
-        public int? StampThreshold { get; private set; }
+        public int? StampThreshold { get; set; }
         
         // For points-based programs
-        public decimal? PointsConversionRate { get; private set; }
+        public decimal? PointsConversionRate { get; set; }
+        
+        // New points configuration for more detailed control
+        public PointsConfig PointsConfig { get; set; }
         
         // Optional constraints
-        public int? DailyStampLimit { get; private set; }
-        public decimal? MinimumTransactionAmount { get; private set; }
+        public int? DailyStampLimit { get; set; }
+        public decimal? MinimumTransactionAmount { get; set; }
         
-        // Expiration settings
-        public ExpirationPolicy ExpirationPolicy { get; private set; }
-        
-        public bool IsActive { get; private set; }
-        public DateTime CreatedAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
+        public bool HasTiers { get; set; }
+        public string TermsAndConditions { get; set; }
+        public int EnrollmentBonusPoints { get; set; }
+        public DateTime StartDate { get; set; } = DateTime.UtcNow;
+        public DateTime? EndDate { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation property
-        public virtual Brand Brand { get; private set; }
+        public Brand Brand { get; set; }
         
-        // Collection navigation property
-        public virtual IReadOnlyCollection<Reward> Rewards => _rewards.AsReadOnly();
-
-        // Private constructor for EF Core
-        private LoyaltyProgram()
-        {
-            _rewards = new List<Reward>();
-        }
+        // Collection navigation properties
+        public IReadOnlyCollection<Reward> Rewards => _rewards.AsReadOnly();
+        public IReadOnlyCollection<LoyaltyTier> Tiers => _tiers.AsReadOnly();
+        
+        public LoyaltyProgram() { }
 
         public LoyaltyProgram(
-            Guid brandId,
+            BrandId brandId,
             string name,
             LoyaltyProgramType type,
             int? stampThreshold = null,
             decimal? pointsConversionRate = null,
+            PointsConfig pointsConfig = null,
+            bool hasTiers = false,
             int? dailyStampLimit = null,
             decimal? minimumTransactionAmount = null,
-            ExpirationPolicy expirationPolicy = null)
+            ExpirationPolicy expirationPolicy = null,
+            string description = null,
+            string termsAndConditions = null,
+            int enrollmentBonusPoints = 0,
+            DateTime? startDate = null,
+            DateTime? endDate = null)
         {
             if (brandId == Guid.Empty)
                 throw new ArgumentException("BrandId cannot be empty", nameof(brandId));
@@ -64,22 +74,27 @@ namespace LoyaltySystem.Domain.Entities
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Program name cannot be empty", nameof(name));
 
-            // Type-specific validation
-            ValidateProgramTypeParameters(type, stampThreshold, pointsConversionRate);
+            ValidateProgramTypeParameters(type, stampThreshold, pointsConversionRate, pointsConfig);
 
             Id = new LoyaltyProgramId();
             BrandId = brandId;
             Name = name;
+            Description = description;
             Type = type;
             StampThreshold = type == LoyaltyProgramType.Stamp ? stampThreshold : null;
             PointsConversionRate = type == LoyaltyProgramType.Points ? pointsConversionRate : null;
+            PointsConfig = type == LoyaltyProgramType.Points ? (pointsConfig ?? new PointsConfig()) : null;
+            HasTiers = hasTiers;
             DailyStampLimit = dailyStampLimit;
             MinimumTransactionAmount = minimumTransactionAmount;
-            ExpirationPolicy = expirationPolicy ?? new ExpirationPolicy();
+            ExpirationPolicy = expirationPolicy;
+            TermsAndConditions = termsAndConditions;
+            EnrollmentBonusPoints = enrollmentBonusPoints;
+            StartDate = startDate ?? DateTime.UtcNow;
+            EndDate = endDate;
             IsActive = true;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
-            _rewards = new List<Reward>();
         }
 
         /// <summary>
@@ -111,37 +126,156 @@ namespace LoyaltySystem.Domain.Entities
         }
 
         /// <summary>
+        /// Creates a new tier for this loyalty program.
+        /// </summary>
+        public LoyaltyTier CreateTier(
+            string name,
+            int pointThreshold,
+            decimal pointMultiplier,
+            int tierOrder,
+            IEnumerable<string> benefits = null)
+        {
+            if (!HasTiers)
+                throw new InvalidOperationException("Cannot create tiers for a non-tiered program");
+
+            if (Type != LoyaltyProgramType.Points)
+                throw new InvalidOperationException("Tiers are only supported for points-based programs");
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Tier name cannot be empty", nameof(name));
+
+            if (pointThreshold < 0)
+                throw new ArgumentException("Point threshold cannot be negative", nameof(pointThreshold));
+
+            if (pointMultiplier <= 0)
+                throw new ArgumentException("Point multiplier must be greater than zero", nameof(pointMultiplier));
+
+            // Check if tier with same order already exists
+            if (_tiers.Any(t => t.TierOrder == tierOrder))
+                throw new InvalidOperationException($"A tier with order {tierOrder} already exists");
+
+            var tier = new LoyaltyTier(
+                Id,
+                name,
+                pointThreshold,
+                pointMultiplier,
+                tierOrder);
+
+            // Add benefits if provided
+            if (benefits != null)
+            {
+                foreach (var benefit in benefits)
+                {
+                    tier.AddBenefit(benefit);
+                }
+            }
+
+            _tiers.Add(tier);
+            return tier;
+        }
+
+        /// <summary>
         /// Updates the properties of the loyalty program.
         /// </summary>
         public void Update(
             string name,
             int? stampThreshold = null,
             decimal? pointsConversionRate = null,
+            PointsConfig pointsConfig = null,
+            bool? hasTiers = null,
             int? dailyStampLimit = null,
             decimal? minimumTransactionAmount = null,
-            ExpirationPolicy expirationPolicy = null)
+            ExpirationPolicy expirationPolicy = null,
+            string description = null,
+            string termsAndConditions = null,
+            int? enrollmentBonusPoints = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Program name cannot be empty", nameof(name));
 
-            // Type-specific validation
-            ValidateProgramTypeParameters(Type, stampThreshold, pointsConversionRate);
+            ValidateProgramTypeParameters(Type, stampThreshold, pointsConversionRate, pointsConfig);
 
             Name = name;
             
-            if (Type == LoyaltyProgramType.Stamp)
+            if (!string.IsNullOrEmpty(description))
+                Description = description;
+                
+            if (!string.IsNullOrEmpty(termsAndConditions))
+                TermsAndConditions = termsAndConditions;
+                
+            if (startDate.HasValue)
+                StartDate = startDate.Value;
+                
+            if (endDate.HasValue)
+                EndDate = endDate;
+            
+            if (Type == LoyaltyProgramType.Stamp && stampThreshold.HasValue)
                 StampThreshold = stampThreshold;
                 
             if (Type == LoyaltyProgramType.Points)
-                PointsConversionRate = pointsConversionRate;
+            {
+                if (pointsConversionRate.HasValue)
+                    PointsConversionRate = pointsConversionRate;
+                    
+                if (pointsConfig != null)
+                    PointsConfig = pointsConfig;
+            }
+            
+            if (hasTiers.HasValue)
+            {
+                if (hasTiers.Value && Type != LoyaltyProgramType.Points)
+                    throw new InvalidOperationException("Tiers are only supported for points-based programs");
+                    
+                HasTiers = hasTiers.Value;
+            }
                 
-            DailyStampLimit = dailyStampLimit;
-            MinimumTransactionAmount = minimumTransactionAmount;
+            if (dailyStampLimit.HasValue)
+                DailyStampLimit = dailyStampLimit;
+                
+            if (minimumTransactionAmount.HasValue)
+                MinimumTransactionAmount = minimumTransactionAmount;
+                
+            if (enrollmentBonusPoints.HasValue)
+                EnrollmentBonusPoints = enrollmentBonusPoints.Value;
             
             if (expirationPolicy != null)
                 ExpirationPolicy = expirationPolicy;
                 
             UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Updates the points configuration for a points-based program.
+        /// </summary>
+        public void UpdatePointsConfig(PointsConfig pointsConfig)
+        {
+            if (Type != LoyaltyProgramType.Points)
+                throw new InvalidOperationException("Cannot update points configuration for non-points program");
+
+            if (pointsConfig == null)
+                throw new ArgumentNullException(nameof(pointsConfig));
+
+            PointsConfig = pointsConfig;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Returns the tier for a given point balance, or null if not found.
+        /// </summary>
+        public LoyaltyTier GetTierForPoints(int pointBalance)
+        {
+            if (!HasTiers || Type != LoyaltyProgramType.Points)
+                return null;
+
+            // Get all tiers where the point threshold is less than or equal to the balance
+            var qualifyingTiers = _tiers.Where(t => t.PointThreshold <= pointBalance)
+                                      .OrderByDescending(t => t.PointThreshold)
+                                      .ToList();
+
+            // Return the highest tier (with highest threshold) that the customer qualifies for
+            return qualifyingTiers.FirstOrDefault();
         }
 
         /// <summary>
@@ -188,15 +322,39 @@ namespace LoyaltySystem.Domain.Entities
         /// <summary>
         /// Calculates points based on transaction amount and conversion rate.
         /// </summary>
-        public decimal CalculatePoints(decimal transactionAmount)
+        public decimal CalculatePoints(decimal transactionAmount, LoyaltyTier customerTier = null)
         {
-            if (Type != LoyaltyProgramType.Points || !PointsConversionRate.HasValue)
-                throw new InvalidOperationException("Cannot calculate points for non-points program or missing conversion rate");
+            if (Type != LoyaltyProgramType.Points)
+                throw new InvalidOperationException("Cannot calculate points for non-points program");
 
             if (MinimumTransactionAmount.HasValue && transactionAmount < MinimumTransactionAmount.Value)
                 return 0;
 
-            return Math.Floor(transactionAmount * PointsConversionRate.Value);
+            // If we have a detailed points config, use it
+            if (PointsConfig != null)
+            {
+                decimal tierMultiplier = 1.0m;
+                if (HasTiers && customerTier != null)
+                {
+                    tierMultiplier = customerTier.PointMultiplier;
+                }
+                
+                return PointsConfig.CalculatePoints(transactionAmount, tierMultiplier);
+            }
+            
+            // Fall back to simple conversion rate
+            if (!PointsConversionRate.HasValue)
+                throw new InvalidOperationException("Missing points conversion rate and points config");
+                
+            decimal basePoints = Math.Floor(transactionAmount * PointsConversionRate.Value);
+            
+            // Apply tier multiplier if applicable
+            if (HasTiers && customerTier != null)
+            {
+                return Math.Floor(basePoints * customerTier.PointMultiplier);
+            }
+            
+            return basePoints;
         }
         
         /// <summary>
@@ -217,25 +375,45 @@ namespace LoyaltySystem.Domain.Entities
             _rewards.Add(reward);
         }
         
+        /// <summary>
+        /// Adds an existing tier to the program.
+        /// Used by the repository for loading from database.
+        /// </summary>
+        public void AddTier(LoyaltyTier tier)
+        {
+            if (Type != LoyaltyProgramType.Points)
+                throw new InvalidOperationException("Tiers are only supported for points-based programs");
+                
+            _tiers.Add(tier);
+        }
+
+        /// <summary>
+        /// Sets the points configuration.
+        /// Used by the repository for loading from database.
+        /// </summary>
+        internal void SetPointsConfig(PointsConfig pointsConfig)
+        {
+            if (Type != LoyaltyProgramType.Points)
+                throw new InvalidOperationException("Cannot set points configuration for non-points program");
+                
+            PointsConfig = pointsConfig;
+        }
+        
         private void ValidateProgramTypeParameters(
             LoyaltyProgramType type, 
             int? stampThreshold, 
-            decimal? pointsConversionRate)
+            decimal? pointsConversionRate,
+            PointsConfig pointsConfig = null)
         {
             if (type == LoyaltyProgramType.Stamp)
             {
-                if (!stampThreshold.HasValue)
-                    throw new ArgumentException("Stamp threshold is required for stamp-based programs", nameof(stampThreshold));
-                    
-                if (stampThreshold.Value <= 0)
+                if (stampThreshold.HasValue && stampThreshold.Value <= 0)
                     throw new ArgumentException("Stamp threshold must be greater than zero", nameof(stampThreshold));
             }
             else if (type == LoyaltyProgramType.Points)
             {
-                if (!pointsConversionRate.HasValue)
-                    throw new ArgumentException("Points conversion rate is required for points-based programs", nameof(pointsConversionRate));
-                    
-                if (pointsConversionRate.Value <= 0)
+                // Either need points conversion rate or a points config
+                if (pointsConversionRate.HasValue && pointsConversionRate.Value <= 0)
                     throw new ArgumentException("Points conversion rate must be greater than zero", nameof(pointsConversionRate));
             }
         }

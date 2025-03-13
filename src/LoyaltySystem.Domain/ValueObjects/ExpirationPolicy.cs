@@ -10,32 +10,32 @@ namespace LoyaltySystem.Domain.Entities
         /// <summary>
         /// Whether loyalty expires at all.
         /// </summary>
-        public bool HasExpiration { get; private set; }
+        public bool HasExpiration { get; set; }
         
         /// <summary>
         /// Type of expiration period (days, months, years).
         /// </summary>
-        public ExpirationType ExpirationType { get; private set; }
+        public ExpirationType ExpirationType { get; set; }
         
         /// <summary>
         /// Value for the expiration period.
         /// </summary>
-        public int ExpirationValue { get; private set; }
+        public int ExpirationValue { get; set; }
         
         /// <summary>
         /// Whether expiration occurs on a specific day.
         /// </summary>
-        public bool ExpiresOnSpecificDate { get; private set; }
+        public bool ExpiresOnSpecificDate { get; set; }
         
         /// <summary>
         /// Specific day of month for expiration (if applicable).
         /// </summary>
-        public int? ExpirationDay { get; private set; }
+        public int? ExpirationDay { get; set; }
         
         /// <summary>
         /// Specific month for expiration (if applicable).
         /// </summary>
-        public int? ExpirationMonth { get; private set; }
+        public int? ExpirationMonth { get; set; }
 
         /// <summary>
         /// Create a policy with no expiration.

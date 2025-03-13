@@ -28,26 +28,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
     public class CustomerRepository : ICustomerRepository
     {
-        private readonly IDatabaseConnection _connection;
+        private readonly IDatabaseConnection _dbConnection;
 
         public CustomerRepository(IDatabaseConnection connection)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
         }
 
         public async Task<Customer?> GetByIdAsync(CustomerId id)
         {
-            const string sql = @"
-                SELECT * FROM customers
-                WHERE id = @Id";
-
-            // Use the Guid value directly from the EntityId
-            // The implicit conversion to Guid is defined in the EntityId base class
-            Guid guidId = id; // This uses the implicit operator
+            const string sql = "SELECT * FROM customers WHERE id = @Id";
+            var parameters = new { Id = id.Value };
             
-            var parameters = new { Id = guidId };
-            
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             var dto = await dbConnection.QuerySingleOrDefaultAsync<CustomerDto>(sql, parameters);
             
             if (dto == null)
@@ -59,51 +52,97 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return customer;
         }
 
-        public async Task<IEnumerable<Customer>> GetAllAsync(int page, int pageSize)
+        public async Task<IEnumerable<Customer>> GetAllAsync(int skip = 0, int limit = 50)
         {
             const string sql = @"
                 SELECT * FROM customers
                 ORDER BY name
-                LIMIT @PageSize OFFSET @Offset";
+                LIMIT @Limit OFFSET @Skip";
             
-            var parameters = new { Offset = (page - 1) * pageSize, PageSize = pageSize };
-            var dbConnection = await _connection.GetConnectionAsync();
+            var parameters = new { Skip = skip, Limit = limit };
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
             
             // Map DTOs to domain entities
-            var customers = new List<Customer>();
-            foreach (var dto in dtos)
-            {
-                var customer = CreateCustomerFromDto(dto);
-                customers.Add(customer);
-            }
-            
-            return customers;
+            return dtos.Select(CreateCustomerFromDto).ToList();
         }
 
         public async Task<int> GetTotalCountAsync()
         {
             const string sql = "SELECT COUNT(*) FROM customers";
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             return await dbConnection.ExecuteScalarAsync<int>(sql);
         }
 
-        public async Task<IEnumerable<Customer>> SearchAsync(string searchTerm, int page, int pageSize)
+        public async Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null)
+        {
+            var dbConnection = await _dbConnection.GetConnectionAsync();
+        
+            // Track whether we created the transaction or are using an existing one
+            bool ownsTransaction = transaction == null;
+        
+            // If no transaction was provided, create one
+            transaction ??= dbConnection.BeginTransaction();
+            
+            try
+            {
+                await dbConnection.ExecuteAsync(@"
+                    INSERT INTO 
+                        customers 
+                            (id, name, email, phone, marketing_consent, joined_at, last_login_at, created_at, updated_at)
+                        VALUES 
+                            (@CustomerId, @Name, @Email, @Phone, @MarketingConsent, @JoinedAt, @LastLoginAt, @CreatedAt, @UpdatedAt)
+                    ",
+                    new
+                    {
+                        CustomerId = customer.Id.Value,
+                        customer.Name,
+                        customer.Email,
+                        customer.Phone,
+                        customer.MarketingConsent,
+                        customer.JoinedAt,
+                        customer.LastLoginAt,
+                        customer.CreatedAt,
+                        customer.UpdatedAt
+                    },
+                    transaction
+                );
+                
+                if (ownsTransaction)
+                    transaction.Commit();
+                
+                return customer;
+            }
+            catch (Exception ex)
+            {
+                if (ownsTransaction)
+                    transaction.Rollback();
+                
+                throw new Exception($"Error adding customer: {ex.Message}", ex);
+            }
+            finally
+            {
+                if (ownsTransaction && transaction != null)
+                    transaction.Dispose();
+            }
+        }
+                
+        public async Task<IEnumerable<Customer>> SearchAsync(string searchTerm, int skip = 0, int limit = 50)
         {
             const string sql = @"
                 SELECT * FROM customers
                 WHERE name ILIKE @SearchTerm OR email ILIKE @SearchTerm OR phone ILIKE @SearchTerm
                 ORDER BY name
-                LIMIT @PageSize OFFSET @Offset";
+                LIMIT @Limit OFFSET @Skip";
             
             var parameters = new 
             { 
                 SearchTerm = $"%{searchTerm}%", 
-                Offset = (page - 1) * pageSize, 
-                PageSize = pageSize 
+                Skip = skip, 
+                Limit = limit 
             };
             
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
             
             // Map DTOs to domain entities
@@ -116,125 +155,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             return customers;
         }
-
-        public async Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null)
-        {
-            // Insert the customer
-            const string customerSql = @"
-                INSERT INTO customers (id, name, email, phone, marketing_consent, joined_at, last_login_at, created_at, updated_at)
-                VALUES (@Id, @Name, @Email, @Phone, @MarketingConsent, @JoinedAt, @LastLoginAt, @CreatedAt, @UpdatedAt)
-                RETURNING *";
-            
-            var dbConnection = await _connection.GetConnectionAsync();
-            
-            // Use the existing transaction if provided, otherwise create a new one
-            bool ownsTransaction = false;
-            var localTransaction = transaction;
-            
-            if (localTransaction == null)
-            {
-                // Only create a new transaction if one wasn't provided
-                localTransaction = await dbConnection.BeginTransactionAsync();
-                ownsTransaction = true;
-            }
-            
-            try
-            {
-                // Determine the ID to use for the database record
-                Guid customerId;
-                
-                if (!string.IsNullOrEmpty(customer.Id.ToString()))
-                {
-                    // Try to parse the prefixed ID
-                    if (EntityId.TryParse<CustomerId>(customer.Id.ToString(), out var parsedId))
-                    {
-                        customerId = parsedId; // Use the parsed ID
-                    }
-                    else if (Guid.TryParse(customer.Id.ToString(), out customerId))
-                    {
-                        // Use the successfully parsed Guid
-                    }
-                    else
-                    {
-                        // Generate a new ID if parsing fails
-                        customerId = Guid.NewGuid();
-                    }
-                }
-                else
-                {
-                    // No ID provided, generate a new one
-                    customerId = Guid.NewGuid();
-                }
-                
-                // Prepare parameters for the database
-                DateTime now = DateTime.UtcNow;
-                var customerParams = new
-                {
-                    Id = customerId,
-                    customer.Name,
-                    customer.Email,
-                    customer.Phone,
-                    customer.MarketingConsent,
-                    JoinedAt = customer.JoinedAt != default ? customer.JoinedAt : now,
-                    LastLoginAt = customer.LastLoginAt,
-                    CreatedAt = customer.CreatedAt != default ? customer.CreatedAt : now,
-                    UpdatedAt = customer.UpdatedAt != default ? customer.UpdatedAt : now
-                };
-                
-                // Execute the insert and get the inserted record
-                var insertedCustomer = await dbConnection.QuerySingleAsync<CustomerDto>(
-                    customerSql, 
-                    customerParams, 
-                    localTransaction);
-                    
-                // If we created our own transaction (not using an existing one), commit it
-                if (ownsTransaction)
-                {
-                    localTransaction.Commit();
-                }
-                
-                // Create a Customer instance with the data from the inserted record
-                // Make sure we use the data from the database to ensure consistency
-                var newCustomer = new Customer(
-                    insertedCustomer.Name,
-                    insertedCustomer.Email,
-                    insertedCustomer.Phone,
-                    new CustomerId(customerId),
-                    insertedCustomer.MarketingConsent);
-                
-                // IMPORTANT: Set the ID from the database to ensure consistency
-                // This ensures the Customer ID matches what's in the database
-                string formattedId = $"cus_{FormatGuidToBase64(insertedCustomer.Id)}";
-                SetPrivatePropertyValue(newCustomer, "Id", formattedId);
-                
-                // Set other private properties from the database values
-                SetPrivatePropertyValue(newCustomer, "JoinedAt", insertedCustomer.JoinedAt);
-                SetPrivatePropertyValue(newCustomer, "LastLoginAt", insertedCustomer.LastLoginAt);
-                SetPrivatePropertyValue(newCustomer, "CreatedAt", insertedCustomer.CreatedAt);
-                SetPrivatePropertyValue(newCustomer, "UpdatedAt", insertedCustomer.UpdatedAt);
-                
-                return newCustomer;
-            }
-            catch (Exception ex)
-            {
-                // Only rollback if we own the transaction
-                if (ownsTransaction && localTransaction != null)
-                {
-                    localTransaction.Rollback();
-                }
-                // Add more context to the exception
-                throw new Exception($"Error adding customer: {ex.Message}", ex);
-            }
-            finally
-            {
-                // Only dispose if we own the transaction
-                if (ownsTransaction && localTransaction != null)
-                {
-                    localTransaction.Dispose();
-                }
-            }
-        }
-
+        
+        
         // Helper method to set private properties using reflection
         private void SetPrivatePropertyValue<T>(object obj, string propName, T value)
         {
@@ -253,7 +175,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 ORDER BY joined_at DESC";
 
             var parameters = new { Start = start, End = end };
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
             
             // Map DTOs to domain entities
@@ -267,6 +189,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return customers;
         }
 
+        
         // Private helper method to create a Customer entity from a DTO
         private Customer CreateCustomerFromDto(CustomerDto dto)
         {
@@ -319,7 +242,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw new ArgumentException($"Invalid customer ID format: {customer.Id}. Expected a valid prefixed ID or UUID.");
             }
             
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new
             {
                 Id = customerId,
@@ -347,7 +270,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 FROM customers c
                 JOIN loyalty_cards lc ON c.id = lc.customer_id";
             
-            var dbConnection = await _connection.GetConnectionAsync();
+            var dbConnection = await _dbConnection.GetConnectionAsync();
             return await dbConnection.ExecuteScalarAsync<int>(sql);
         }
 

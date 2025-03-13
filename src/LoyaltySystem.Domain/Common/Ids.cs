@@ -18,6 +18,21 @@ namespace LoyaltySystem.Domain.Common
     }
     
     /// <summary>
+    /// Business identifier (bus_xxxxxxxx)
+    /// </summary>
+    public class StaffId : EntityId
+    {
+        public override string Prefix => "stf_";
+        
+        public StaffId() : base(Guid.NewGuid()) { }
+        
+        public StaffId(Guid value) : base(value) { }
+        
+        // Create from string representation
+        public static StaffId FromString(string prefixed) => Parse<StaffId>(prefixed);
+    }
+    
+    /// <summary>
     /// Brand identifier (bnd_xxxxxxxx)
     /// </summary>
     public class BrandId : EntityId
