@@ -85,8 +85,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
-                    c.type::int AS Type, c.stamps_collected AS StampsCollected, 
-                    c.points_balance AS PointsBalance, c.status::int AS Status, 
+                    c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
+                    c.points_balance AS PointsBalance, c.status::card_status AS Status, 
                     c.qr_code AS QrCode, c.created_at AS CreatedAt, 
                     c.expires_at AS ExpiresAt, c.updated_at AS UpdatedAt
                 FROM loyalty_cards c
@@ -110,7 +110,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
-                    c.type::int AS Type, c.stamps_collected AS StampsCollected, 
+                    c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
                     c.points_balance AS PointsBalance, c.status::int AS Status, 
                     c.qr_code AS QrCode, c.created_at AS CreatedAt, 
                     c.expires_at AS ExpiresAt, c.updated_at AS UpdatedAt
@@ -304,7 +304,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 SELECT 
                     t.id AS Id, 
                     t.card_id AS CardId, 
-                    t.type::int AS Type, 
+                    t.type::transaction_type AS Type, 
                     t.reward_id AS RewardId, 
                     t.quantity AS Quantity, 
                     t.points_amount AS PointsAmount, 

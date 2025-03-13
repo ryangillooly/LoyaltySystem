@@ -41,7 +41,16 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                 minimum_transaction_amount AS MinimumTransactionAmount,
                 is_active AS IsActive,
                 created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                updated_at AS UpdatedAt,
+                has_tiers AS HasTiers,
+                points_per_pound AS PointsPerPound, 
+                minimum_points_for_redemption AS MinimumPointsForRedemption,
+                points_rounding_rule AS PointsRoundingRule,
+                enrollment_bonus_points AS EnrollmentBonusPoints,
+                description AS Description,
+                terms_and_conditions AS TermsAndConditions,
+                start_date AS StartDate,
+                end_date AS EndDate
             FROM loyalty_programs 
             WHERE id = @Id";
 
@@ -49,10 +58,8 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         var parameters = new { Id = id.Value };
         var program = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgram>(sql, parameters);
 
-        if (program != null)
-        {
+        if (program is { })
             await LoadRewardsForProgram(program);
-        }
 
         return program;
     }
@@ -180,10 +187,14 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                 INSERT INTO 
                     loyalty_programs 
                         (id, brand_id, name, type, stamp_threshold, points_conversion_rate,
-                        daily_stamp_limit, minimum_transaction_amount, is_active, created_at, updated_at) 
+                        daily_stamp_limit, minimum_transaction_amount, is_active, description, 
+                        points_rounding_rule, enrollment_bonus_points, minimum_points_for_redemption,
+                        points_per_pound, start_date, end_date, has_tiers, terms_and_conditions, created_at, updated_at) 
                     VALUES 
                         (@Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
-                        @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @CreatedAt, @UpdatedAt)
+                        @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @Description, @PointsRoundingRule,
+                        @EnrollmentBonusPoints, @MinimumPointsForRedemption, @PointsPerPound, @StartDate, @EndDate,
+                        @HasTiers, @TermsAndConditions, @CreatedAt, @UpdatedAt)
                 ",
                 new
                 {
@@ -196,6 +207,15 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                     program.DailyStampLimit,
                     program.MinimumTransactionAmount,
                     program.IsActive,
+                    program.Description,
+                    program.PointsRoundingRule,
+                    program.EnrollmentBonusPoints,
+                    program.MinimumPointsForRedemption,
+                    program.PointsPerPound,
+                    program.StartDate,
+                    program.EndDate,
+                    program.HasTiers,
+                    program.TermsAndConditions,
                     program.CreatedAt,
                     program.UpdatedAt
                 },

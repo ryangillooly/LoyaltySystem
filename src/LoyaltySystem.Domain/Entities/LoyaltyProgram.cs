@@ -32,7 +32,9 @@ namespace LoyaltySystem.Domain.Entities
         // Optional constraints
         public int? DailyStampLimit { get; set; }
         public decimal? MinimumTransactionAmount { get; set; }
-        
+        public PointsRoundingRule PointsRoundingRule { get; set; }
+        public int MinimumPointsForRedemption { get; set; }
+        public int PointsPerPound { get; set; }
         public bool HasTiers { get; set; }
         public string TermsAndConditions { get; set; }
         public int EnrollmentBonusPoints { get; set; }

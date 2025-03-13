@@ -36,12 +36,9 @@ public class LoyaltyProgramService
             var programId = EntityId.Parse<LoyaltyProgramId>(id);
             var program = await _programRepository.GetByIdAsync(programId);
 
-            if (program == null)
-            {
-                return OperationResult<LoyaltyProgramDto>.FailureResult($"Loyalty program with ID {id} not found");
-            }
-
-            return OperationResult<LoyaltyProgramDto>.SuccessResult(MapToDto(program));
+            return program is null 
+                ? OperationResult<LoyaltyProgramDto>.FailureResult($"Loyalty program with ID {id} not found") 
+                : OperationResult<LoyaltyProgramDto>.SuccessResult(MapToDto(program));
         }
         catch (Exception ex)
         {
@@ -133,8 +130,6 @@ public class LoyaltyProgramService
     {
         try
         {
-            var brandId = EntityId.Parse<BrandId>(dto.BrandId);
-            
             // Create expiration policy if provided
             ExpirationPolicy expirationPolicy = null;
             if (dto.ExpirationPolicy != null)
@@ -157,23 +152,28 @@ public class LoyaltyProgramService
                 pointsConfig = dto.PointsConfig.ToPointsConfig();
             }
 
-            var program = new LoyaltyProgram(
-                brandId,
-                dto.Name,
-                dto.Type,
-                dto.StampThreshold,  // stampThreshold
-                null,  // pointsConversionRate
-                pointsConfig,
-                dto.HasTiers,
-                null,  // dailyStampLimit
-                dto.PointsConfig.MinimumPointsForRedemption,  // minimumTransactionAmount
-                expirationPolicy,
-                dto.Description,
-                dto.TermsAndConditions,
-                dto.EnrollmentBonusPoints,
-                dto.StartDate,
-                dto.EndDate
-            );
+            var program = new LoyaltyProgram
+            {
+                Id = new LoyaltyProgramId(),
+                BrandId = EntityId.Parse<BrandId>(dto.BrandId),
+                Name = dto.Name,
+                Description = dto.Description,
+                Type = dto.Type,
+                ExpirationPolicy = dto.ExpirationPolicy.ToExpirationPolicy(),
+                StampThreshold = dto.StampThreshold,
+                PointsConversionRate = dto.PointsConversionRate,
+                PointsConfig = dto.PointsConfig.ToPointsConfig(),
+                DailyStampLimit = dto.DailyStampLimit,
+                MinimumTransactionAmount = dto.MinimumTransactionAmount,
+                IsActive = dto.IsActive,
+                HasTiers = dto.HasTiers,
+                TermsAndConditions = dto.TermsAndConditions,
+                EnrollmentBonusPoints = dto.EnrollmentBonusPoints,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
             // Add tiers if the program supports them
             if (dto is { HasTiers: true, Tiers: { } } && dto.Tiers.Any())
@@ -457,7 +457,7 @@ public class LoyaltyProgramService
             Name = program.Name,
             Description = program.Description,
             Type = program.Type,
-            ExpirationPolicy = program.ExpirationPolicy != null 
+            ExpirationPolicy = program.ExpirationPolicy is { } 
                 ? new ExpirationPolicyDto
                 {
                     ExpirationType = program.ExpirationPolicy.ExpirationType,
@@ -468,7 +468,7 @@ public class LoyaltyProgramService
                     ExpiresOnSpecificDate = program.ExpirationPolicy.ExpiresOnSpecificDate
                 } 
                 : null,
-            PointsConfig = program.PointsConfig != null 
+            PointsConfig = program.PointsConfig is { } 
                 ? new PointsConfigDto(program.PointsConfig)
                 : null,
             TermsAndConditions = program.TermsAndConditions,

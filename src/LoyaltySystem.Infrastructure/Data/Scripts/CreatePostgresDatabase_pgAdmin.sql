@@ -292,7 +292,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(name gi
 
 -- Create LoyaltyPrograms table
 CREATE TABLE IF NOT EXISTS loyalty_programs (
-                                                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     type loyalty_program_type NOT NULL,
@@ -302,10 +302,14 @@ CREATE TABLE IF NOT EXISTS loyalty_programs (
     minimum_transaction_amount NUMERIC(18, 2) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     description VARCHAR(255) NULL,
+    points_rounding_rule INT NOT NULL,
+    enrollment_bonus_points INT NOT NULL,
+    minimum_points_for_redemption INT NOT NULL,
+    points_per_pound INT NOT NULL,
     start_date TIMESTAMP NOT NULL,
+    has_tiers BOOLEAN NOT NULL DEFAULT FALSE,
     end_date TIMESTAMP NOT NULL,
     terms_and_conditions VARCHAR(255) NULL,
-    
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_loyalty_programs_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE,

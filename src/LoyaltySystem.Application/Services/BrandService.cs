@@ -30,12 +30,9 @@ namespace LoyaltySystem.Application.Services
                 var brandId = EntityId.Parse<BrandId>(id);
                 var brand = await _brandRepository.GetByIdAsync(brandId);
 
-                if (brand == null)
-                {
-                    return OperationResult<BrandDto>.FailureResult($"Brand with ID {id} not found");
-                }
-
-                return OperationResult<BrandDto>.SuccessResult(MapToDto(brand));
+                return brand is null 
+                    ? OperationResult<BrandDto>.FailureResult($"Brand with ID {id} not found") 
+                    : OperationResult<BrandDto>.SuccessResult(MapToDto(brand));
             }
             catch (Exception ex)
             {

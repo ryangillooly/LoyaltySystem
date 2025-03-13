@@ -599,11 +599,14 @@ namespace LoyaltySystem.Application.Services
                 Id = card.Id,
                 CustomerId = card.CustomerId,
                 ProgramId = card.ProgramId,
+                Type = card.Type,
                 Status = card.Status,
                 PointsBalance = card.PointsBalance,
                 StampCount = card.StampsCollected,
+                QrCode = card.QrCode,
                 CreatedAt = card.CreatedAt,
                 ExpiresAt = card.ExpiresAt,
+                Transactions = card.Transactions,
                 TotalTransactions = card.Transactions.Count
             };
         }

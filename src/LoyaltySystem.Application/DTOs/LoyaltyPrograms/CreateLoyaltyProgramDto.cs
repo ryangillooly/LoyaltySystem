@@ -34,8 +34,15 @@ namespace LoyaltySystem.Application.DTOs.LoyaltyPrograms
         public bool HasTiers { get; set; }
         public int EnrollmentBonusPoints { get; set; }
         public int StampThreshold { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
         public bool IsActive { get; set; } = true;
+        
+        // For points-based programs
+        public decimal? PointsConversionRate { get; set; }
+        
+        // Optional constraints
+        public int? DailyStampLimit { get; set; }
+        public decimal? MinimumTransactionAmount { get; set; }
     }
 } 

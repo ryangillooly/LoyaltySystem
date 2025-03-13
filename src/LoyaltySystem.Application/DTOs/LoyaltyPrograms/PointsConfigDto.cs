@@ -21,7 +21,7 @@ namespace LoyaltySystem.Application.DTOs.LoyaltyPrograms
         /// <summary>
         /// How points should be rounded when calculated.
         /// </summary>
-        public Domain.ValueObjects.PointsRoundingRule RoundingRule { get; set; } = Domain.ValueObjects.PointsRoundingRule.RoundDown;
+        public PointsRoundingRule RoundingRule { get; set; } = PointsRoundingRule.RoundDown;
 
         /// <summary>
         /// Enrollment bonus points awarded when a customer joins the program.
