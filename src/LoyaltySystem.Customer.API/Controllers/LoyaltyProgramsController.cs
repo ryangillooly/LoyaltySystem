@@ -90,7 +90,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             }
             
             // Include brand information with the program
-            var brandResult = await _brandService.GetBrandByIdAsync(result.Data.BrandId);
+            var brandResult = await _brandService.GetBrandByIdAsync(result.Data.BrandId.ToString());
             if (brandResult.Success)
             {
                 return Ok(new

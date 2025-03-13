@@ -8,8 +8,8 @@ namespace LoyaltySystem.Application.DTOs.LoyaltyPrograms
 {
     public class LoyaltyProgramDto
     {
-        public string Id { get; set; }
-        public string BrandId { get; set; }
+        public Guid Id { get; set; }
+        public Guid BrandId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public LoyaltyProgramType Type { get; set; }

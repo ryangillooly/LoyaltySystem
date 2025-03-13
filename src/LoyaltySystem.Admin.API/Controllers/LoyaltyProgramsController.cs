@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace LoyaltySystem.Admin.API.Controllers
 {
     [ApiController]
-    [Route("api/loyaltyprograms")]
+    [Route("api/[controller]")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public class LoyaltyProgramsController : ControllerBase
     {

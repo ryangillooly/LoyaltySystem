@@ -46,12 +46,13 @@ namespace LoyaltySystem.Admin.API.Controllers
             return Ok(result.Data);
         }
         
+        [HttpGet("{id}")]
         // Admin can access any card without ownership checks
-        public async Task<IActionResult> GetById(LoyaltyCardId id)
+        public async Task<IActionResult> GetById(string id)
         {
             _logger.LogInformation("Admin requesting loyalty card by ID: {CardId}", id);
             
-            var result = await _loyaltyCardService.GetByIdAsync(id);
+            var result = await _loyaltyCardService.GetByIdAsync(new LoyaltyCardId(EntityId.Parse<LoyaltyCardId>(id)));
             
             if (!result.Success)
             {

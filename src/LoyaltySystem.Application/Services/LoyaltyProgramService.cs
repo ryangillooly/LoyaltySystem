@@ -452,8 +452,8 @@ public class LoyaltyProgramService
         
         return new LoyaltyProgramDto
         {
-            Id = program.Id.ToString(),
-            BrandId = program.BrandId.ToString(),
+            Id = program.Id.Value,
+            BrandId = program.BrandId.Value,
             Name = program.Name,
             Description = program.Description,
             Type = program.Type,

@@ -36,17 +36,29 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<LoyaltyCard>> GetAllAsync(int skip = 0, int limit = 50)
         {
             const string sql = @"
-                SELECT * FROM loyalty_cards
-                ORDER BY created_at ASC
+                SELECT 
+                    c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
+                    c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
+                    c.points_balance AS PointsBalance, c.status::card_status AS Status, 
+                    c.qr_code AS QrCode, c.created_at AS CreatedAt, 
+                    c.expires_at AS ExpiresAt, c.updated_at AS UpdatedAt
+                FROM loyalty_cards c
+                ORDER BY c.created_at ASC
                 LIMIT @Limit 
                 OFFSET @Skip";
             
             var parameters = new { Skip = skip, Limit = limit };
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<LoyaltyCardDto>(sql, parameters);
+            var cards = await dbConnection.QueryAsync<LoyaltyCard>(sql, parameters);
             
-            // Map DTOs to domain entities
-            return dtos.Select(CreateCardFromDto).ToList();
+            // Load transactions for each card
+            var cardsList = cards.ToList();
+            foreach (var card in cardsList)
+            {
+                await LoadTransactionsAsync(card);
+            }
+            
+            return cardsList;
         }
         
         public async Task<int> GetTotalCountAsync()
@@ -61,8 +73,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
-                    c.type::int AS Type, c.stamps_collected AS StampsCollected, 
-                    c.points_balance AS PointsBalance, c.status::int AS Status, 
+                    c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
+                    c.points_balance AS PointsBalance, c.status::card_status AS Status, 
                     c.qr_code AS QrCode, c.created_at AS CreatedAt, 
                     c.expires_at AS ExpiresAt, c.updated_at AS UpdatedAt
                 FROM loyalty_cards c

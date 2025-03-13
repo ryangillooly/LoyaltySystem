@@ -10,6 +10,7 @@ using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
 
@@ -482,43 +483,106 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
 
     public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int limit = 50)
     {
-        // Define a local record for database results mapping
         var sql = @"
             SELECT 
-                id,
-                brand_id AS BrandId,
-                name,
-                description,
-                type,
-                stamp_threshold AS StampThreshold,
-                points_conversion_rate AS PointsConversionRate,
-                daily_stamp_limit AS DailyStampLimit,
-                minimum_transaction_amount AS MinimumTransactionAmount,
-                is_active AS IsActive,
-                created_at AS CreatedAt,
-                updated_at AS UpdatedAt,
-                enrollment_bonus_points AS EnrollmentBonusPoints,
-                terms_and_conditions AS TermsAndConditions,
-                start_date AS StartDate,
-                end_date AS EndDate
-            FROM loyalty_programs 
-            ORDER BY created_at DESC
-            LIMIT @Limit OFFSET @Skip";
+                p.id,
+                p.brand_id,
+                p.name,
+                p.description,
+                p.type::loyalty_program_type,
+                p.stamp_threshold,
+                p.points_conversion_rate,
+                p.daily_stamp_limit,
+                p.minimum_transaction_amount,
+                p.is_active,
+                p.created_at,
+                p.updated_at,
+                p.enrollment_bonus_points, 
+                p.terms_and_conditions,
+                p.start_date,
+                p.end_date,
+                p.has_tiers,
+                p.points_per_pound,
+                p.minimum_points_for_redemption,
+                p.points_rounding_rule,
+                pep.expiration_type,
+                pep.expiration_day,
+                pep.expiration_month,
+                pep.has_expiration,
+                pep.expiration_value,
+                pep.expires_on_specific_date
+            FROM loyalty_programs p
+            LEFT JOIN program_expiration_policies pep ON p.id = pep.program_id
+            ORDER BY p.created_at DESC
+            LIMIT @Limit 
+            OFFSET @Skip";
 
         var parameters = new { Skip = skip, Limit = limit };
         var dbConnection = await _dbConnection.GetConnectionAsync();
-        
-        // Query using dynamic to get raw data without mapping issues
-        var dtos = await dbConnection.QueryAsync<LoyaltyProgramDto>(sql, parameters);
+        var records = await dbConnection.QueryAsync(sql, parameters);
 
-        return dtos.Select(CreateProgramFromDto).ToList();
+        var programs = new List<LoyaltyProgram>();
+        foreach (var record in records)
+        {
+            // Create expiration policy if it exists
+            ExpirationPolicy? expirationPolicy = null;
+            if (record.has_expiration)
+            {
+                expirationPolicy = new ExpirationPolicy
+                {
+                    ExpirationType = Enum.Parse<ExpirationType>(record.expiration_type),
+                    ExpirationDay = record.expiration_day,
+                    ExpirationMonth = record.expiration_month,
+                    ExpirationValue = record.expiration_value,
+                    ExpiresOnSpecificDate = record.expires_on_specific_date
+                };
+            }
+
+            // Parse enums with null checks and default values
+            var roundingRule = record.points_rounding_rule != null 
+                ? Enum.Parse<PointsRoundingRule>(record.points_rounding_rule.ToString())
+                : PointsRoundingRule.RoundDown;
+
+            var programType = record.type != null
+                ? Enum.Parse<LoyaltyProgramType>(record.type.ToString())
+                : LoyaltyProgramType.Stamp;
+
+            var program = new LoyaltyProgram
+            (
+                new BrandId(record.brand_id),
+                record.name,
+                programType,
+                record.stamp_threshold,
+                record.points_conversion_rate,
+                new PointsConfig(record.points_per_pound, record.minimum_points_for_redemption, roundingRule, record.enrollment_bonus_points),
+                record.has_tiers,
+                record.daily_stamp_limit,
+                record.minimum_transaction_amount,
+                expirationPolicy,
+                record.description,
+                record.terms_and_conditions,
+                record.enrollment_bonus_points,
+                new LoyaltyProgramId(record.id),
+                record.start_date,
+                record.end_date
+            );
+
+            // Set additional properties
+            program.HasTiers = record.has_tiers;
+            program.PointsRoundingRule = roundingRule;
+
+            programs.Add(program);
+        }
+
+        return programs;
     }
 
-    public LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto) =>
-        new ()
+    public LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto) 
+    {
+        var a = new LoyaltyProgram
         {
-            Id = EntityId.Parse<LoyaltyProgramId>(dto.Id),
-            BrandId = EntityId.Parse<BrandId>(dto.BrandId),
+            Id = new LoyaltyProgramId(dto.Id),
+            BrandId = new BrandId(dto.BrandId),
             Name = dto.Name,
             Description = dto.Description,
             Type = dto.Type,
@@ -537,4 +601,7 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
             CreatedAt = dto.CreatedAt,
             UpdatedAt = dto.UpdatedAt
         };
+
+        return a;
+    }
 }

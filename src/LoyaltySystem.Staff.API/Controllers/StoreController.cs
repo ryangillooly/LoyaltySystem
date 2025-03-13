@@ -137,10 +137,10 @@ namespace LoyaltySystem.Staff.API.Controllers
             }
             
             // Collect all active rewards from all active programs
-            var rewards = new List<LoyaltySystem.Application.DTOs.LoyaltyPrograms.RewardDto>();
+            var rewards = new List<RewardDto>();
             foreach (var program in programsResult.Data.Where(p => p.IsActive))
             {
-                var rewardsResult = await _programService.GetRewardsByProgramIdAsync(program.Id);
+                var rewardsResult = await _programService.GetRewardsByProgramIdAsync(program.Id.ToString());
                 if (rewardsResult.Success)
                 {
                     // Only add active rewards - use foreach loop instead of AddRange to avoid ambiguity

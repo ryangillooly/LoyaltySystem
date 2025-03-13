@@ -67,6 +67,7 @@ namespace LoyaltySystem.Domain.Entities
             string description = null,
             string termsAndConditions = null,
             int enrollmentBonusPoints = 0,
+            LoyaltyProgramId? id = null,
             DateTime? startDate = null,
             DateTime? endDate = null)
         {
@@ -78,7 +79,7 @@ namespace LoyaltySystem.Domain.Entities
 
             ValidateProgramTypeParameters(type, stampThreshold, pointsConversionRate, pointsConfig);
 
-            Id = new LoyaltyProgramId();
+            Id = id ?? new LoyaltyProgramId();
             BrandId = brandId;
             Name = name;
             Description = description;

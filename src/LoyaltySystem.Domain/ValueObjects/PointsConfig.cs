@@ -10,7 +10,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// <summary>
         /// Number of points awarded per dollar spent.
         /// </summary>
-        public decimal PointsPerDollar { get; private set; }
+        public decimal PointsPerPounds { get; private set; }
 
         /// <summary>
         /// Minimum number of points required for redemption.
@@ -32,7 +32,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// </summary>
         public PointsConfig()
         {
-            PointsPerDollar = 1;
+            PointsPerPounds = 1;
             MinimumPointsForRedemption = 100;
             RoundingRule = PointsRoundingRule.RoundDown;
             EnrollmentBonusPoints = 0;
@@ -42,13 +42,13 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// Create a new points configuration.
         /// </summary>
         public PointsConfig(
-            decimal pointsPerDollar,
+            decimal pointsPerPound,
             int minimumPointsForRedemption, 
             PointsRoundingRule roundingRule = PointsRoundingRule.RoundDown,
             int enrollmentBonusPoints = 0)
         {
-            if (pointsPerDollar <= 0)
-                throw new ArgumentException("Points per dollar must be greater than zero", nameof(pointsPerDollar));
+            if (pointsPerPound <= 0)
+                throw new ArgumentException("Points per dollar must be greater than zero", nameof(pointsPerPound));
 
             if (minimumPointsForRedemption < 0)
                 throw new ArgumentException("Minimum points for redemption cannot be negative", nameof(minimumPointsForRedemption));
@@ -56,7 +56,7 @@ namespace LoyaltySystem.Domain.ValueObjects
             if (enrollmentBonusPoints < 0)
                 throw new ArgumentException("Enrollment bonus points cannot be negative", nameof(enrollmentBonusPoints));
 
-            PointsPerDollar = pointsPerDollar;
+            PointsPerPounds = pointsPerPound;
             MinimumPointsForRedemption = minimumPointsForRedemption;
             RoundingRule = roundingRule;
             EnrollmentBonusPoints = enrollmentBonusPoints;
@@ -70,7 +70,7 @@ namespace LoyaltySystem.Domain.ValueObjects
             if (transactionAmount < 0)
                 throw new ArgumentException("Transaction amount cannot be negative", nameof(transactionAmount));
 
-            decimal rawPoints = transactionAmount * PointsPerDollar * tierMultiplier;
+            decimal rawPoints = transactionAmount * PointsPerPounds * tierMultiplier;
 
             return RoundingRule switch
             {
@@ -90,7 +90,7 @@ namespace LoyaltySystem.Domain.ValueObjects
                 return false;
 
             var other = (PointsConfig)obj;
-            return PointsPerDollar == other.PointsPerDollar
+            return PointsPerPounds == other.PointsPerPounds
                 && MinimumPointsForRedemption == other.MinimumPointsForRedemption
                 && RoundingRule == other.RoundingRule
                 && EnrollmentBonusPoints == other.EnrollmentBonusPoints;
@@ -101,7 +101,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// </summary>
         public override int GetHashCode()
         {
-            return HashCode.Combine(PointsPerDollar, MinimumPointsForRedemption, RoundingRule, EnrollmentBonusPoints);
+            return HashCode.Combine(PointsPerPounds, MinimumPointsForRedemption, RoundingRule, EnrollmentBonusPoints);
         }
     }
 
