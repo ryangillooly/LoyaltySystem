@@ -22,7 +22,6 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Shared.API.Serialization;
 using LoyaltySystem.Shared.API.ModelBinding;
 using LoyaltySystem.Shared.API.Attributes;
-using LoyaltySystem.Infrastructure.Data.TypeHandlers;
 
 namespace LoyaltySystem.Shared.API.Configuration;
 
@@ -147,23 +146,22 @@ public static class ApiConfiguration
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>();
         builder.Services.AddScoped<ILoyaltyProgramRepository, LoyaltyProgramRepository>();
+        builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
         builder.Services.AddScoped<IBrandRepository, BrandRepository>();
-        builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
         builder.Services.AddScoped<IStoreRepository, StoreRepository>();
-
-        // Initialize Dapper type handlers for EntityId types
-        TypeHandlerConfig.Initialize();
+        builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 
         // Add Unit of Work
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add application services
-        builder.Services.AddScoped<LoyaltyCardService>();
         builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<LoyaltyCardService>();
         builder.Services.AddScoped<LoyaltyProgramService>();
-        builder.Services.AddScoped<CustomerService>();
-        builder.Services.AddScoped<StoreService>();
+        builder.Services.AddScoped<BusinessService>();
         builder.Services.AddScoped<BrandService>();
+        builder.Services.AddScoped<StoreService>();
+        builder.Services.AddScoped<CustomerService>();
 
         // Add event handling
         builder.Services.AddScoped<IEventPublisher, ConsoleEventPublisher>();

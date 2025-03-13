@@ -43,20 +43,15 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        public async Task<OperationResult<PagedResult<BrandDto>>> GetAllBrandsAsync(int page, int pageSize)
+        public async Task<OperationResult<PagedResult<BrandDto>>> GetAllBrandsAsync(int skip, int limit)
         {
             try
             {
-                var brands = await _brandRepository.GetAllAsync(page, pageSize);
-                var brandDtos = new List<BrandDto>();
-
-                foreach (var brand in brands)
-                {
-                    brandDtos.Add(MapToDto(brand));
-                }
+                var brands = await _brandRepository.GetAllAsync(skip, limit);
+                var brandDtos = brands.Select(MapToDto).ToList();
 
                 var totalCount = brandDtos.Count; // This is not accurate, but we don't have a count method in the repository
-                var result = new PagedResult<BrandDto>(brandDtos, totalCount, page, pageSize);
+                var result = new PagedResult<BrandDto>(brandDtos, totalCount, skip, limit);
 
                 return OperationResult<PagedResult<BrandDto>>.SuccessResult(result);
             }
@@ -70,7 +65,10 @@ namespace LoyaltySystem.Application.Services
         {
             try
             {
-                var brandId = EntityId.New<BrandId>();
+                // Validate brand name is unique
+                if (await _brandRepository.ExistsByNameAsync(dto.Name))
+                    return OperationResult<BrandDto>.FailureResult($"A brand with the name '{dto.Name}' already exists");
+                
                 var contactInfo = new ContactInfo(
                     dto.ContactInfo.Email,
                     dto.ContactInfo.Phone,
@@ -92,14 +90,17 @@ namespace LoyaltySystem.Application.Services
                     dto.Logo,
                     dto.Description,
                     contactInfo,
-                    address
+                    address,
+                    EntityId.Parse<BusinessId>(dto.BusinessId)
                 );
 
-                await _unitOfWork.BeginTransactionAsync();
-                await _brandRepository.AddAsync(brand);
-                await _unitOfWork.CommitTransactionAsync();
-
-                return OperationResult<BrandDto>.SuccessResult(MapToDto(brand));
+                // Use ExecuteInTransactionAsync to handle the transaction properly
+                return await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    // Pass the current transaction to the repository method
+                    await _brandRepository.AddAsync(brand, _unitOfWork.CurrentTransaction);
+                    return OperationResult<BrandDto>.SuccessResult(MapToDto(brand));
+                });
             }
             catch (Exception ex)
             {
@@ -157,11 +158,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        private BrandDto MapToDto(Brand brand)
-        {
-            return new BrandDto
+        private static BrandDto MapToDto(Brand brand) =>
+            new ()
             {
                 Id = brand.Id.ToString(),
+                BusinessId = brand.BusinessId.ToString(),
                 Name = brand.Name,
                 Category = brand.Category,
                 Logo = brand.Logo,
@@ -184,37 +185,4 @@ namespace LoyaltySystem.Application.Services
                 CreatedAt = brand.CreatedAt
             };
         }
-    }
-
-    public class BrandDto
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string Logo { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public ContactInfoDto ContactInfo { get; set; } = new ContactInfoDto();
-        public AddressDto Address { get; set; } = new AddressDto();
-        public DateTime CreatedAt { get; set; }
-    }
-
-    public class CreateBrandDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string Logo { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public ContactInfoDto ContactInfo { get; set; } = new ContactInfoDto();
-        public AddressDto Address { get; set; } = new AddressDto();
-    }
-
-    public class UpdateBrandDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string Logo { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public ContactInfoDto ContactInfo { get; set; } = new ContactInfoDto();
-        public AddressDto Address { get; set; } = new AddressDto();
-    }
 } 

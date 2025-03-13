@@ -6,8 +6,39 @@
 !define COLUMN(x) <color:darkgoldenrod>x</color>
 
 ' Define tables with their attributes
+TABLE(Businesses) {
+  PK(Id) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(Description) NVARCHAR(500)
+  COLUMN(TaxId) NVARCHAR(50)
+  COLUMN(Logo) NVARCHAR(255)
+  COLUMN(Website) NVARCHAR(255)
+  COLUMN(FoundedDate) DATETIME2
+  COLUMN(IsActive) BIT
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(BusinessContacts) {
+  PK(BusinessId) UNIQUEIDENTIFIER
+  COLUMN(Email) NVARCHAR(100)
+  COLUMN(Phone) NVARCHAR(50)
+  COLUMN(Website) NVARCHAR(255)
+}
+
+TABLE(BusinessAddresses) {
+  PK(BusinessId) UNIQUEIDENTIFIER
+  COLUMN(Line1) NVARCHAR(100)
+  COLUMN(Line2) NVARCHAR(100)
+  COLUMN(City) NVARCHAR(100)
+  COLUMN(State) NVARCHAR(50)
+  COLUMN(PostalCode) NVARCHAR(20)
+  COLUMN(Country) NVARCHAR(50)
+}
+
 TABLE(Brands) {
   PK(Id) UNIQUEIDENTIFIER
+  FK(BusinessId) UNIQUEIDENTIFIER
   COLUMN(Name) NVARCHAR(100)
   COLUMN(Category) NVARCHAR(50)
   COLUMN(Logo) NVARCHAR(255)
@@ -155,6 +186,9 @@ TABLE(CardLinks) {
 }
 
 ' Define relationships
+Businesses "1" -- "0..1" BusinessContacts
+Businesses "1" -- "0..1" BusinessAddresses
+Businesses "1" -- "*" Brands
 Brands "1" -- "0..1" BrandContacts
 Brands "1" -- "0..1" BrandAddresses
 Brands "1" -- "*" Stores

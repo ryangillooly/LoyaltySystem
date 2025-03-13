@@ -121,6 +121,8 @@ namespace LoyaltySystem.Infrastructure.Data.TypeHandlers
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<StoreId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<RewardId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<TransactionId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<BrandId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<BusinessId>());
                 
                 // Register other special handlers
                 SqlMapper.AddTypeHandler(new CustomerIdStringHandler());

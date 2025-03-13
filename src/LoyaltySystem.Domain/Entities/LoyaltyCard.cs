@@ -282,7 +282,7 @@ namespace LoyaltySystem.Domain.Entities
         /// Adds an existing transaction to the card.
         /// Used by the repository for loading transactions.
         /// </summary>
-        internal void AddTransaction(Transaction transaction)
+        public void AddTransaction(Transaction transaction)
         {
             _transactions.Add(transaction);
         }

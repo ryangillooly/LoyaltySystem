@@ -1,23 +1,43 @@
 ```mermaid
 erDiagram
-    Brands ||--o| BrandContacts : has
-    Brands ||--o| BrandAddresses : has
-    Brands ||--|{ Stores : owns
-    Stores ||--o| StoreAddresses : has
-    Stores ||--o| StoreGeoLocations : has
-    Stores ||--|{ StoreOperatingHours : has
-    Brands ||--|{ LoyaltyPrograms : offers
-    LoyaltyPrograms ||--o| ProgramExpirationPolicies : has
-    LoyaltyPrograms ||--|{ Rewards : includes
-    LoyaltyPrograms ||--|{ LoyaltyCards : issues
-    Customers ||--|{ LoyaltyCards : holds
-    LoyaltyCards ||--|{ Transactions : records
-    Rewards ||--|{ Transactions : redeemed_in
-    Stores ||--|{ Transactions : processes
-    LoyaltyCards ||--|{ CardLinks : linked_to
+    %% Core Entities
+    Businesses {
+        UUID Id PK
+        string Name
+        string Description
+        string TaxId
+        string Logo
+        string Website
+        datetime FoundedDate
+        boolean IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    BusinessContacts {
+        UUID BusinessId PK,FK
+        string Email
+        string Phone
+        string Website
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    BusinessAddresses {
+        UUID BusinessId PK,FK
+        string Line1
+        string Line2
+        string City
+        string State
+        string PostalCode
+        string Country
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
 
     Brands {
         UUID Id PK
+        UUID BusinessId FK
         string Name
         string Category
         string Logo
@@ -31,6 +51,8 @@ erDiagram
         string Email
         string Phone
         string Website
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     BrandAddresses {
@@ -41,13 +63,23 @@ erDiagram
         string State
         string PostalCode
         string Country
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     Stores {
         UUID Id PK
         UUID BrandId FK
         string Name
-        string ContactInfo
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    StoreContacts {
+        UUID StoreId PK,FK
+        string Email
+        string Phone
+        string Website
         datetime CreatedAt
         datetime UpdatedAt
     }
@@ -60,12 +92,16 @@ erDiagram
         string State
         string PostalCode
         string Country
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     StoreGeoLocations {
         UUID StoreId PK,FK
         float Latitude
         float Longitude
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     StoreOperatingHours {
@@ -73,20 +109,11 @@ erDiagram
         int DayOfWeek PK
         time OpenTime
         time CloseTime
-    }
-
-    Customers {
-        UUID Id PK
-        string Name
-        string Email
-        string Phone
-        boolean MarketingConsent
-        datetime JoinedAt
-        datetime LastLoginAt
         datetime CreatedAt
         datetime UpdatedAt
     }
 
+    %% Loyalty Program Entities
     LoyaltyPrograms {
         UUID Id PK
         UUID BrandId FK
@@ -109,6 +136,8 @@ erDiagram
         boolean ExpiresOnSpecificDate
         int ExpirationDay
         int ExpirationMonth
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     Rewards {
@@ -120,6 +149,19 @@ erDiagram
         datetime ValidFrom
         datetime ValidTo
         boolean IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    %% Customer Entities
+    Customers {
+        UUID Id PK
+        string Name
+        string Email
+        string Phone
+        boolean MarketingConsent
+        datetime JoinedAt
+        datetime LastLoginAt
         datetime CreatedAt
         datetime UpdatedAt
     }
@@ -138,6 +180,7 @@ erDiagram
         datetime UpdatedAt
     }
 
+    %% Transaction Entities
     Transactions {
         UUID Id PK
         UUID CardId FK
@@ -163,4 +206,31 @@ erDiagram
         datetime CreatedAt
         datetime UpdatedAt
     }
+
+    %% Relationship Definitions
+    Businesses ||--|| BusinessContacts : "has"
+    Businesses ||--|| BusinessAddresses : "has"
+    Businesses ||--|{ Brands : "owns"
+    
+    Brands ||--|| BrandContacts : "has"
+    Brands ||--|| BrandAddresses : "has"
+    Brands ||--|{ Stores : "owns"
+    Brands ||--|{ LoyaltyPrograms : "offers"
+    
+    Stores ||--|| StoreContacts : "has"
+    Stores ||--|| StoreAddresses : "has"
+    Stores ||--|| StoreGeoLocations : "has"
+    Stores ||--|{ StoreOperatingHours : "has"
+    
+    LoyaltyPrograms ||--|| ProgramExpirationPolicies : "has"
+    LoyaltyPrograms ||--|{ Rewards : "includes"
+    LoyaltyPrograms ||--|{ LoyaltyCards : "issues"
+    
+    Customers ||--|{ LoyaltyCards : "holds"
+    
+    LoyaltyCards ||--|{ Transactions : "records"
+    LoyaltyCards ||--|{ CardLinks : "linked_to"
+    
+    Stores ||--|{ Transactions : "processes"
+    Rewards }|--|{ Transactions : "redeemed_in"
 ``` 

@@ -362,7 +362,7 @@ namespace LoyaltySystem.Application.Services
             {
                 Id = store.Id.ToString(),
                 Name = store.Name,
-                Address = new AddressDto
+                Address = new DTOs.AddressDto
                 {
                     Line1 = store.Address.Line1,
                     Line2 = store.Address.Line2,
@@ -371,7 +371,7 @@ namespace LoyaltySystem.Application.Services
                     PostalCode = store.Address.PostalCode,
                     Country = store.Address.Country
                 },
-                ContactInfo = new ContactInfoDto
+                ContactInfo = new DTOs.ContactInfoDto
                 {
                     Email = store.ContactInfo ?? string.Empty,
                     Phone = string.Empty,

@@ -273,7 +273,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public LoyaltySystem.Application.DTOs.AddressDto Address { get; set; }
+        public AddressDto Address { get; set; }
     }
 
     public class UpdateCustomerRequest
@@ -283,7 +283,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
-        public LoyaltySystem.Application.DTOs.AddressDto Address { get; set; }
+        public AddressDto Address { get; set; }
         public bool IsActive { get; set; }
     }
 

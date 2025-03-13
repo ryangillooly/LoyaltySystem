@@ -16,6 +16,8 @@ namespace LoyaltySystem.Application.Services
         private readonly IStoreRepository _storeRepository;
         private readonly IUnitOfWork _unitOfWork;
 
+        public CustomerService() { }
+        
         public CustomerService(
             ICustomerRepository customerRepository,
             IStoreRepository storeRepository,
@@ -245,7 +247,7 @@ namespace LoyaltySystem.Application.Services
                     {
                         Id = store.Id.ToString(),
                         Name = store.Name,
-                        Address = new AddressDto
+                        Address = new DTOs.AddressDto
                         {
                             Line1 = store.Address.Line1,
                             Line2 = store.Address.Line2,
@@ -254,13 +256,13 @@ namespace LoyaltySystem.Application.Services
                             PostalCode = store.Address.PostalCode,
                             Country = store.Address.Country
                         },
-                        ContactInfo = new ContactInfoDto
+                        ContactInfo = new DTOs.ContactInfoDto
                         {
                             Email = store.ContactInfo ?? string.Empty,
                             Phone = string.Empty,
                             Website = string.Empty
                         },
-                        Location = new GeoLocationDto
+                        Location = new DTOs.GeoLocationDto
                         {
                             Latitude = store.Location.Latitude,
                             Longitude = store.Location.Longitude
@@ -339,33 +341,10 @@ namespace LoyaltySystem.Application.Services
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public AddressDto Address { get; set; } = new AddressDto();
-        public ContactInfoDto ContactInfo { get; set; } = new ContactInfoDto();
-        public GeoLocationDto Location { get; set; } = new GeoLocationDto();
+        public DTOs.AddressDto Address { get; set; } = new DTOs.AddressDto();
+        public DTOs.ContactInfoDto ContactInfo { get; set; } = new DTOs.ContactInfoDto();
+        public DTOs.GeoLocationDto Location { get; set; } = new DTOs.GeoLocationDto();
         public string BrandId { get; set; } = string.Empty;
         public string BrandName { get; set; } = string.Empty;
-    }
-
-    public class AddressDto
-    {
-        public string Line1 { get; set; } = string.Empty;
-        public string Line2 { get; set; } = string.Empty;
-        public string City { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
-        public string PostalCode { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-    }
-
-    public class ContactInfoDto
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Website { get; set; } = string.Empty;
-    }
-
-    public class GeoLocationDto
-    {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
     }
 } 

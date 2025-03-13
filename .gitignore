@@ -51,6 +51,10 @@ bld/
 **/*.cache
 **/*.CopyComplete
 
+# Catch ALL paths with 'Debug' in them (case insensitive)
+**/*[Dd]ebug*/**
+**/*[Dd]ebug*
+
 # Visual Studio / Rider
 .vs/
 .idea/
@@ -234,5 +238,4 @@ secrets.json
 !.vscode/extensions.json
 
 # Explicitly exclude specific files
-src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.tx
 src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.txt

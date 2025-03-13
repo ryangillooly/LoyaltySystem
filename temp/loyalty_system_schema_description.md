@@ -2,10 +2,19 @@
 
 ## Core Entities
 
-### Brands
-Represents companies or businesses that offer loyalty programs.
+### Businesses
+Represents top-level business entities that own multiple brands.
 - **Primary Key**: Id (GUID)
 - **Relationships**:
+  - One-to-many with Brands
+  - One-to-one with BusinessContacts and BusinessAddresses
+
+### Brands
+Represents companies or product lines that belong to a business and offer loyalty programs.
+- **Primary Key**: Id (GUID)
+- **Foreign Keys**: BusinessId (references Businesses)
+- **Relationships**:
+  - Many-to-one with Businesses
   - One-to-many with Stores
   - One-to-many with LoyaltyPrograms
   - One-to-one with BrandContacts and BrandAddresses
@@ -83,6 +92,18 @@ Records of loyalty activity (stamp issuance, point accrual, redemptions).
 
 ## Supporting Entities
 
+### BusinessContacts
+Contact information for businesses.
+- **Primary Key**: BusinessId (GUID)
+- **Foreign Keys**: BusinessId (references Businesses)
+- **Relationships**: One-to-one with Businesses
+
+### BusinessAddresses
+Physical address for business headquarters.
+- **Primary Key**: BusinessId (GUID)
+- **Foreign Keys**: BusinessId (references Businesses)
+- **Relationships**: One-to-one with Businesses
+
 ### BrandContacts
 Contact information for brands.
 - **Primary Key**: BrandId (GUID)
@@ -136,14 +157,16 @@ Associations between loyalty cards and external identifiers (payment cards, etc.
 
 ## Key Design Features
 
-1. **Value Object Pattern**: Address information is stored in separate tables (BrandAddresses, StoreAddresses) to encapsulate this complex value object.
+1. **Multi-level Business Hierarchy**: The system supports a two-level hierarchy with Businesses at the top level and Brands as their children, enabling multi-brand management under a single business entity.
 
-2. **Flexible Loyalty Rules**: The LoyaltyPrograms table supports both stamp-based and points-based programs with configurable thresholds, conversion rates, and limits.
+2. **Value Object Pattern**: Address information is stored in separate tables (BusinessAddresses, BrandAddresses, StoreAddresses) to encapsulate this complex value object.
 
-3. **Time-Bound Rewards**: Rewards can have validity periods (ValidFrom, ValidTo) to support seasonal or limited-time offers.
+3. **Flexible Loyalty Rules**: The LoyaltyPrograms table supports both stamp-based and points-based programs with configurable thresholds, conversion rates, and limits.
 
-4. **Rich Transaction Data**: The Transactions table records all loyalty activity with detailed metadata about store location, staff member, and POS integration.
+4. **Time-Bound Rewards**: Rewards can have validity periods (ValidFrom, ValidTo) to support seasonal or limited-time offers.
 
-5. **External Integration**: The CardLinks table enables linking loyalty cards to external identifiers for POS integration.
+5. **Rich Transaction Data**: The Transactions table records all loyalty activity with detailed metadata about store location, staff member, and POS integration.
 
-6. **Schema Evolution Support**: Most tables include CreatedAt and UpdatedAt timestamps for auditing and data lifecycle management. 
+6. **External Integration**: The CardLinks table enables linking loyalty cards to external identifiers for POS integration.
+
+7. **Schema Evolution Support**: Most tables include CreatedAt and UpdatedAt timestamps for auditing and data lifecycle management. 

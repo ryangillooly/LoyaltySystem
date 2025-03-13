@@ -1,5 +1,6 @@
 ```mermaid
 erDiagram
+    Businesses ||--|{ Brands : owns
     Brands ||--|{ Stores : owns
     Brands ||--|{ LoyaltyPrograms : offers
     Stores ||--|{ Transactions : processes
@@ -15,8 +16,18 @@ erDiagram
     
     Rewards }|--|{ Transactions : redeemed_in
 
+    Businesses {
+        UUID Id PK
+        string Name
+        string Description
+        string TaxId
+        string Website
+        datetime FoundedDate
+    }
+    
     Brands {
         UUID Id PK
+        UUID BusinessId FK
         string Name
         string Description
     }

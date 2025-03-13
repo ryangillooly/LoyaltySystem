@@ -12,7 +12,7 @@ namespace LoyaltySystem.Admin.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
     public class LoyaltyProgramsController : ControllerBase
     {
         private readonly LoyaltyProgramService _programService;
@@ -27,7 +27,7 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllPrograms([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetAllPrograms([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string brandId = null)
         {
             _logger.LogInformation("Admin requesting all loyalty programs (page {Page}, size {PageSize})", 
                 page, pageSize);
@@ -37,7 +37,7 @@ namespace LoyaltySystem.Admin.API.Controllers
                 return BadRequest("Invalid pagination parameters");
             }
             
-            var result = await _programService.GetAllProgramsAsync(page, pageSize);
+            var result = await _programService.GetAllProgramsAsync(brandId, page, pageSize);
             
             if (!result.Success)
             {

@@ -212,7 +212,7 @@ namespace LoyaltySystem.Domain.Entities
         /// Adds an existing reward to the program.
         /// Used by the repository for loading from database.
         /// </summary>
-        internal void AddReward(Reward reward)
+        public void AddReward(Reward reward)
         {
             _rewards.Add(reward);
         }

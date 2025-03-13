@@ -3,6 +3,21 @@ using System;
 namespace LoyaltySystem.Domain.Common
 {
     /// <summary>
+    /// Business identifier (bus_xxxxxxxx)
+    /// </summary>
+    public class BusinessId : EntityId
+    {
+        public override string Prefix => "bus_";
+        
+        public BusinessId() : base(Guid.NewGuid()) { }
+        
+        public BusinessId(Guid value) : base(value) { }
+        
+        // Create from string representation
+        public static BusinessId FromString(string prefixed) => Parse<BusinessId>(prefixed);
+    }
+    
+    /// <summary>
     /// Brand identifier (bnd_xxxxxxxx)
     /// </summary>
     public class BrandId : EntityId

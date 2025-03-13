@@ -20,6 +20,8 @@ namespace LoyaltySystem.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LoyaltyCardService> _logger;
 
+        public LoyaltyCardService() { }
+        
         public LoyaltyCardService(
             ILoyaltyCardRepository cardRepository,
             ILoyaltyProgramRepository programRepository,

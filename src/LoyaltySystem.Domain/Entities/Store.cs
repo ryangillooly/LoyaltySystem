@@ -67,12 +67,12 @@ namespace LoyaltySystem.Domain.Entities
         }
         
         // Internal methods for Dapper to use when materializing objects
-        internal void SetAddress(Address address)
+        public void SetAddress(Address address)
         {
             Address = address;
         }
-        
-        internal void SetLocation(GeoLocation location)
+
+        public void SetLocation(GeoLocation location)
         {
             Location = location;
         }

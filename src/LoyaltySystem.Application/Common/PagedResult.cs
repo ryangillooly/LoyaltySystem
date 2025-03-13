@@ -11,8 +11,8 @@ namespace LoyaltySystem.Application.Common
         /// <summary>
         /// The items in the current page.
         /// </summary>
-        public IEnumerable<T> Items { get; }
-        
+        public IEnumerable<T> Items { get; set; }
+
         /// <summary>
         /// The total number of items across all pages.
         /// </summary>

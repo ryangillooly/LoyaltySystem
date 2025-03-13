@@ -137,13 +137,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE PROCEDURE refresh_analytics_views()
+-- Define procedure for refreshing materialized views as a function instead
+DROP PROCEDURE IF EXISTS refresh_analytics_views;
+DROP FUNCTION IF EXISTS refresh_analytics_views();
+CREATE OR REPLACE FUNCTION refresh_analytics_views()
+RETURNS void
 LANGUAGE plpgsql
 AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW mv_program_metrics;
     REFRESH MATERIALIZED VIEW mv_customer_metrics;
-END;
+END
 $$;
 
 -- Now create all the tables and structure in a single DO block
@@ -454,19 +458,29 @@ BEGIN
 
     -- PERFORMANCE OPTIMIZATIONS FOR HIGH-VOLUME TABLES
 
-    -- Optimize autovacuum for transactions table
+    -- Optimize autovacuum for transactions table (commented out for compatibility)
+    /*
     ALTER TABLE transactions SET (
         autovacuum_vacuum_scale_factor = 0.05,
         autovacuum_analyze_scale_factor = 0.025,
         fillfactor = 80
     );
+    */
+    
+    -- Only set fillfactor which is widely supported
+    ALTER TABLE transactions SET (fillfactor = 80);
 
-    -- Optimize loyalty_cards table
+    -- Optimize loyalty_cards table (commented out for compatibility)
+    /*
     ALTER TABLE loyalty_cards SET (
         autovacuum_vacuum_scale_factor = 0.1,
         autovacuum_analyze_scale_factor = 0.05,
         fillfactor = 90
     );
+    */
+    
+    -- Only set fillfactor which is widely supported
+    ALTER TABLE loyalty_cards SET (fillfactor = 90);
 
     -- PARTITION MANAGEMENT TOOLS
 
@@ -597,16 +611,6 @@ BEGIN
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_customer_metrics_customer_id ON mv_customer_metrics(customer_id);
 
-    -- Function to refresh materialized views
-    CREATE OR REPLACE PROCEDURE refresh_analytics_views()
-    LANGUAGE plpgsql
-    AS $$
-    BEGIN
-        REFRESH MATERIALIZED VIEW mv_program_metrics;
-        REFRESH MATERIALIZED VIEW mv_customer_metrics;
-    END
-    $$;
-
     -- SECURITY WITH ROW-LEVEL SECURITY
 
     -- Create an app context for current brand/store/staff access control
@@ -671,7 +675,7 @@ BEGIN
     -- Create indexes for the business table
     CREATE INDEX IF NOT EXISTS idx_businesses_name ON businesses (name);
     CREATE INDEX IF NOT EXISTS idx_businesses_is_active ON businesses (is_active);
-END
+END;
 $$;
 
 -- Apply triggers after tables exist
@@ -742,7 +746,7 @@ BEGIN
     CREATE TRIGGER update_users_timestamp
     BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_timestamp();
-END
+END;
 $$;
 
 -- Apply Business entity specific RLS policies
@@ -754,7 +758,7 @@ BEGIN
     -- Create RLS policies for business isolation
     DROP POLICY IF EXISTS business_isolation ON businesses;
     CREATE POLICY business_isolation ON businesses
-        USING (id::TEXT = get_app_context('current_business_id') OR get_app_context('user_role') = 'admin');
+        USING (id::TEXT = get_app_context('current_business_id') OR get_app_context('user_role') = 'SuperAdmin');
     
     -- Update Brand isolation to include business context
     DROP POLICY IF EXISTS brand_isolation ON brands;
@@ -764,7 +768,7 @@ BEGIN
             business_id::TEXT = get_app_context('current_business_id') OR 
             get_app_context('user_role') = 'SuperAdmin'
         );
-END
+END;
 $$;
 
 COMMIT; 

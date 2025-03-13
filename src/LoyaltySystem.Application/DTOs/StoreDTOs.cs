@@ -14,29 +14,6 @@ namespace LoyaltySystem.Application.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
-    public class AddressDto
-    {
-        public string Line1 { get; set; } = string.Empty;
-        public string Line2 { get; set; } = string.Empty;
-        public string City { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
-        public string PostalCode { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-    }
-
-    public class ContactInfoDto
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Website { get; set; } = string.Empty;
-    }
-
-    public class GeoLocationDto
-    {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-    }
-
     public class CreateStoreDto
     {
         public string Name { get; set; } = string.Empty;
@@ -95,5 +72,20 @@ namespace LoyaltySystem.Application.DTOs
         /// Closing time (if open).
         /// </summary>
         public TimeSpan? CloseTime { get; set; }
+    }
+
+    public partial class AddressDto
+    {
+        // ... existing code ...
+    }
+
+    public partial class ContactInfoDto
+    {
+        // ... existing code ...
+    }
+
+    public partial class GeoLocationDto
+    {
+        // ... existing code ...
     }
 } 

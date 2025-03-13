@@ -7,6 +7,7 @@ using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace LoyaltySystem.Customer.API.Controllers
 {
@@ -30,7 +31,7 @@ namespace LoyaltySystem.Customer.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAvailablePrograms([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetAvailablePrograms([FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string brandId = null)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
@@ -48,7 +49,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             }
             
             // Get only active programs for customers
-            var result = await _programService.GetAllProgramsAsync(page, pageSize);
+            var result = await _programService.GetAllProgramsAsync(brandId, page, pageSize);
             
             if (!result.Success)
             {
@@ -263,7 +264,7 @@ namespace LoyaltySystem.Customer.API.Controllers
             }
             
             // Get programs near the specified location
-            var result = await _programService.GetAllProgramsAsync(page, pageSize);
+            var result = await _programService.GetNearbyProgramsAsync(latitude, longitude, radiusKm, page, pageSize);
             
             if (!result.Success)
             {
@@ -300,13 +301,26 @@ namespace LoyaltySystem.Customer.API.Controllers
                 return BadRequest("Invalid pagination parameters");
             }
             
-            // Search for programs matching the query
-            var result = await _programService.GetAllProgramsAsync(page, pageSize);
+            // TODO: Implement a proper search method in the service that filters by query
+            // For now, we're just using GetAllProgramsAsync as a fallback
+            var result = await _programService.GetAllProgramsAsync(null, page, pageSize);
             
             if (!result.Success)
             {
                 _logger.LogWarning("Search programs failed - {Error}", result.Errors);
                 return BadRequest(result.Errors);
+            }
+            
+            // Filter results client-side for now based on the search query
+            // This is not efficient and should be replaced with a proper search implementation
+            if (!string.IsNullOrEmpty(query))
+            {
+                var filteredData = result.Data;
+                filteredData.Items = filteredData.Items
+                    .Where(p => p.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                return Ok(filteredData);
             }
             
             return Ok(result.Data);

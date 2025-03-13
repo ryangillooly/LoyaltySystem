@@ -32,7 +32,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     id AS Id,
                     brand_id AS BrandId,
                     name AS Name,
-                    type::int AS Type,
+                    type::text AS Type,
                     stamp_threshold AS StampThreshold,
                     points_conversion_rate AS PointsConversionRate,
                     daily_stamp_limit AS DailyStampLimit,
@@ -62,7 +62,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     id AS Id,
                     brand_id AS BrandId,
                     name AS Name,
-                    type::int AS Type,
+                    type::text AS Type,
                     stamp_threshold AS StampThreshold,
                     points_conversion_rate AS PointsConversionRate,
                     daily_stamp_limit AS DailyStampLimit,
@@ -93,7 +93,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     id AS Id,
                     brand_id AS BrandId,
                     name AS Name,
-                    type::int AS Type,
+                    type::text AS Type,
                     stamp_threshold AS StampThreshold,
                     points_conversion_rate AS PointsConversionRate,
                     daily_stamp_limit AS DailyStampLimit,
@@ -136,7 +136,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     id AS Id,
                     brand_id AS BrandId,
                     name AS Name,
-                    type::int AS Type,
+                    (type::text)::int AS Type,
                     stamp_threshold AS StampThreshold,
                     points_conversion_rate AS PointsConversionRate,
                     daily_stamp_limit AS DailyStampLimit,
@@ -147,13 +147,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 FROM loyalty_programs 
                 WHERE type = @Type::loyalty_program_type
                 ORDER BY created_at DESC
-                LIMIT @PageSize OFFSET @Offset";
+                LIMIT @Take OFFSET @Skip";
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
+            var skip = (page - 1) * pageSize;
             var parameters = new { 
-                Type = type.ToString(), 
-                Offset = (page - 1) * pageSize, 
-                PageSize = pageSize 
+                Type = type.ToString().ToLower(), 
+                Skip = skip,
+                Take = pageSize 
             };
             var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
 
@@ -446,12 +447,13 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<IEnumerable<LoyaltyProgram>> GetAllAsync(int skip = 0, int take = 100)
         {
+            // Retrieve programs with type as text, then map to the appropriate enum value in code
             const string sql = @"
                 SELECT 
                     id AS Id,
                     brand_id AS BrandId,
                     name AS Name,
-                    type::int AS Type,
+                    type AS TypeText,
                     stamp_threshold AS StampThreshold,
                     points_conversion_rate AS PointsConversionRate,
                     daily_stamp_limit AS DailyStampLimit,
@@ -465,10 +467,61 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new { Skip = skip, Take = take };
-            var programs = await dbConnection.QueryAsync<LoyaltyProgram>(sql, parameters);
-
-            foreach (var program in programs)
+            
+            // Use a dynamic query to get raw data
+            var results = await dbConnection.QueryAsync<dynamic>(sql, parameters);
+            var programs = new List<LoyaltyProgram>();
+            
+            foreach (var row in results)
             {
+                // Map the typeText to the enum value
+                LoyaltyProgramType programType;
+                string typeText = row.TypeText?.ToString()?.ToLower();
+                
+                if (typeText == "stamp")
+                {
+                    programType = LoyaltyProgramType.Stamp;
+                }
+                else if (typeText == "points")
+                {
+                    programType = LoyaltyProgramType.Points;
+                }
+                else
+                {
+                    // Default fallback
+                    programType = LoyaltyProgramType.Stamp;
+                }
+                
+                // Create the program with the correct type
+                var program = new LoyaltyProgram(
+                    Guid.Parse(row.BrandId.ToString()),
+                    row.Name.ToString(),
+                    programType,
+                    row.StampThreshold,
+                    row.PointsConversionRate,
+                    row.DailyStampLimit,
+                    row.MinimumTransactionAmount,
+                    null // No ExpirationPolicy available from database query
+                );
+                
+                // Set additional properties using reflection as they are private setters
+                typeof(LoyaltyProgram)
+                    .GetProperty("Id")
+                    ?.SetValue(program, new LoyaltyProgramId(Guid.Parse(row.Id.ToString())));
+                
+                typeof(LoyaltyProgram)
+                    .GetProperty("IsActive")
+                    ?.SetValue(program, row.IsActive);
+                
+                typeof(LoyaltyProgram)
+                    .GetProperty("CreatedAt")
+                    ?.SetValue(program, row.CreatedAt);
+                
+                typeof(LoyaltyProgram)
+                    .GetProperty("UpdatedAt")
+                    ?.SetValue(program, row.UpdatedAt);
+                
+                programs.Add(program);
                 await LoadRewardsForProgram(program);
             }
 
