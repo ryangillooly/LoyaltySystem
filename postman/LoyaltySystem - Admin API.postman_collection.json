@@ -1,9 +1,10 @@
 {
 	"info": {
-		"_postman_id": "b7a8f1e2-5f6c-4d8a-a6b1-ef8d12c35d93",
+		"_postman_id": "005554fc-2d57-404a-9faa-fca338485e63",
 		"name": "LoyaltySystem - Admin API",
 		"description": "API collection for the Admin API in the Loyalty System",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10301074"
 	},
 	"item": [
 		{
@@ -17,7 +18,7 @@
 							"script": {
 								"exec": [
 									"var jsonData = JSON.parse(responseBody);",
-									"pm.environment.set(\"authToken\", jsonData.token);",
+									"pm.environment.set(\"admin_token\", jsonData.token);",
 									"",
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
@@ -27,7 +28,8 @@
 									"    pm.expect(jsonData.token).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -41,7 +43,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"Admin123!\"\n}"
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"Admin@123\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/auth/login",
@@ -55,6 +57,203 @@
 							]
 						},
 						"description": "Login to get the authentication token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/profile",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get the profile of the current admin user"
+					},
+					"response": []
+				},
+				{
+					"name": "Add User Role Copy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{user_id}}\",\n    \"role\": \"Admin\"\n}"
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/users/roles/add",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"roles",
+								"add"
+							]
+						},
+						"description": "Add a role to a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove User Role Copy",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{user_id}}\",\n    \"role\": \"Admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/users/roles/remove",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"roles",
+								"remove"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Copy",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"johnsmith1\",\n    \"email\": \"mytest@gmail.com\",\n    \"password\": \"Admin123!\",\n    \"confirmpassword\": \"Admin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/register",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By Id Copy",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/users/{{user_id}}",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile Copy",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"mytesgfgfgt@gmail.com\",\n    \"currentpassword\": \"Admin123\",\n    \"newpassword\": \"Admin1232\",\n    \"confirmnewpassword\": \"Admin1232\"\n}"
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/auth/profile",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						}
 					},
 					"response": []
 				}
@@ -88,7 +287,8 @@
 									"    pm.expect(jsonData.pageSize).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -98,7 +298,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -150,7 +350,8 @@
 									"    pm.expect(jsonData.headquartersAddress).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -160,7 +361,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -199,7 +400,8 @@
 									"    pm.environment.set(\"businessId\", jsonData.id);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -209,7 +411,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -223,7 +425,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Coffee Chain Inc.\",\n    \"description\": \"Premium coffee shop chain\",\n    \"taxId\": \"TAX123456789\",\n    \"contact\": {\n        \"email\": \"info@coffeechain.com\",\n        \"phone\": \"+1-555-123-4567\",\n        \"website\": \"https://coffeechain.com\"\n    },\n    \"headquartersAddress\": {\n        \"line1\": \"123 Business Street\",\n        \"line2\": \"Suite 500\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98101\",\n        \"country\": \"USA\"\n    },\n    \"logo\": \"https://example.com/coffeechain-logo.png\",\n    \"website\": \"https://coffeechain.com\",\n    \"foundedDate\": \"2005-03-15T00:00:00Z\"\n}"
+							"raw": "{\n    \"name\": \"Coffee Chffain Inc.\",\n    \"description\": \"Premium coffee shop chain\",\n    \"taxId\": \"TAX12345d6789\",\n    \"contact\": {\n        \"email\": \"info@coffeechain.com\",\n        \"phone\": \"+1-555-123-4567\",\n        \"website\": \"https://coffeechain.com\"\n    },\n    \"headquartersAddress\": {\n        \"line1\": \"123 Business Street\",\n        \"line2\": \"Suite 500\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98101\",\n        \"country\": \"USA\"\n    },\n    \"logo\": \"https://example.com/coffeechain-logo.png\",\n    \"website\": \"https://coffeechain.com\",\n    \"foundedDate\": \"2005-03-15T00:00:00Z\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/business",
@@ -257,7 +459,8 @@
 									"    pm.expect(jsonData.description).to.eql(requestData.description);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -267,12 +470,72 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
 						},
 						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Coffee Chain Inc. - Updated\",\n    \"description\": \"Premium coffee shop chain with organic options\",\n    \"taxId\": \"TAX123456789\",\n    \"contact\": {\n        \"email\": \"info@coffeechain.com\",\n        \"phone\": \"+1-555-123-4567\",\n        \"website\": \"https://coffeechain.com\"\n    },\n    \"headquartersAddress\": {\n        \"line1\": \"123 Business Street\",\n        \"line2\": \"Suite 500\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98101\",\n        \"country\": \"USA\"\n    },\n    \"logo\": \"https://example.com/coffeechain-logo-new.png\",\n    \"website\": \"https://coffeechain.com\",\n    \"foundedDate\": \"2005-03-15T00:00:00Z\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/business/{{businessId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"business",
+								"{{businessId}}"
+							]
+						},
+						"description": "Update an existing business"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Business",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Business has updated fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var requestData = JSON.parse(pm.request.body.raw);",
+									"    pm.expect(jsonData.name).to.eql(requestData.name);",
+									"    pm.expect(jsonData.description).to.eql(requestData.description);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -321,7 +584,8 @@
 									"    pm.expect(jsonData.items).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -331,7 +595,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -382,7 +646,8 @@
 									"    pm.expect(jsonData.description).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -392,7 +657,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -431,7 +696,8 @@
 									"    pm.environment.set(\"brandId\", jsonData.id);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -441,7 +707,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -455,7 +721,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Coffee Express\",\n    \"category\": \"Cafe\",\n    \"logo\": \"https://example.com/coffee-express-logo.png\",\n    \"description\": \"Fast and delicious coffee\",\n    \"contactInfo\": {\n        \"email\": \"contact@coffeeexpress.com\",\n        \"phone\": \"+1-555-234-5678\",\n        \"website\": \"https://coffeeexpress.com\"\n    },\n    \"address\": {\n        \"line1\": \"456 Brand Avenue\",\n        \"line2\": \"Floor 3\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98102\",\n        \"country\": \"USA\"\n    },\n    \"businessId\": \"{{businessId}}\"\n}"
+							"raw": "{\n    \"name\": \"Coffee Exprfress\",\n    \"category\": \"Cafe\",\n    \"logo\": \"https://example.com/coffee-express-logo.png\",\n    \"description\": \"Fast and delicious coffee\",\n    \"contactInfo\": {\n        \"email\": \"contact@coffeeexpress.com\",\n        \"phone\": \"+1-555-234-5678\",\n        \"website\": \"https://coffeeexpress.com\"\n    },\n    \"address\": {\n        \"line1\": \"456 Brand Avenue\",\n        \"line2\": \"Floor 3\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98102\",\n        \"country\": \"USA\"\n    },\n    \"businessId\": \"{{businessId}}\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/brands",
@@ -488,7 +754,8 @@
 									"    pm.expect(jsonData.name).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -498,7 +765,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -540,7 +807,8 @@
 									"    pm.response.to.have.status(204);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -550,7 +818,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -595,7 +863,8 @@
 									"    pm.expect(jsonData.items).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -605,7 +874,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -660,7 +929,8 @@
 									"    pm.expect(jsonData.address).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -670,7 +940,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -709,7 +979,8 @@
 									"    pm.environment.set(\"storeId\", jsonData.id);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -719,7 +990,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -733,7 +1004,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Coffee Express - Downtown\",\n    \"brandId\": \"{{brandId}}\",\n    \"storeCode\": \"CE-DT-001\",\n    \"phone\": \"+1-555-789-0123\",\n    \"email\": \"downtown@coffeeexpress.com\",\n    \"address\": {\n        \"line1\": \"123 Main Street\",\n        \"line2\": \"Suite 101\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98104\",\n        \"country\": \"USA\"\n    },\n    \"location\": {\n        \"latitude\": 47.6062,\n        \"longitude\": -122.3321\n    },\n    \"hoursOfOperation\": [\n        {\n            \"dayOfWeek\": \"Monday\",\n            \"openTime\": \"07:00\",\n            \"closeTime\": \"20:00\"\n        },\n        {\n            \"dayOfWeek\": \"Tuesday\",\n            \"openTime\": \"07:00\",\n            \"closeTime\": \"20:00\"\n        },\n        {\n            \"dayOfWeek\": \"Wednesday\",\n            \"openTime\": \"07:00\",\n            \"closeTime\": \"20:00\"\n        },\n        {\n            \"dayOfWeek\": \"Thursday\",\n            \"openTime\": \"07:00\",\n            \"closeTime\": \"20:00\"\n        },\n        {\n            \"dayOfWeek\": \"Friday\",\n            \"openTime\": \"07:00\",\n            \"closeTime\": \"22:00\"\n        },\n        {\n            \"dayOfWeek\": \"Saturday\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"22:00\"\n        },\n        {\n            \"dayOfWeek\": \"Sunday\",\n            \"openTime\": \"08:00\",\n            \"closeTime\": \"18:00\"\n        }\n    ],\n    \"amenities\": [\"WiFi\", \"Outdoor Seating\", \"Power Outlets\", \"Restrooms\"],\n    \"openDate\": \"2020-03-15\"\n}"
+							"raw": "{\n    \"name\": \"Coffee Express - Downtown\",\n    \"brandId\": \"{{brandId}}\",\n    \"address\": {\n        \"line1\": \"123 Main Street\",\n        \"line2\": \"Suite 101\",\n        \"city\": \"Seattle\",\n        \"state\": \"WA\",\n        \"postalCode\": \"98104\",\n        \"country\": \"USA\"\n    },\n    \"location\": {\n        \"latitude\": 47.6062,\n        \"longitude\": -122.3321\n    },\n    \"contactInfo\": {\n        \"phone\": \"+1-555-789-0123\",\n        \"email\": \"downtown@coffeeexpress.com\",\n        \"website\": \"loool.com\"\n    },\n    \"operatingHours\": \n    {\n        \"Monday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Tuesday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Wednesday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Thursday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Friday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Saturday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        },\n        \"Sunday\": {\n            \"OpenTime\": \"07:00\",\n            \"CloseTime\": \"20:00\"\n        }\n    }\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/stores",
@@ -855,7 +1126,592 @@
 		},
 		{
 			"name": "Customer Management",
-			"item": [],
+			"item": [
+				{
+					"name": "Get All Customers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has items array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.exist;",
+									"    pm.expect(jsonData.items).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/customers?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"customers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get a paginated list of all brands"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has brand ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.environment.set(\"customerId\", jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": " {\n    \"firstname\": \"Ryan\",\n    \"lastname\": \"Gillooly\",\n    \"email\": \"ryangillooly@hotmail.co.uk\",\n    \"phonenumber\":\"07415835716\",\n    \"dateofbirth\": \"1995-04-20T00:00:00Z\",\n    \"address\": {\n        \"line1\": \"32323\",\n        \"line2\": \"2323\",\n        \"city\": \"2233\",\n        \"state\": \"2323\",\n        \"postalcode\": \"2323\",\n        \"country\": \"2323\"\n    }\n }"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/customers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"customers"
+							]
+						},
+						"description": "Create a new brand"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer by Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Brand has correct properties\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.expect(jsonData.name).to.exist;",
+									"    pm.expect(jsonData.category).to.exist;",
+									"    pm.expect(jsonData.logo).to.exist;",
+									"    pm.expect(jsonData.description).to.exist;",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/customers/{{customerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"customers",
+								"{{customerId}}"
+							]
+						},
+						"description": "Get a brand by its ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Customers Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/Customers/search?query=smith&page=1&pageSize=20",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"Customers",
+								"search"
+							],
+							"query": [
+								{
+									"key": "query",
+									"value": "smith"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Search customers by name, email, or phone number"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Cards Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/Customers/{{customer_id}}/cards",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"Customers",
+								"{{customer_id}}",
+								"cards"
+							]
+						},
+						"description": "Get all loyalty cards for a specific customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Enroll Customer in Program Copy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"programId\": \"{{program_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/Customers/{{customer_id}}/enroll",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"Customers",
+								"{{customer_id}}",
+								"enroll"
+							]
+						},
+						"description": "Enroll a customer in a loyalty program"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing customers"
+		},
+		{
+			"name": "Card Management",
+			"item": [
+				{
+					"name": "Get All Loyalty Cards",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has items array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.items).to.exist;",
+									"    pm.expect(jsonData.items).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/loyaltycards?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loyaltycards"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get a paginated list of all brands"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Loyalty Card",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has brand ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.environment.set(\"customerId\", jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"programId\": \"{{programId}}\",\n  \"qrCode\": \"....\",\n  \"status\": 0,\n  \"type\": 1,\n  \"stampCount\": 2,\n  \"totalTransactions\": 44\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/loyaltycards",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"loyaltycards"
+							]
+						},
+						"description": "Create a new brand"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Loyalty Card by Id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Brand has correct properties\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.exist;",
+									"    pm.expect(jsonData.name).to.exist;",
+									"    pm.expect(jsonData.category).to.exist;",
+									"    pm.expect(jsonData.logo).to.exist;",
+									"    pm.expect(jsonData.description).to.exist;",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/customers/{{customerId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"customers",
+								"{{customerId}}"
+							]
+						},
+						"description": "Get a brand by its ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cards by Customer ID Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/LoyaltyCards/customer/{{customer_id}}",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"LoyaltyCards",
+								"customer",
+								"{{customer_id}}"
+							]
+						},
+						"description": "Get all loyalty cards for a specific customer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cards by Program ID Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/LoyaltyCards/program/{{program_id}}",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"LoyaltyCards",
+								"program",
+								"{{program_id}}"
+							]
+						},
+						"description": "Get all loyalty cards for a specific loyalty program"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Card Status Copy",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Suspended\"\n}"
+						},
+						"url": {
+							"raw": "{{admin_base_url}}/api/LoyaltyCards/{{card_id}}/status",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"LoyaltyCards",
+								"{{card_id}}",
+								"status"
+							]
+						},
+						"description": "Update the status of a loyalty card (Active, Suspended, Expired)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Card Count by Status Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/LoyaltyCards/analytics/status",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"LoyaltyCards",
+								"analytics",
+								"status"
+							]
+						},
+						"description": "Get count of loyalty cards grouped by status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Program Card Analytics Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/LoyaltyCards/analytics/program/{{program_id}}",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"LoyaltyCards",
+								"analytics",
+								"program",
+								"{{program_id}}"
+							]
+						},
+						"description": "Get analytics for loyalty cards of a specific program"
+					},
+					"response": []
+				}
+			],
 			"description": "Endpoints for managing customers"
 		},
 		{
@@ -878,7 +1734,8 @@
 									"    pm.expect(jsonData.items).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -888,7 +1745,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -896,27 +1753,22 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loyalty-programs?page=1&pageSize=20&brandId={{brandId}}",
+							"raw": "{{baseUrl}}/api/loyaltyprograms?skip=0&limit=50",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"loyalty-programs"
+								"loyaltyprograms"
 							],
 							"query": [
 								{
-									"key": "page",
-									"value": "1"
+									"key": "skip",
+									"value": "0"
 								},
 								{
-									"key": "pageSize",
-									"value": "20"
-								},
-								{
-									"key": "brandId",
-									"value": "{{brandId}}",
-									"description": "Optional filter by brand"
+									"key": "limit",
+									"value": "50"
 								}
 							]
 						},
@@ -943,7 +1795,8 @@
 									"    pm.expect(jsonData.pointsConfig).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -953,7 +1806,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -961,13 +1814,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/loyalty-programs/{{programId}}",
+							"raw": "{{baseUrl}}/api/loyaltyprograms/{{programId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"loyalty-programs",
+								"loyaltyprograms",
 								"{{programId}}"
 							]
 						},
@@ -992,7 +1845,8 @@
 									"    pm.environment.set(\"programId\", jsonData.id);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -1002,7 +1856,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -1016,16 +1870,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Coffee Express Rewards\",\n    \"description\": \"Earn points with every purchase and redeem for free items\",\n    \"brandId\": \"{{brandId}}\",\n    \"startDate\": \"2023-01-01T00:00:00Z\",\n    \"endDate\": null,\n    \"status\": \"Active\",\n    \"termsAndConditions\": \"Terms and conditions apply. Points expire after 12 months of inactivity.\",\n    \"pointsConfig\": {\n        \"pointsPerDollar\": 10,\n        \"minimumPointsForRedemption\": 500,\n        \"pointsRoundingRule\": \"RoundUp\",\n        \"expirationPolicy\": {\n            \"type\": \"Rolling\",\n            \"durationInDays\": 365\n        }\n    },\n    \"tiers\": [\n        {\n            \"name\": \"Bronze\",\n            \"pointThreshold\": 0,\n            \"benefits\": [\n                \"Earn 10 points per $1 spent\",\n                \"Free birthday item\"\n            ]\n        },\n        {\n            \"name\": \"Silver\",\n            \"pointThreshold\": 5000,\n            \"benefits\": [\n                \"Earn 12 points per $1 spent\",\n                \"Free birthday item\",\n                \"Free size upgrade on any drink\"\n            ]\n        },\n        {\n            \"name\": \"Gold\",\n            \"pointThreshold\": 10000,\n            \"benefits\": [\n                \"Earn 15 points per $1 spent\",\n                \"Free birthday item\",\n                \"Free size upgrade on any drink\",\n                \"Free coffee on Mondays\"\n            ]\n        }\n    ],\n    \"enrollmentBonusPoints\": 100\n}"
+							"raw": "{\n    \"name\": \"Coffee Express oRewards\",\n    \"brandId\": \"{{brandId}}\",\n    \"description\": \"my new program\",\n    \"termsAndConditions\": \"my Ts+Cs\",\n    \"type\": 2,\n    \"startDate\": \"2023-01-01T00:00:00Z\",\n    \"endDate\": \"2023-01-01T00:00:00Z\",\n    \"stampThreshold\": 10,\n    \"enrollmentBonusPoints\": 100,\n    \"status\": \"Active\",\n    \"pointsConversionRate\": 1.00,\n    \"dailyStampLimit\": 10,\n    \"minimumTransactionAmount\": 1,\n    \"pointsConfig\": {\n        \"pointsPerPound\": 10,\n        \"minimumPointsForRedemption\": 500,\n        \"roundingRule\": 0\n    },\n    \"expirationPolicy\": {\n        \"expirationType\": 3,\n        \"durationInDays\": 365,\n        \"expirationValue\": 1,\n        \"expirationDate\": \"2024-01-01T00:00:00Z\",\n        \"hasExpiration\": true\n    },\n    \"hasTiers\": true,\n    \"tiers\": [\n        {\n            \"name\": \"Bronze\",\n            \"pointThreshold\": 0,\n            \"pointMultiplier\": 1,\n            \"benefits\": [\n                \"Earn 10 points per $1 spent\",\n                \"Free birthday item\"\n            ]\n        },\n        {\n            \"name\": \"Silver\",\n            \"pointThreshold\": 5000,\n            \"pointMultiplier\": 1,\n            \"benefits\": [\n                \"Earn 12 points per $1 spent\",\n                \"Free birthday item\",\n                \"Free size upgrade on any drink\"\n            ]\n        },\n        {\n            \"name\": \"Gold\",\n            \"pointMultiplier\": 1,\n            \"pointThreshold\": 10000,\n            \"benefits\": [\n                \"Earn 15 points per $1 spent\",\n                \"Free birthday item\",\n                \"Free size upgrade on any drink\",\n                \"Free coffee on Mondays\"\n            ]\n        }\n    ]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/loyalty-programs",
+							"raw": "{{baseUrl}}/api/loyaltyprograms",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"loyalty-programs"
+								"loyaltyprograms"
 							]
 						},
 						"description": "Create a new loyalty program"
@@ -1132,6 +1986,68 @@
 						"description": "Delete a loyalty program by ID"
 					},
 					"response": []
+				},
+				{
+					"name": "Get Programs by Brand ID Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/loyaltyprograms/brand/{{brandId}}",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"loyaltyprograms",
+								"brand",
+								"{{brandId}}"
+							]
+						},
+						"description": "Get all loyalty programs for a specific brand"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Programs by Type Copy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{admin_base_url}}/api/loyaltyprograms/type/Points?page=1&pageSize=20",
+							"host": [
+								"{{admin_base_url}}"
+							],
+							"path": [
+								"api",
+								"loyaltyprograms",
+								"type",
+								"Points"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get loyalty programs of a specific type (Points, Stamps, Tiered)"
+					},
+					"response": []
 				}
 			],
 			"description": "Endpoints for managing loyalty programs"
@@ -1140,7 +2056,7 @@
 			"name": "Reward Management",
 			"item": [
 				{
-					"name": "Get All Rewards",
+					"name": "Get All Rewards for ProgramId",
 					"event": [
 						{
 							"listen": "test",
@@ -1156,30 +2072,40 @@
 									"    pm.expect(jsonData.items).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
 						},
 						"method": "GET",
 						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
 						"url": {
-							"raw": "{{baseUrl}}/api/rewards?page=1&pageSize=20&programId={{programId}}",
+							"raw": "{{baseUrl}}/api/program/{{programId}}/rewards?page=1&pageSize=20",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
+								"program",
+								"{{programId}}",
 								"rewards"
 							],
 							"query": [
@@ -1190,11 +2116,6 @@
 								{
 									"key": "pageSize",
 									"value": "20"
-								},
-								{
-									"key": "programId",
-									"value": "{{programId}}",
-									"description": "Filter by loyalty program"
 								}
 							]
 						},
@@ -1221,7 +2142,8 @@
 									"    pm.expect(jsonData.pointsCost).to.exist;",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -1231,7 +2153,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -1239,12 +2161,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/rewards/{{rewardId}}",
+							"raw": "{{baseUrl}}/api/program/{{programId}}/rewards/{{rewardId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
+								"program",
+								"{{programId}}",
 								"rewards",
 								"{{rewardId}}"
 							]
@@ -1434,7 +2358,8 @@
 									"    pm.expect(jsonData.items).to.be.an('array');",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -1444,7 +2369,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -1553,7 +2478,8 @@
 									"    pm.environment.set(\"memberId\", jsonData.id);",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -1563,7 +2489,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{authToken}}",
+									"value": "{{admin_token}}",
 									"type": "string"
 								}
 							]
@@ -1834,341 +2760,6 @@
 				}
 			],
 			"description": "Endpoints for managing loyalty program members"
-		},
-		{
-			"name": "Campaign Management",
-			"item": [
-				{
-					"name": "Get All Campaigns",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has items array\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.items).to.exist;",
-									"    pm.expect(jsonData.items).to.be.an('array');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns?page=1&pageSize=20&programId={{programId}}&status=Active",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns"
-							],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "pageSize",
-									"value": "20"
-								},
-								{
-									"key": "programId",
-									"value": "{{programId}}",
-									"description": "Filter by loyalty program"
-								},
-								{
-									"key": "status",
-									"value": "Active",
-									"description": "Filter by campaign status"
-								}
-							]
-						},
-						"description": "Get a paginated list of all campaigns"
-					},
-					"response": []
-				},
-				{
-					"name": "Get Campaign by ID",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Campaign has correct properties\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.id).to.exist;",
-									"    pm.expect(jsonData.name).to.exist;",
-									"    pm.expect(jsonData.programId).to.exist;",
-									"    pm.expect(jsonData.startDate).to.exist;",
-									"    pm.expect(jsonData.rules).to.exist;",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns/{{campaignId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns",
-								"{{campaignId}}"
-							]
-						},
-						"description": "Get a campaign by its ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Create Campaign",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 201\", function () {",
-									"    pm.response.to.have.status(201);",
-									"});",
-									"",
-									"pm.test(\"Response has campaign ID\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.id).to.exist;",
-									"    pm.environment.set(\"campaignId\", jsonData.id);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Summer Coffee Promotion\",\n    \"description\": \"Double points on all coffee purchases during summer\",\n    \"programId\": \"{{programId}}\",\n    \"startDate\": \"2023-06-01T00:00:00Z\",\n    \"endDate\": \"2023-08-31T23:59:59Z\",\n    \"status\": \"Active\",\n    \"rules\": [\n        {\n            \"type\": \"PointMultiplier\",\n            \"config\": {\n                \"multiplier\": 2.0,\n                \"productCategories\": [\"Coffee\", \"Espresso\"],\n                \"dayOfWeek\": null,\n                \"timeRange\": null,\n                \"storeIds\": null\n            }\n        }\n    ],\n    \"memberSegments\": [\n        {\n            \"type\": \"AllMembers\"\n        }\n    ],\n    \"budget\": {\n        \"maxPoints\": 100000,\n        \"maxRedemptions\": null\n    },\n    \"priority\": 10,\n    \"tags\": [\"summer\", \"promotion\", \"coffee\"]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns"
-							]
-						},
-						"description": "Create a new campaign"
-					},
-					"response": []
-				},
-				{
-					"name": "Update Campaign",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has updated campaign\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.id).to.exist;",
-									"    pm.expect(jsonData.name).to.exist;",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Summer Coffee Promotion Extended\",\n    \"description\": \"Double points on all coffee purchases during summer and early fall\",\n    \"programId\": \"{{programId}}\",\n    \"startDate\": \"2023-06-01T00:00:00Z\",\n    \"endDate\": \"2023-09-30T23:59:59Z\",\n    \"status\": \"Active\",\n    \"rules\": [\n        {\n            \"type\": \"PointMultiplier\",\n            \"config\": {\n                \"multiplier\": 2.0,\n                \"productCategories\": [\"Coffee\", \"Espresso\", \"Cold Brew\"],\n                \"dayOfWeek\": null,\n                \"timeRange\": null,\n                \"storeIds\": null\n            }\n        }\n    ],\n    \"memberSegments\": [\n        {\n            \"type\": \"AllMembers\"\n        }\n    ],\n    \"budget\": {\n        \"maxPoints\": 150000,\n        \"maxRedemptions\": null\n    },\n    \"priority\": 10,\n    \"tags\": [\"summer\", \"promotion\", \"coffee\", \"fall\"]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns/{{campaignId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns",
-								"{{campaignId}}"
-							]
-						},
-						"description": "Update an existing campaign"
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Campaign",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 204\", function () {",
-									"    pm.response.to.have.status(204);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns/{{campaignId}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns",
-								"{{campaignId}}"
-							]
-						},
-						"description": "Delete a campaign by ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Get Campaign Performance",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has performance metrics\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.totalPoints).to.exist;",
-									"    pm.expect(jsonData.totalMembers).to.exist;",
-									"    pm.expect(jsonData.dailyStats).to.exist;",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{authToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/campaigns/{{campaignId}}/performance",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"campaigns",
-								"{{campaignId}}",
-								"performance"
-							]
-						},
-						"description": "Get performance metrics for a campaign"
-					},
-					"response": []
-				}
-			],
-			"description": "Endpoints for managing promotional campaigns"
 		}
 	],
 	"variable": [
@@ -2178,4 +2769,4 @@
 			"type": "string"
 		}
 	]
-} 
+}
