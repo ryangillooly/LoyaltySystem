@@ -18,6 +18,7 @@ bld/
 [Bb]in/[Dd]ebug*/
 **/[Bb]in/[Dd]ebug*/
 **/[Bb]in/[Dd]ebug/**/*
+**/Debug/**/*
 [Oo]bj/[Dd]ebug*/
 **/[Oo]bj/[Dd]ebug*/
 **/[Oo]bj/[Dd]ebug/**/*
@@ -38,6 +39,20 @@ bld/
 **/*.assets.cache
 **/*.dll.config
 **/*.exe.config
+
+# Additional specific patterns for build artifacts
+**/*.csproj.AssemblyReference.cache
+**/*.AssemblyInfo.cs
+**/*.AssemblyInfoInputs.cache
+**/project.assets.json
+**/project.nuget.cache
+**/project.packagespec.json
+**/*.csproj.AssemblyReference.cache
+**/*.csproj.CopyComplete
+**/*.csproj.CoreCompileInputs.cache
+**/*.csproj.FileListAbsolute.txt
+**/*.nuget.dgspec.json
+**/*.nuget.g.targets
 
 # Explicitly exclude Debug directories and all related files
 **/[Dd]ebug/
