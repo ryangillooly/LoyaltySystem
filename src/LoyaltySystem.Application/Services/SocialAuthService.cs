@@ -1,3 +1,4 @@
+/*
 using System;
 using System.Threading.Tasks;
 using System.Security.Claims;
@@ -5,12 +6,12 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using System.Text;
-using Google.Apis.Auth;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.Interfaces;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Shared.API.Settings;
 using Microsoft.Extensions.Logging;
@@ -458,3 +459,4 @@ public class AppleKey
     public string N { get; set; }
     public string E { get; set; }
 } 
+*/

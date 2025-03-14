@@ -61,7 +61,7 @@ public class StaffAuthorizationService : IStaffAuthorizationService
         }
 
         // Verify the store exists
-        var store = await _storeRepository.GetByIdAsync(storeId.ToString());
+        var store = await _storeRepository.GetByIdAsync(storeId);
         if (store == null)
         {
             _logger.LogWarning("Store not found for ID: {StoreId}", storeId);
