@@ -278,6 +278,7 @@ CREATE TABLE IF NOT EXISTS customers
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NULL,
     phone VARCHAR(50) NULL,
     marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
@@ -494,6 +495,7 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     password_salt VARCHAR(255) NOT NULL,
@@ -528,19 +530,24 @@ DELETE FROM users WHERE username = 'admin';
 DELETE FROM users WHERE username = 'manager';
 
 -- Insert admin user with password 'Admin@123'
-INSERT INTO users (
-    id, username, email, password_hash, password_salt,
+INSERT INTO users 
+(
+    id, first_name, last_name, username, email, password_hash, password_salt,
     status, created_at, updated_at
-) VALUES (
-             uuid_generate_v4(),
-             'admin',
-             'admin@loyaltysystem.com',
-             'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-             'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
-             1, -- Active status
-             CURRENT_TIMESTAMP,
-             CURRENT_TIMESTAMP
-         );
+) 
+VALUES 
+(
+     uuid_generate_v4(),
+     'tom',
+     'jim',
+     'admin',
+     'admin@loyaltysystem.com',
+     'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
+     'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
+     1, -- Active status
+     CURRENT_TIMESTAMP,
+     CURRENT_TIMESTAMP
+ );
 
 -- Add SuperAdmin role to the admin user
 INSERT INTO user_roles (user_id, role)
@@ -548,18 +555,20 @@ SELECT id, 'SuperAdmin' FROM users WHERE username = 'admin';
 
 -- Add a manager user with the same password
 INSERT INTO users (
-    id, username, email, password_hash, password_salt,
+    id, first_name, last_name, username, email, password_hash, password_salt,
     status, created_at, updated_at
 ) VALUES (
-             uuid_generate_v4(),
-             'manager',
-             'manager@loyaltysystem.com',
-             'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-             'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
-             1, -- Active status
-             CURRENT_TIMESTAMP,
-             CURRENT_TIMESTAMP
-         );
+     uuid_generate_v4(),
+     'tom',
+     'jim',
+     'manager',
+     'manager@loyaltysystem.com',
+     'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
+     'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
+     1, -- Active status
+     CURRENT_TIMESTAMP,
+     CURRENT_TIMESTAMP
+ );
 
 -- Add Manager role to the manager user
 INSERT INTO user_roles (user_id, role)
@@ -594,7 +603,8 @@ CREATE INDEX IF NOT EXISTS idx_mv_program_metrics_brand_id ON mv_program_metrics
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_customer_metrics AS
 SELECT
     c.id AS customer_id,
-    c.name AS customer_name,
+    c.first_name,
+    c.last_name,
     COUNT(DISTINCT lc.id) AS total_cards,
     SUM(CASE WHEN lc.status = 'Active' THEN 1 ELSE 0 END) AS active_cards,
     SUM(lc.points_balance) AS total_points,
@@ -604,7 +614,7 @@ SELECT
 FROM customers c
          LEFT JOIN loyalty_cards lc ON c.id = lc.customer_id
          LEFT JOIN transactions t ON lc.id = t.card_id
-GROUP BY c.id, c.name
+GROUP BY c.id, c.first_name, c.last_name
     WITH DATA;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_customer_metrics_customer_id ON mv_customer_metrics(customer_id);

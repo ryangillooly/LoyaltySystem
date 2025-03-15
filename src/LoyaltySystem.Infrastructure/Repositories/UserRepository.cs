@@ -238,10 +238,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 INSERT INTO users (
-                    id, username, email, password_hash, password_salt, 
+                    id, first_name, last_name, username, email, password_hash, password_salt, 
                     customer_id, status, created_at, updated_at, last_login_at
                 ) VALUES (
-                    @Id, @Username, @Email, @PasswordHash, @PasswordSalt, 
+                    @Id, @FirstName, @LastName, @Username, @Email, @PasswordHash, @PasswordSalt, 
                     @CustomerId::uuid, @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
                 )";
 
@@ -260,6 +260,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     Id = user.Id.Value,
                     user.FirstName,
                     user.LastName,
+                    user.UserName,
                     user.Email,
                     user.PasswordHash,
                     user.PasswordSalt,

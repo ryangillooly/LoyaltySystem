@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using LoyaltySystem.Domain.Common;
-using System.ComponentModel;
 
 namespace LoyaltySystem.Application.DTOs
 {
@@ -23,9 +19,13 @@ namespace LoyaltySystem.Application.DTOs
     
     public class LoginRequestDto 
     {
-        [Required]
-        [EmailAddress]
+        // TODO: How do we decide which to use?
+        //[Required]
         public string Email { get; set; } = string.Empty;
+        
+        // [Required]
+        [StringLength(100, MinimumLength = 2)]
+        public string UserName { get; set; } = string.Empty;
 
         [Required]
         public string Password { get; set; } = string.Empty;
@@ -47,7 +47,11 @@ namespace LoyaltySystem.Application.DTOs
         [StringLength(100, MinimumLength = 3)]
         public string LastName { get; set; } = string.Empty;
         
-        [Required]
+        // [Required]
+        [StringLength(100, MinimumLength = 2)]
+        public string UserName { get; set; } = string.Empty;
+        
+        // [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
@@ -66,7 +70,10 @@ namespace LoyaltySystem.Application.DTOs
     {
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
-         
+        
+        [StringLength(100, MinimumLength = 2)]
+        public string UserName { get; set; } = string.Empty;
+        
         [Phone]
         public string Phone { get; set; } = string.Empty;
         public string CurrentPassword { get; set; } = string.Empty;

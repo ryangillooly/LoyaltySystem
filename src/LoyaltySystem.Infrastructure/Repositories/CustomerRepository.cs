@@ -36,7 +36,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 """
                     SELECT * 
                     FROM customers
-                    ORDER BY name
+                    ORDER BY first_name, last_name
                     LIMIT @Limit 
                     OFFSET @Skip
                 """, 
@@ -74,15 +74,16 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
-                            (id, name, email, phone, marketing_consent, last_login_at, created_at, updated_at)
+                            (id, first_name, last_name, username, email, phone, marketing_consent, last_login_at, created_at, updated_at)
                         VALUES 
-                            (@CustomerId, @Name, @Email, @Phone, @MarketingConsent, @LastLoginAt, @CreatedAt, @UpdatedAt)
+                            (@CustomerId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @LastLoginAt, @CreatedAt, @UpdatedAt)
                     ",
                     new
                     {
                         CustomerId = customer.Id.Value,
                         customer.FirstName,
                         customer.LastName,
+                        customer.UserName,
                         customer.Email,
                         customer.Phone,
                         customer.MarketingConsent,
@@ -115,10 +116,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Customer>> SearchAsync(string searchTerm, int skip = 0, int limit = 50)
         {
             const string sql = @"
-                SELECT * FROM customers
-                WHERE name ILIKE @SearchTerm OR email ILIKE @SearchTerm OR phone ILIKE @SearchTerm
-                ORDER BY name
-                LIMIT @Limit OFFSET @Skip";
+                SELECT * 
+                FROM customers
+                WHERE 
+                    first_name ILIKE @SearchTerm OR
+                    last_name ILIKE @SearchTerm OR
+                    email ILIKE @SearchTerm OR 
+                    phone ILIKE @SearchTerm
+                ORDER BY 
+                    first_name, 
+                    last_name
+                LIMIT @Limit 
+                OFFSET @Skip";
             
             var parameters = new 
             { 
@@ -194,7 +203,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 UPDATE customers 
-                SET name = @Name,
+                SET first_name = @FirstName,
+                    last_name = @LastName,          
+                    username = @UserName,
                     email = @Email,
                     phone = @Phone,
                     marketing_consent = @MarketingConsent,
@@ -228,6 +239,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 Id = customerId,
                 customer.FirstName,
                 customer.LastName,
+                customer.UserName,
                 customer.Email,
                 customer.Phone,
                 customer.MarketingConsent,

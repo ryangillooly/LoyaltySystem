@@ -75,7 +75,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var password = "password123";
             var loginDto = new LoginRequestDto
             {
-                Email = "admin",
+                Email = "admin@example.com",
                 Password = password
             };
 
@@ -84,6 +84,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var user = new User(
                 "test",
                 "user",
+                "username",
                 "admin@example.com",
                 passwordHash,
                 passwordSalt);
@@ -94,7 +95,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             // 1. Repository returns our active user
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByEmailAsync(loginDto.Email))
+                .Setup<Task<User>>(x => x.GetByUsernameAsync(loginDto.UserName))
                 .ReturnsAsync(user);
                                 
             // 2. Setup JWT token generation
@@ -167,6 +168,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var user = new User(
                 "tester",
                 "admin",
+                "username",
                 "inactive@example.com",
                 passwordHash,
                 passwordSalt);
@@ -411,6 +413,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var user = new User(
                 "johndoe",
                 "john",
+                "username",
                 "johndoe@example.com",
                 passwordHash,
                 passwordSalt);
@@ -892,6 +895,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var user = new User(
                 "test",
                 "user",
+                "username",
                 email,
                 validPasswordHash,
                 validSalt);

@@ -17,6 +17,7 @@ namespace LoyaltySystem.Domain.Entities
             CustomerId? customerId,
             string firstName,
             string lastName,
+            string username,
             string email,
             string phone,
             Address? address,
@@ -34,6 +35,7 @@ namespace LoyaltySystem.Domain.Entities
             Id = customerId ?? new CustomerId();
             FirstName = firstName;
             LastName = lastName;
+            UserName = username;
             Email = email;
             Phone = phone;
             MarketingConsent = marketingConsent;
@@ -45,6 +47,7 @@ namespace LoyaltySystem.Domain.Entities
         
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public bool MarketingConsent { get; set; }
@@ -60,6 +63,7 @@ namespace LoyaltySystem.Domain.Entities
         public void Update(
             string firstName,
             string lastName,
+            string username,
             string email,
             string phone,
             Address? address,
@@ -76,6 +80,7 @@ namespace LoyaltySystem.Domain.Entities
 
             FirstName = firstName;
             LastName = lastName;
+            UserName = username;
             Email = email;
             Address = address;
             Phone = phone;

@@ -15,6 +15,10 @@ public class CustomerRegisterDto : RegisterUserDto
     [StringLength(100, MinimumLength = 2)]
     public string LastName { get; set; } = string.Empty;
     
+    [Required]
+    [StringLength(100, MinimumLength = 2)]
+    public string UserName { get; set; } = string.Empty;
+    
     [Phone]
     public string Phone { get; set; } = string.Empty;
     public bool MarketingConsent { get; set; } = false;
@@ -28,6 +32,7 @@ public class CustomerDto
     public string Id { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public bool MarketingConsent { get; set; }
@@ -50,6 +55,10 @@ public class CreateCustomerDto
     public string LastName { get; set; } = string.Empty;
     
     [Required]
+    [StringLength(100, MinimumLength = 2)]
+    public string UserName { get; set; } = string.Empty;
+    
+    [Required]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
 
@@ -70,6 +79,10 @@ public class UpdateCustomerDto
     [StringLength(100, MinimumLength = 2)]
     public string LastName { get; set; } = string.Empty;
     
+    [Required]
+    [StringLength(100, MinimumLength = 2)]
+    public string UserName { get; set; } = string.Empty;
+    
     [Phone]
     public string Phone { get; set; } = string.Empty;
     
@@ -88,6 +101,7 @@ public class CustomerDbObjectDto
     public Guid Id { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public bool MarketingConsent { get; set; }

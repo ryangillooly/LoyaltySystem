@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
@@ -13,8 +7,6 @@ using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Interfaces;
 
 namespace LoyaltySystem.Application.Services
@@ -41,6 +33,7 @@ namespace LoyaltySystem.Application.Services
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+            _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
         }
 
         /// <summary>
@@ -50,7 +43,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByUsernameAsync(username);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
                 
             if (user.Status != UserStatus.Active)
@@ -58,12 +51,10 @@ namespace LoyaltySystem.Application.Services
                 
             if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
                 return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
-                
-            // Record login
+            
             user.RecordLogin();
             await _userRepository.UpdateAsync(user);
             
-            // Generate token
             var token = GenerateJwtToken(user);
             
             return OperationResult<AuthResponseDto>.SuccessResult(new AuthResponseDto
@@ -94,7 +85,7 @@ namespace LoyaltySystem.Application.Services
                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
 
                 // Create user entity
-                var user = new User(registerDto.FirstName, registerDto.LastName, registerDto.Email, passwordHash, passwordSalt);
+                var user = new User(registerDto.FirstName, registerDto.LastName, registerDto.UserName, registerDto.Email, passwordHash, passwordSalt);
 
                 // Add default customer role
                 user.AddRole(RoleType.Customer);
@@ -105,6 +96,7 @@ namespace LoyaltySystem.Application.Services
                         null,
                         registerDto.FirstName,
                         registerDto.LastName,
+                        registerDto.UserName,
                         registerDto.Email,
                         registerDto.Phone,
                         null,
@@ -112,6 +104,7 @@ namespace LoyaltySystem.Application.Services
                     );
 
                     // First save the customer to get an ID, then link the user to that customer
+                    // TODO: we need to change this, because not all users will be customers. Please sort this.
                     customer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
                     user.LinkToCustomer(customer.Id.ToString());
 

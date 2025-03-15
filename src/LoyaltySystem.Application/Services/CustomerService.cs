@@ -120,7 +120,7 @@ namespace LoyaltySystem.Application.Services
                 if (customer == null)
                     return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
 
-                customer.Update(dto.FirstName, dto.LastName, dto.Email, dto.Phone, dto.Address, false);
+                customer.Update(dto.FirstName, dto.LastName, dto.UserName, dto.Email, dto.Phone, dto.Address, false);
                 return await _unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
                     await _customerRepository.UpdateAsync(customer);
@@ -259,6 +259,7 @@ namespace LoyaltySystem.Application.Services
                 null, // Let the class generate a new Id
                 dto.FirstName, 
                 dto.LastName, 
+                dto.UserName,
                 dto.Email, 
                 dto.Phone, 
                 dto.Address, 
