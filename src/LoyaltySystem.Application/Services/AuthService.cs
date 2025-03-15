@@ -25,6 +25,7 @@ namespace LoyaltySystem.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
@@ -33,7 +34,8 @@ namespace LoyaltySystem.Application.Services
             IUserRepository userRepository,
             IConfiguration configuration,
             IUnitOfWork unitOfWork,
-            IJwtService jwtService)
+            IJwtService jwtService,
+            ICustomerRepository customerRepository)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
@@ -76,35 +78,54 @@ namespace LoyaltySystem.Application.Services
         /// </summary>
         public async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerDto)
         {
-            // Check if username already exists
-            var existingUsername = await _userRepository.GetByUsernameAsync(registerDto.Username);
-            if (existingUsername != null)
-                return OperationResult<UserDto>.FailureResult("Username already exists");
-                
-            // Check if email already exists
-            var existingEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
-            if (existingEmail != null)
-                return OperationResult<UserDto>.FailureResult("Email already exists");
-                
-            // Create password hash
-            CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
-            
-            // Create user entity
-            var user = new User(
-                registerDto.Username,
-                registerDto.Email,
-                passwordHash,
-                passwordSalt);
-                
-            // Add default customer role
-            user.AddRole(RoleType.Customer);
-            
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            try
             {
-                await _userRepository.AddAsync(user, _unitOfWork.CurrentTransaction);
-            });
-            
-            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
+                // Check if username already exists
+                var existingUsername = await _userRepository.GetByEmailAsync(registerDto.Email);
+                if (existingUsername is { })
+                    return OperationResult<UserDto>.FailureResult("Username already exists");
+
+                // Check if email already exists
+                var existingEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
+                if (existingEmail is { })
+                    return OperationResult<UserDto>.FailureResult("Email already exists");
+
+                // Create password hash
+                CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
+
+                // Create user entity
+                var user = new User(registerDto.FirstName, registerDto.LastName, registerDto.Email, passwordHash, passwordSalt);
+
+                // Add default customer role
+                user.AddRole(RoleType.Customer);
+
+                await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    var customer = new Customer(
+                        null,
+                        registerDto.FirstName,
+                        registerDto.LastName,
+                        registerDto.Email,
+                        registerDto.Phone,
+                        null,
+                        false
+                    );
+
+                    // First save the customer to get an ID, then link the user to that customer
+                    customer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
+                    user.LinkToCustomer(customer.Id.ToString());
+
+                    // Now save the user with the customer ID reference
+                    await _userRepository.AddAsync(user, _unitOfWork.CurrentTransaction);
+                });
+                
+                
+                return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<UserDto>.FailureResult(ex.Message);
+            }
         }
 
         /// <summary>
@@ -114,14 +135,14 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             // Check if email is changing and already exists
             if (updateDto.Email != user.Email)
             {
                 var existingEmail = await _userRepository.GetByEmailAsync(updateDto.Email);
-                if (existingEmail != null)
+                if (existingEmail is { })
                     return OperationResult<UserDto>.FailureResult("Email already exists");
                     
                 user.UpdateEmail(updateDto.Email);
@@ -149,7 +170,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
@@ -162,7 +183,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByCustomerIdAsync(customerId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
@@ -175,7 +196,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             user.AddRole(role);
@@ -191,7 +212,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             user.RemoveRole(role);
@@ -207,7 +228,7 @@ namespace LoyaltySystem.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             
-            if (user == null)
+            if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
                 
             // Check if customer already linked to a user
@@ -229,7 +250,7 @@ namespace LoyaltySystem.Application.Services
             var additionalClaims = new Dictionary<string, string>();
             
             // Add customer ID claim if it exists
-            if (user.CustomerId != null)
+            if (user.CustomerId is { })
             {
                 additionalClaims.Add("CustomerId", user.CustomerId.ToString());
                 additionalClaims.Add("UserId", user.Id.ToString());
@@ -243,28 +264,25 @@ namespace LoyaltySystem.Application.Services
             // Use the JwtService to generate the token
             return _jwtService.GenerateToken(
                 user.Id.ToString(),
-                user.Username,
+                user.FirstName,
+                user.LastName,
                 user.Email,
                 roles,
                 additionalClaims
             );
         }
 
-        private bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
+        private static bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
         {
-            // Convert the salt back to bytes
             byte[] saltBytes = Convert.FromBase64String(storedSalt);
-    
-            // Use the salt to initialize the HMAC
             using var hmac = new HMACSHA512(saltBytes);
-    
-            // Compute the hash from the password
+            
             var computedHash = Convert.ToBase64String(
                 hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
         
             return computedHash == storedHash;
         }
-        private void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
+        private static void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
         {
             using var hmac = new HMACSHA512();
             
@@ -273,20 +291,19 @@ namespace LoyaltySystem.Application.Services
                 hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
         }
 
-        private UserDto MapUserToDto(User user)
-        {
-            return new UserDto
+        private static UserDto MapUserToDto(User user) =>
+            new ()
             {
                 Id = user.Id.ToString(),
-                Username = user.Username,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Email = user.Email,
                 Status = user.Status.ToString(),
-                CustomerId = user.CustomerId?.ToString(),
+                CustomerId = user.CustomerId?.ToString() ?? string.Empty,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
                 Roles = user.Roles.Select(r => r.Role.ToString()).ToList()
             };
-        }
 
         #endregion
     }

@@ -46,7 +46,7 @@ public static class ApiConfiguration
             })
             .AddJsonOptions(options => 
             {
-                // Register converters for all EntityId types
+                // RegisterUser converters for all EntityId types
                 options.JsonSerializerOptions.Converters.Add(new OperatingHoursConverter());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserId>());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<CustomerId>());
@@ -65,7 +65,7 @@ public static class ApiConfiguration
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.Configure<PostgresqlSettings>(postgresSection);
         
-        // Register JWT service
+        // RegisterUser JWT service
         builder.Services.AddSingleton<IJwtService, JwtService>();
         
         builder.Services.AddSwaggerGen(c =>
@@ -180,7 +180,7 @@ public static class ApiConfiguration
             app.UseSwaggerUI();
             
             // Initialize the entity ID utility for development mode
-            LoyaltySystem.Shared.API.Utilities.EntityIdUtility.Initialize();
+            Utilities.EntityIdUtility.Initialize();
         }
 
         app.UseHttpsRedirection();

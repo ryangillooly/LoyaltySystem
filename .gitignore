@@ -230,12 +230,6 @@ Desktop.ini
 # Microsoft Fakes
 FakesAssemblies/
 
-# Local Configuration
-appsettings.Development.json
-appsettings.*.json
-!appsettings.json
-launchSettings.json
-
 # Local secrets
 *.secret
 *.secrets

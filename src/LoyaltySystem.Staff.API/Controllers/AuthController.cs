@@ -1,11 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Shared.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace LoyaltySystem.Staff.API.Controllers
 {
@@ -13,17 +10,17 @@ namespace LoyaltySystem.Staff.API.Controllers
     [Route("api/[controller]")]
     public class AuthController : BaseAuthController
     {
-        public AuthController(AuthService authService, ILogger<AuthController> logger) 
+        public AuthController(IAuthService authService, ILogger<AuthController> logger) 
             : base(authService, logger)
         {
         }
 
         // Override the registration method to prevent customer registration through staff API
         [HttpPost("register")]
-        public override async Task<IActionResult> Register(RegisterUserDto registerRequest)
+        public override async Task<IActionResult> RegisterUser(RegisterUserDto registerRequest)
         {
             // Staff API should not allow customer registration
-            _logger.LogWarning("Attempt to register through Staff API blocked: {Username}", registerRequest.Username);
+            _logger.LogWarning("Attempt to register through Staff API blocked: {email}", registerRequest.Email);
             return StatusCode(403, new { message = "Registration not allowed through Staff API" });
         }
         

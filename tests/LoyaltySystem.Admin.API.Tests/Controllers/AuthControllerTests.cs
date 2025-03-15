@@ -32,6 +32,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
         private readonly Mock<IUserRepository> _mockUserRepository;
         private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+        private readonly Mock<ICustomerRepository> _customerRepository;
         private readonly Mock<IJwtService> _mockJwtService;
         private readonly AuthService _authService;
         private readonly Mock<ILogger<AuthController>> _mockLogger;
@@ -44,6 +45,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             _output = output;
             
             // Create mocks for all the dependencies of AuthService
+            _customerRepository = new Mock<ICustomerRepository>();
             _mockUserRepository = new Mock<IUserRepository>();
             _mockConfiguration = new Mock<IConfiguration>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
@@ -54,7 +56,8 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
                 _mockUserRepository.Object,
                 _mockConfiguration.Object,
                 _mockUnitOfWork.Object,
-                _mockJwtService.Object
+                _mockJwtService.Object,
+                _customerRepository.Object
             );
             
             _mockLogger = new Mock<ILogger<AuthController>>();
@@ -72,14 +75,15 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var password = "password123";
             var loginDto = new LoginRequestDto
             {
-                Username = "admin",
+                Email = "admin",
                 Password = password
             };
 
             // Create a valid mock user with properly hashed password that will verify correctly
             CreatePasswordHash(password, out string passwordHash, out string passwordSalt);
             var user = new User(
-                loginDto.Username,
+                "test",
+                "user",
                 "admin@example.com",
                 passwordHash,
                 passwordSalt);
@@ -90,12 +94,13 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             // 1. Repository returns our active user
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(loginDto.Username))
+                .Setup<Task<User>>(x => x.GetByEmailAsync(loginDto.Email))
                 .ReturnsAsync(user);
                                 
             // 2. Setup JWT token generation
             _mockJwtService
                 .Setup(x => x.GenerateToken(
+                    It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -115,7 +120,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             {
                 returnedResponse.Token.Should().Be("jwt-token");
                 returnedResponse.User.Should().NotBeNull();
-                returnedResponse.User.Username.Should().Be(loginDto.Username);
+                returnedResponse.User.Email.Should().Be(loginDto.Email);
             }
         }
 
@@ -125,13 +130,13 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             // Arrange
             var loginDto = new LoginRequestDto
             {
-                Username = "admin",
+                Email = "admin",
                 Password = "wrongpassword"
             };
 
             // Setup repository to simulate nonexistent user
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(loginDto.Username)!)!
+                .Setup<Task<User>>(x => x.GetByEmailAsync(loginDto.Email)!)!
                 .ReturnsAsync((User)null!);
 
             // Act
@@ -143,7 +148,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             // Verify the error message using serialization
             var json = JsonSerializer.Serialize(unauthorizedResult.Value);
-            json.Should().Contain("Invalid username or password");
+            json.Should().Contain("Invalid Email or password");
         }
 
         [Fact]
@@ -153,14 +158,15 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var password = "password123";
             var loginDto = new LoginRequestDto
             {
-                Username = "inactive",
+                Email = "inactive",
                 Password = password
             };
 
             // Create user with inactive status
             CreatePasswordHash(password, out string passwordHash, out string passwordSalt);
             var user = new User(
-                loginDto.Username,
+                "tester",
+                "admin",
                 "inactive@example.com",
                 passwordHash,
                 passwordSalt);
@@ -169,10 +175,10 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             // In the real User class, not calling RecordLogin() should leave the user in inactive state
             
             // Debug the user state if needed - use appropriate properties from the User class
-            _output.WriteLine($"Testing login with potentially inactive user: {user.Username}");
+            _output.WriteLine($"Testing login with potentially inactive user: {user.Email}");
             
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(loginDto.Username))
+                .Setup<Task<User>>(x => x.GetByEmailAsync(loginDto.Email))
                 .ReturnsAsync(user);
 
             // Act
@@ -192,7 +198,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
 
         #endregion
 
-        #region Register Tests
+        #region RegisterUser Tests
 
         [Fact]
         public async Task Register_WithValidData_ReturnsCreatedAtAction()
@@ -200,7 +206,8 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             // Arrange
             var registerDto = new RegisterUserDto
             {
-                Username = "newadmin",
+                FirstName = "tester",
+                LastName = "admin",
                 Email = "newadmin@example.com",
                 Password = "password123",
                 ConfirmPassword = "password123"
@@ -208,7 +215,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
 
             // Setup repository for successful registration
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(registerDto.Username))
+                .Setup<Task<User>>(x => x.GetByEmailAsync(registerDto.Email))
                 .ReturnsAsync((User)null);
 
             _mockUserRepository
@@ -225,7 +232,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
                 .Returns(Task.CompletedTask);
                 
             // Act
-            var result = await _controller.Register(registerDto);
+            var result = await _controller.RegisterUser(registerDto);
 
             // Assert
             var createdAtActionResult = result.Should().BeOfType<CreatedAtActionResult>().Subject;
@@ -234,7 +241,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             if (createdAtActionResult.Value is UserDto userDto)
             {
-                userDto.Username.Should().Be(registerDto.Username);
+                userDto.Email.Should().Be(registerDto.Email);
                 userDto.Email.Should().Be(registerDto.Email);
                 userDto.Id.Should().StartWith("usr_");
             }
@@ -246,14 +253,15 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             // Arrange
             var registerDto = new RegisterUserDto
             {
-                Username = "newadmin",
+                FirstName = "tester",
+                LastName = "admin",
                 Email = "newadmin@example.com",
                 Password = "password123",
                 ConfirmPassword = "password456" // Mismatch
             };
 
             // Act
-            var result = await _controller.Register(registerDto);
+            var result = await _controller.RegisterUser(registerDto);
 
             // Assert
             var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
@@ -265,26 +273,27 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
         }
 
         [Fact]
-        public async Task Register_WithExistingUsername_ReturnsBadRequest()
+        public async Task Register_WithExistingEmail_ReturnsBadRequest()
         {
             // Arrange
             var registerDto = new RegisterUserDto
             {
-                Username = "existingadmin",
+                FirstName = "tester",
+                LastName = "admin",
                 Email = "newadmin@example.com",
                 Password = "password123",
                 ConfirmPassword = "password123"
             };
 
-            // Setup UserRepository to return an existing user with the same username
+            // Setup UserRepository to return an existing user with the same Email
             var existingUser = CreateMockUser("existingadmin", "existing@example.com");
             
             _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(registerDto.Username))
+                .Setup<Task<User>>(x => x.GetByEmailAsync(registerDto.Email))
                 .ReturnsAsync(existingUser);
 
             // Act
-            var result = await _controller.Register(registerDto);
+            var result = await _controller.RegisterUser(registerDto);
 
             // Assert
             result.Should().BeOfType<BadRequestObjectResult>();
@@ -296,42 +305,9 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             // Verify the error message
             var json = JsonSerializer.Serialize(badRequestResult.Value);
-            json.Should().Contain("Username already exists");
-        }
-
-        [Fact]
-        public async Task Register_WithExistingEmail_ReturnsBadRequest()
-        {
-            // Arrange
-            var registerDto = new RegisterUserDto
-            {
-                Username = "newuser",
-                Email = "existing@example.com",
-                Password = "password123",
-                ConfirmPassword = "password123"
-            };
-
-            // Setup repository to return null for username check but an existing user for email check
-            _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByUsernameAsync(registerDto.Username))
-                .ReturnsAsync((User)null);
-
-            var existingUser = CreateMockUser("existinguser", registerDto.Email);
-            _mockUserRepository
-                .Setup<Task<User>>(x => x.GetByEmailAsync(registerDto.Email))
-                .ReturnsAsync(existingUser);
-
-            // Act
-            var result = await _controller.Register(registerDto);
-
-            // Assert
-            result.Should().BeOfType<BadRequestObjectResult>();
-            var badRequestResult = (BadRequestObjectResult)result;
-            
-            // Verify the error message
-            var json = JsonSerializer.Serialize(badRequestResult.Value);
             json.Should().Contain("Email already exists");
         }
+        
 
         #endregion
 
@@ -361,7 +337,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             {
                 okResult.Value.Should().BeOfType<UserDto>();
                 var returnedDto = okResult.Value as UserDto;
-                returnedDto.Username.Should().Be(user.Username);
+                returnedDto.Email.Should().Be(user.Email);
             }
         }
 
@@ -434,6 +410,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             CreatePasswordHash(currentPassword, out string passwordHash, out string passwordSalt);
             var user = new User(
                 "johndoe",
+                "john",
                 "johndoe@example.com",
                 passwordHash,
                 passwordSalt);
@@ -553,7 +530,7 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             var okResult = (OkObjectResult)result;
             if (okResult.Value is UserDto userDto)
             {
-                userDto.Username.Should().Be(user.Username);
+                userDto.Email.Should().Be(user.Email);
                 userDto.Email.Should().Be(user.Email);
             }
         }
@@ -901,9 +878,9 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
         }
 
         /// <summary>
-        /// Creates a mock User object with the given username and email
+        /// Creates a mock User object with the given Email and email
         /// </summary>
-        private User CreateMockUser(string username, string email)
+        private User CreateMockUser(string Email, string email)
         {
             // Create a valid Base64 string for password hash and salt
             // This is important because the VerifyPasswordHash method expects valid Base64
@@ -913,7 +890,8 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             
             // Create a proper User object with valid Base64 strings
             var user = new User(
-                username,
+                "test",
+                "user",
                 email,
                 validPasswordHash,
                 validSalt);

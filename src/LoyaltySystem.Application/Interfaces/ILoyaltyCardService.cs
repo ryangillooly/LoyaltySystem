@@ -30,5 +30,13 @@ namespace LoyaltySystem.Application.Interfaces
         Task<int> GetActiveCardCountForProgramAsync(string programId);
         Task<int> GetCardCountForProgramAsync(string programId);
         Task<decimal> GetAverageTransactionsPerCardForProgramAsync(string programId);
+        
+        /// <summary>
+        /// Verifies that a loyalty card belongs to a specific customer
+        /// </summary>
+        /// <param name="cardId">The ID of the loyalty card to check</param>
+        /// <param name="customerId">The ID of the customer</param>
+        /// <returns>Success result if the card belongs to the customer, failure otherwise</returns>
+        Task<OperationResult<bool>> VerifyCardOwnership(string cardId, CustomerId customerId);
     }
 } 

@@ -13,7 +13,7 @@ public interface ICustomerService
     Task<OperationResult<PagedResult<CustomerDto>>> SearchCustomersAsync(string query, int page, int pageSize);
     Task<OperationResult<CustomerDto>> CreateCustomerAsync(CreateCustomerDto dto);
     Task<OperationResult<CustomerDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto);
-    Task<OperationResult<List<CustomerSignupDto>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end);
+    Task<OperationResult<IEnumerable<Customer>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end);
     Task<Dictionary<string, int>> GetCustomerAgeGroupsAsync();
     Task<Dictionary<string, int>> GetCustomerGenderDistributionAsync();
     Task<List<KeyValuePair<string, int>>> GetTopCustomerLocationsAsync(int limit);

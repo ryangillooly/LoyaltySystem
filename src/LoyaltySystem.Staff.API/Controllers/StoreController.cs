@@ -1,3 +1,4 @@
+using LoyaltySystem.Application.Interfaces;
 using System.Security.Claims;
 using LoyaltySystem.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,12 +12,12 @@ namespace LoyaltySystem.Staff.API.Controllers
     public class StoreController : ControllerBase
     {
         private readonly StoreService _storeService;
-        private readonly LoyaltyProgramService _programService;
+        private readonly ILoyaltyProgramService _programService;
         private readonly ILogger<StoreController> _logger;
 
         public StoreController(
             StoreService storeService,
-            LoyaltyProgramService programService,
+            ILoyaltyProgramService programService,
             ILogger<StoreController> logger)
         {
             _storeService = storeService ?? throw new ArgumentNullException(nameof(storeService));

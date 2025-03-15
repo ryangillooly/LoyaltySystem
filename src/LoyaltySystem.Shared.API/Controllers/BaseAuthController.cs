@@ -26,30 +26,30 @@ namespace LoyaltySystem.Shared.API.Controllers
         }
 
         [HttpPost("login")]
-        public virtual async Task<IActionResult> Login(LoginRequestDto loginRequest)
+        public virtual async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            _logger.LogInformation("Login attempt for user: {Username}", loginRequest.Username);
+            _logger.LogInformation("Login attempt for email: {email}", loginRequest.Email);
             
-            var result = await _authService.AuthenticateAsync(loginRequest.Username, loginRequest.Password);
+            var result = await _authService.AuthenticateAsync(loginRequest.Email, loginRequest.Password);
             
             if (!result.Success)
             {
-                _logger.LogWarning("Failed login attempt for user: {Username}", loginRequest.Username);
+                _logger.LogWarning("Failed login attempt for email: {email}", loginRequest.Email);
                 return Unauthorized(new { message = result.Errors });
             }
             
-            _logger.LogInformation("Successful login for user: {Username}", loginRequest.Username);
+            _logger.LogInformation("Successful login for email: {email}", loginRequest.Email);
             return Ok(result.Data);
         }
 
         [HttpPost("register")]
-        public virtual async Task<IActionResult> Register(RegisterUserDto registerRequest)
+        public virtual async Task<IActionResult> RegisterUser(RegisterUserDto registerRequest)
         {
-            _logger.LogInformation("Registration attempt for username: {Username}", registerRequest.Username);
+            _logger.LogInformation("Registration attempt for email: {email}", registerRequest.Email);
             
             if (registerRequest.Password != registerRequest.ConfirmPassword)
             {
-                _logger.LogWarning("Registration failed - password mismatch for username: {Username}", registerRequest.Username);
+                _logger.LogWarning("Registration failed - password mismatch for email: {email}", registerRequest.Email);
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
@@ -57,11 +57,11 @@ namespace LoyaltySystem.Shared.API.Controllers
             
             if (!result.Success)
             {
-                _logger.LogWarning("Registration failed for username: {Username} - {Error}", registerRequest.Username, result.Errors);
+                _logger.LogWarning("Registration failed for email: {email} - {Error}", registerRequest.Email, result.Errors);
                 return BadRequest(new { message = result.Errors });
             }
             
-            _logger.LogInformation("Successful registration for user: {Username}", registerRequest.Username);
+            _logger.LogInformation("Successful registration for email: {email}", registerRequest.Email);
             return CreatedAtAction(nameof(GetUserById), new { id = result.Data.Id }, result.Data);
         }
 

@@ -273,9 +273,11 @@ CREATE TABLE IF NOT EXISTS store_addresses (
 CREATE INDEX IF NOT EXISTS idx_store_addresses_location ON store_addresses USING GIST (location);
 
 -- Create Customers table
-CREATE TABLE IF NOT EXISTS customers (
-                                         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(100) NOT NULL,
+CREATE TABLE IF NOT EXISTS customers 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NULL,
     phone VARCHAR(50) NULL,
     marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
@@ -288,7 +290,7 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email) WHERE email IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone) WHERE phone IS NOT NULL;
 -- Add enhanced search for customers by name (using trigram similarity)
-CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
 
 -- Create LoyaltyPrograms table
 CREATE TABLE IF NOT EXISTS loyalty_programs (
@@ -321,24 +323,26 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_programs_brand_id ON loyalty_programs (br
 CREATE INDEX IF NOT EXISTS idx_loyalty_programs_type ON loyalty_programs (type);
 
 -- Create ProgramExpirationPolicies table
-CREATE TABLE IF NOT EXISTS program_expiration_policies (
-                                                           program_id UUID PRIMARY KEY,
-                                                           has_expiration BOOLEAN NOT NULL DEFAULT FALSE,
-                                                           expiration_type expiration_type NULL,
-                                                           expiration_value INTEGER NULL,
-                                                           expires_on_specific_date BOOLEAN NOT NULL DEFAULT FALSE,
-                                                           expiration_day INTEGER NULL,
-                                                           expiration_month INTEGER NULL,
-                                                           CONSTRAINT fk_program_expiration_policies_loyalty_programs FOREIGN KEY (program_id) REFERENCES loyalty_programs (id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS program_expiration_policies 
+(
+    program_id UUID PRIMARY KEY,
+    has_expiration BOOLEAN NOT NULL DEFAULT FALSE,
+    expiration_type expiration_type NULL,
+    expiration_value INTEGER NULL,
+    expires_on_specific_date BOOLEAN NOT NULL DEFAULT FALSE,
+    expiration_day INTEGER NULL,
+    expiration_month INTEGER NULL,
+    CONSTRAINT fk_program_expiration_policies_loyalty_programs FOREIGN KEY (program_id) REFERENCES loyalty_programs (id) ON DELETE CASCADE,
     CONSTRAINT chk_expiration_type CHECK (has_expiration = FALSE OR expiration_type IS NOT NULL),
     CONSTRAINT chk_expiration_value CHECK (has_expiration = FALSE OR expiration_value IS NOT NULL),
     CONSTRAINT chk_expiration_day CHECK (expires_on_specific_date = FALSE OR expiration_day BETWEEN 1 AND 31),
     CONSTRAINT chk_expiration_month CHECK (expires_on_specific_date = FALSE OR expiration_month BETWEEN 1 AND 12)
-    );
+);
 
 -- Create Rewards table
-CREATE TABLE IF NOT EXISTS rewards (
-                                       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS rewards 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL,
     title VARCHAR(100) NOT NULL,
     description VARCHAR(500) NULL,
@@ -358,8 +362,9 @@ CREATE INDEX IF NOT EXISTS idx_rewards_valid_period ON rewards (valid_from, vali
 CREATE INDEX IF NOT EXISTS idx_rewards_program_active ON rewards(program_id, is_active) WHERE is_active = TRUE;
 
 -- Create LoyaltyCards table
-CREATE TABLE IF NOT EXISTS loyalty_cards (
-                                             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS loyalty_cards
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL,
     customer_id UUID NOT NULL,
     type loyalty_program_type NOT NULL,
@@ -381,12 +386,14 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_cards_program_id ON loyalty_cards (progra
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_customer_id ON loyalty_cards (customer_id);
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_status ON loyalty_cards (status);
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_expires_at ON loyalty_cards (expires_at) WHERE expires_at IS NOT NULL;
+
 -- Add composite index for common query patterns
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_program_status ON loyalty_cards(program_id, status);
 
 -- Create Transactions table with partitioning
-CREATE TABLE IF NOT EXISTS transactions (
-                                            id UUID DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS transactions
+(
+    id UUID DEFAULT uuid_generate_v4(),
     card_id UUID NOT NULL,
     type transaction_type NOT NULL,
     reward_id UUID NULL,
@@ -484,8 +491,9 @@ CREATE TABLE IF NOT EXISTS partition_maintenance_log (
 -- Then create your users and admin after tables are created
 -- Create users table (if it doesn't exist)
 CREATE TABLE IF NOT EXISTS users (
-                                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(50) NOT NULL UNIQUE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     password_salt VARCHAR(255) NOT NULL,
@@ -498,17 +506,18 @@ CREATE TABLE IF NOT EXISTS users (
     );
 
 -- Create user_roles table (if it doesn't exist)
-CREATE TABLE IF NOT EXISTS user_roles (
-                                          user_id UUID NOT NULL,
-                                          role VARCHAR(50) NOT NULL,
+CREATE TABLE IF NOT EXISTS user_roles 
+(
+    user_id UUID NOT NULL,
+    role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role),
     CONSTRAINT fk_user_roles_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    );
+);
 
 -- Add proper indexing for users table
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
 CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id) WHERE customer_id IS NOT NULL;
 
 -- Add proper indexing for user_roles table

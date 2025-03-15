@@ -1,0 +1,14 @@
+{
+  "ApiBaseUrl": "http://localhost:5000",
+  "TestUser": {
+    "Email": "test.user@example.com",
+    "Password": "Test@123!"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  }
+} 

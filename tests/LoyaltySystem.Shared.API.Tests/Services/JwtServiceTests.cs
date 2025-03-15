@@ -63,7 +63,7 @@ namespace LoyaltySystem.Shared.API.Tests.Services
             };
 
             // Act
-            var token = _sut.GenerateToken(userId.ToString(), username, email, roles, customClaims);
+            var token = _sut.GenerateToken(userId.ToString(), username, username, email, roles, customClaims);
 
             // Assert
             token.Should().NotBeNullOrEmpty();

@@ -16,7 +16,7 @@ namespace LoyaltySystem.Domain.Common
             Id = id ?? throw new ArgumentNullException(nameof(id));
         }
         
-        public TId Id { get; protected set; }
+        public TId Id { get; set; }
         
         public override bool Equals(object? obj)
         {

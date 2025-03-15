@@ -1,39 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Infrastructure.Data;
-using LoyaltySystem.Infrastructure.Data.Extensions;
+using LoyaltySystem.Application.DTOs;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
-    // Define the CustomerDto for mapping database results
-    internal class CustomerDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public bool MarketingConsent { get; set; }
-        public DateTime JoinedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-    }
-
     public class CustomerRepository : ICustomerRepository
     {
         private readonly IDatabaseConnection _dbConnection;
 
-        public CustomerRepository(IDatabaseConnection connection)
-        {
+        public CustomerRepository(IDatabaseConnection connection) =>
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-        }
 
         public async Task<Customer?> GetByIdAsync(CustomerId id)
         {
@@ -41,27 +21,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var parameters = new { Id = id.Value };
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dto = await dbConnection.QuerySingleOrDefaultAsync<CustomerDto>(sql, parameters);
-            
-            if (dto == null)
-                return null;
-                
-            // Map DTO to domain entity
-            var customer = CreateCustomerFromDto(dto);
-            
-            return customer;
+            var dto = await dbConnection.QuerySingleOrDefaultAsync<CustomerDbObjectDto>(sql, parameters);
+
+            return dto is { }
+                ? CreateCustomerFromDto(dto)
+                : null;
         }
 
         public async Task<IEnumerable<Customer>> GetAllAsync(int skip = 0, int limit = 50)
         {
-            const string sql = @"
-                SELECT * FROM customers
-                ORDER BY name
-                LIMIT @Limit OFFSET @Skip";
-            
             var parameters = new { Skip = skip, Limit = limit };
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(
+                """
+                    SELECT * 
+                    FROM customers
+                    ORDER BY name
+                    LIMIT @Limit 
+                    OFFSET @Skip
+                """, 
+                parameters
+            );
             
             // Map DTOs to domain entities
             return dtos.Select(CreateCustomerFromDto).ToList();
@@ -69,9 +49,13 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<int> GetTotalCountAsync()
         {
-            const string sql = "SELECT COUNT(*) FROM customers";
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql);
+            return await dbConnection.ExecuteScalarAsync<int>(
+                """
+                    SELECT COUNT(*) 
+                    FROM customers
+                """
+            );
         }
 
         public async Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null)
@@ -82,6 +66,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             bool ownsTransaction = transaction == null;
         
             // If no transaction was provided, create one
+            // TODO: Check this transaction logic. We are using "ExecuteInTransaction" over these calls, so i assume we can remove this ?
             transaction ??= dbConnection.BeginTransaction();
             
             try
@@ -89,18 +74,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
-                            (id, name, email, phone, marketing_consent, joined_at, last_login_at, created_at, updated_at)
+                            (id, name, email, phone, marketing_consent, last_login_at, created_at, updated_at)
                         VALUES 
-                            (@CustomerId, @Name, @Email, @Phone, @MarketingConsent, @JoinedAt, @LastLoginAt, @CreatedAt, @UpdatedAt)
+                            (@CustomerId, @Name, @Email, @Phone, @MarketingConsent, @LastLoginAt, @CreatedAt, @UpdatedAt)
                     ",
                     new
                     {
                         CustomerId = customer.Id.Value,
-                        customer.Name,
+                        customer.FirstName,
+                        customer.LastName,
                         customer.Email,
                         customer.Phone,
                         customer.MarketingConsent,
-                        customer.JoinedAt,
                         customer.LastLoginAt,
                         customer.CreatedAt,
                         customer.UpdatedAt
@@ -143,7 +128,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             };
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(sql, parameters);
             
             // Map DTOs to domain entities
             var customers = new List<Customer>();
@@ -167,7 +152,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
         }
 
-        public async Task<IEnumerable<Customer>> GetNewCustomersAsync(DateTime start, DateTime end)
+        public async Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end)
         {
             const string sql = @"
                 SELECT * FROM customers
@@ -176,7 +161,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             var parameters = new { Start = start, End = end };
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(sql, parameters);
             
             // Map DTOs to domain entities
             var customers = new List<Customer>();
@@ -191,24 +176,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         
         // Private helper method to create a Customer entity from a DTO
-        private Customer CreateCustomerFromDto(CustomerDto dto)
-        {
-            var customer = new Customer(
-                dto.Name,
-                dto.Email,
-                dto.Phone,
-                new CustomerId(dto.Id),
-                dto.MarketingConsent);
-                
-            // Set private properties
-            SetPrivatePropertyValue(customer, "Id", new CustomerId(dto.Id));
-            SetPrivatePropertyValue(customer, "JoinedAt", dto.JoinedAt);
-            SetPrivatePropertyValue(customer, "LastLoginAt", dto.LastLoginAt);
-            SetPrivatePropertyValue(customer, "CreatedAt", dto.CreatedAt);
-            SetPrivatePropertyValue(customer, "UpdatedAt", dto.UpdatedAt);
-            
-            return customer;
-        }
+        private static Customer CreateCustomerFromDto(CustomerDbObjectDto dbObjectDto) =>
+            new ()
+            {
+                Id = new CustomerId(dbObjectDto.Id),
+                FirstName = dbObjectDto.FirstName,
+                LastName = dbObjectDto.LastName,
+                Email = dbObjectDto.Email,
+                Phone = dbObjectDto.Phone,
+                MarketingConsent = dbObjectDto.MarketingConsent,
+                LastLoginAt = dbObjectDto.LastLoginAt,
+                CreatedAt = dbObjectDto.CreatedAt,
+                UpdatedAt = dbObjectDto.UpdatedAt
+            };
 
         public async Task UpdateAsync(Customer customer)
         {
@@ -246,7 +226,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var parameters = new
             {
                 Id = customerId,
-                customer.Name,
+                customer.FirstName,
+                customer.LastName,
                 customer.Email,
                 customer.Phone,
                 customer.MarketingConsent,
@@ -256,13 +237,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             await dbConnection.ExecuteAsync(sql, parameters);
         }
-
-        public async Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end)
-        {
-            // This method is the same as GetNewCustomersAsync, just with a different name to match the interface
-            return await GetNewCustomersAsync(start, end);
-        }
-
+        
         public async Task<int> GetCustomersWithCardsCountAsync()
         {
             const string sql = @"

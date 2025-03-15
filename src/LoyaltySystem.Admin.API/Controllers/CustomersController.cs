@@ -92,19 +92,11 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request)
+        public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto request)
         {
             _logger.LogInformation("Admin creating customer with email: {Email}", request.Email);
             
-            var createCustomerDto = new CreateCustomerDto
-            {
-                Name = $"{request.FirstName} {request.LastName}",
-                Email = request.Email,
-                Phone = request.PhoneNumber
-            };
-            
-            var result = await _customerService.CreateCustomerAsync(createCustomerDto);
-            
+            var result = await _customerService.CreateCustomerAsync(request);
             if (!result.Success)
             {
                 _logger.LogWarning("Admin create customer failed - {Error}", result.Errors);
@@ -115,18 +107,11 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCustomer([FromRoute] CustomerId id, [FromBody] UpdateCustomerRequest request)
+        public async Task<IActionResult> UpdateCustomer([FromRoute] CustomerId id, [FromBody] UpdateCustomerDto customer)
         {
             _logger.LogInformation("Admin updating customer ID: {CustomerId}", id);
             
-            var updateCustomerDto = new LoyaltySystem.Application.Services.UpdateCustomerDto
-            {
-                Name = $"{request.FirstName} {request.LastName}",
-                Email = request.Email,
-                Phone = request.PhoneNumber
-            };
-            
-            var result = await _customerService.UpdateCustomerAsync(id.ToString(), updateCustomerDto);
+            var result = await _customerService.UpdateCustomerAsync(id.ToString(), customer);
             
             if (!result.Success)
             {
@@ -162,10 +147,10 @@ namespace LoyaltySystem.Admin.API.Controllers
         }
 
         [HttpPost("{id}/enroll")]
-        public async Task<IActionResult> EnrollCustomerInProgram([FromRoute] CustomerId id, [FromBody] EnrollCustomerRequest request)
+        public async Task<IActionResult> EnrollCustomerInProgram([FromRoute] CustomerId id, [FromQuery] string programId)
         {
             _logger.LogInformation("Admin enrolling customer ID: {CustomerId} in program ID: {ProgramId}", 
-                id, request.ProgramId);
+                id, programId);
             
             var customerResult = await _customerService.GetCustomerByIdAsync(id.ToString());
             if (!customerResult.Success)
@@ -265,31 +250,5 @@ namespace LoyaltySystem.Admin.API.Controllers
                 EnrollmentRate = enrollmentRate
             });
         }
-    }
-
-    public class CreateCustomerRequest
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public DateTime? DateOfBirth { get; set; }
-        public Address Address { get; set; }
-    }
-
-    public class UpdateCustomerRequest
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-        public DateTime? DateOfBirth { get; set; }
-        public AddressDto Address { get; set; }
-        public bool IsActive { get; set; }
-    }
-
-    public class EnrollCustomerRequest
-    {
-        public LoyaltyProgramId ProgramId { get; set; }
     }
 } 

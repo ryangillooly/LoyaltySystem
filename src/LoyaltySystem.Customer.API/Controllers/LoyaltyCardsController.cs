@@ -17,13 +17,13 @@ namespace LoyaltySystem.Customer.API.Controllers
     [Authorize]
     public class LoyaltyCardsController : BaseLoyaltyCardsController
     {
-        private readonly CustomerService _customerService;
-        private readonly LoyaltyProgramService _programService;
+        private readonly ICustomerService _customerService;
+        private readonly ILoyaltyProgramService _programService;
 
         public LoyaltyCardsController(
             ILoyaltyCardService loyaltyCardService,
-            CustomerService customerService,
-            LoyaltyProgramService programService,
+            ICustomerService customerService,
+            ILoyaltyProgramService programService,
             ILogger<LoyaltyCardsController> logger) 
             : base(logger, loyaltyCardService)
         {
@@ -41,6 +41,7 @@ namespace LoyaltySystem.Customer.API.Controllers
                 return Unauthorized();
             }
 
+            // TODO: Fix this value; it's username in the JWT, not CustomerId
             var customerId = User.FindFirstValue("CustomerId");
             if (string.IsNullOrEmpty(customerId))
             {
@@ -103,10 +104,9 @@ namespace LoyaltySystem.Customer.API.Controllers
             return Ok(result.Data);
         }
 
-        //[HttpPost("enroll")]
-        //public async Task<IActionResult> EnrollInProgram([FromBody] EnrollmentRequest request)
-        //{
-            /*
+        [HttpPost("enroll")]
+        public async Task<IActionResult> EnrollInProgram([FromBody] EnrollmentRequest request)
+        {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim))
             {
@@ -143,8 +143,11 @@ namespace LoyaltySystem.Customer.API.Controllers
             // Create a new loyalty card for this customer and program
             var customerIdObj = new CustomerId(Guid.Parse(customerId));
             var programIdObj = request.ProgramId ?? throw new InvalidOperationException("Program ID cannot be null");
+
+            // TODO: Not implemented fully. Create the LoyaltyCardDto
+            var newCard = new CreateLoyaltyCardDto();
             
-            var result = await _loyaltyCardService.CreateCardAsync(re);
+            var result = await _loyaltyCardService.CreateCardAsync(newCard);
             
             if (!result.Success)
             {
@@ -152,10 +155,9 @@ namespace LoyaltySystem.Customer.API.Controllers
                     customerId, request.ProgramId, result.Errors);
                 return BadRequest(result.Errors);
             }
-            */
             
-            //return CreatedAtAction(nameof(GetCardTransactions), new { id = result.Data.Id }, result.Data);
-        //}
+            return CreatedAtAction(nameof(GetCardTransactions), new { id = result.Data.Id }, result.Data);
+        }
 
         [HttpGet("{id}/qr-code")]
         public async Task<IActionResult> GetCardQrCode(string id)

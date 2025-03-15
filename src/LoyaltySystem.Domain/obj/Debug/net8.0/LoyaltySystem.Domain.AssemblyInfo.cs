@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LoyaltySystem.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1b7cc51fc97bae9682741ae41f0b38bd5208821a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5307aa4fe076e2f9073ff44a779971c9fa8209bb")]
 [assembly: System.Reflection.AssemblyProductAttribute("LoyaltySystem.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LoyaltySystem.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

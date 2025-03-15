@@ -47,7 +47,8 @@ public class JwtService : IJwtService
     /// </summary>
     public string GenerateToken(
         string userId, 
-        string username, 
+        string firstName,
+        string lastName,
         string email, 
         IEnumerable<string> roles,
         IDictionary<string, string> additionalClaims = null)
@@ -64,8 +65,7 @@ public class JwtService : IJwtService
                 new (JwtRegisteredClaimNames.Sub, userId), // Subject claim
                 new (JwtRegisteredClaimNames.Email, email),
                 new (ClaimTypes.Email, email), // Include both formats for compatibility
-                new (ClaimTypes.Name, username),
-                new ("username", username), // Custom claim for username
+                new (ClaimTypes.Name, $"{firstName} {lastName}"),
             };
             
             // Add each role as a separate claim

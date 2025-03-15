@@ -13,4 +13,9 @@ public interface ILoyaltyRewardsService
     Task<OperationResult<bool>> DeleteRewardAsync(string programId, string rewardId);
     Task<OperationResult<RewardAnalyticsDto>> GetRewardAnalyticsAsync(string rewardId);
     Task<OperationResult<ProgramRewardsAnalyticsDto>> GetProgramRewardsAnalyticsAsync(string programId);
+    
+    // Customer reward redemption methods
+    Task<OperationResult<bool>> CheckRewardEligibility(string rewardId, string loyaltyCardId);
+    Task<OperationResult<RewardRedemptionDto>> RedeemReward(RedeemRewardDto redeemDto);
+    Task<OperationResult<RewardRedemptionDto>> ValidateRedemptionCode(string redemptionCode);
 }

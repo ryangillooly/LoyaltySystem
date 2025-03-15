@@ -4,96 +4,94 @@ using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Entities
 {
-    /// <summary>
-    /// Represents a customer who participates in loyalty programs.
-    /// </summary>
-    public class Customer
+    public class Customer : Entity<CustomerId>
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
-        public CustomerId Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public bool MarketingConsent { get; set; }
-        public DateTime JoinedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-
-        // Collection navigation property
-        public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
-
-        // Private constructor for EF Core
-        public Customer() 
+        public Customer() : base(new CustomerId())
         {
             _loyaltyCards = new List<LoyaltyCard>();
         }
 
         public Customer(
-            string name,
+            CustomerId? customerId,
+            string firstName,
+            string lastName,
             string email,
             string phone,
-            CustomerId? customerId = null,
+            Address? address,
             bool marketingConsent = false)
         {
-            // Validate required fields
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Customer name cannot be empty", nameof(name));
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+            
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
 
             if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
                 throw new ArgumentException("Invalid email format", nameof(email));
 
             Id = customerId ?? new CustomerId();
-            Name = name;
+            FirstName = firstName;
+            LastName = lastName;
             Email = email;
             Phone = phone;
             MarketingConsent = marketingConsent;
-            JoinedAt = DateTime.UtcNow;
+            Address = address;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
             _loyaltyCards = new List<LoyaltyCard>();
         }
+        
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public bool MarketingConsent { get; set; }
+        public Address? Address { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+        
+        public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
 
-        /// <summary>
-        /// Updates the customer's information.
-        /// </summary>
+        
+        
         public void Update(
-            string name,
+            string firstName,
+            string lastName,
             string email,
             string phone,
+            Address? address,
             bool marketingConsent)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Customer name cannot be empty", nameof(name));
+            if (string.IsNullOrWhiteSpace(firstName))
+                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+            
+            if (string.IsNullOrWhiteSpace(lastName))
+                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
 
             if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
                 throw new ArgumentException("Invalid email format", nameof(email));
 
-            Name = name;
+            FirstName = firstName;
+            LastName = lastName;
             Email = email;
+            Address = address;
             Phone = phone;
             MarketingConsent = marketingConsent;
             UpdatedAt = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Records a login event for the customer.
-        /// </summary>
         public void RecordLogin()
         {
             LastLoginAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
         
-        /// <summary>
-        /// Adds a loyalty card to the customer.
-        /// </summary>
         public void AddLoyaltyCard(LoyaltyCard card)
         {
-            if (card == null)
-                throw new ArgumentNullException(nameof(card));
-                
+            ArgumentNullException.ThrowIfNull(card);
             _loyaltyCards.Add(card);
         }
     }

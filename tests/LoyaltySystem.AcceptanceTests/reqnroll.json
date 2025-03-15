@@ -1,0 +1,15 @@
+{
+  "bindingCulture": {
+    "name": "en-us"
+  },
+  "language": {
+    "feature": "en-us"
+  },
+  "livingDocGenerator": {
+    "enabled": true,
+    "filePath": "{CurrentDirectory}\\LoyaltySystem.AcceptanceTests.LivingDoc.html"
+  },
+  "stepAssemblies": [
+    { "assembly": "LoyaltySystem.AcceptanceTests" }
+  ]
+} 
