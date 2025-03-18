@@ -20,6 +20,31 @@ namespace LoyaltySystem.Admin.API.Controllers
 
         // Admin-specific authentication enhancements can be added here
         
+        [HttpPost("register/admin")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserDto registerDto)
+        {
+            _logger.LogInformation("Admin registration attempt for email: {Email}", registerDto.Email);
+            
+            if (registerDto.Password != registerDto.ConfirmPassword)
+            {
+                _logger.LogWarning("Admin registration failed: Passwords don't match for {Email}", registerDto.Email);
+                return BadRequest(new { message = "Password and confirmation password do not match" });
+            }
+
+            var result = await _authService.RegisterAdminAsync(registerDto);
+            
+            if (!result.Success)
+            {
+                _logger.LogWarning("Admin registration failed for {Email}: {Error}", 
+                    registerDto.Email, string.Join(", ", result.Errors));
+                return BadRequest(new { message = result.Errors });
+            }
+
+            _logger.LogInformation("Admin registration successful for {Email}", registerDto.Email);
+            return CreatedAtAction(nameof(GetUserById), new { id = result.Data.Id }, result.Data);
+        }
+        
         [Authorize(Roles = "SuperAdmin,Admin")]
         [HttpPost("users/roles/add")]
         public async Task<IActionResult> AddRole(UserRoleDto roleRequest)

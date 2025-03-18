@@ -73,7 +73,7 @@ namespace LoyaltySystem.Shared.API.Controllers
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
-            var result = await _authService.RegisterAsync(registerRequest);
+            var result = await _authService.RegisterCustomerAsync(registerRequest);
             
             if (!result.Success)
             {

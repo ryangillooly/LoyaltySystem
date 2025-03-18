@@ -36,7 +36,7 @@ namespace LoyaltySystem.Customer.API.Controllers
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
-            var result = await _authService.RegisterAsync(registerRequest);
+            var result = await _authService.RegisterCustomerAsync(registerRequest);
             
             if (!result.Success)
             {
@@ -63,10 +63,11 @@ namespace LoyaltySystem.Customer.API.Controllers
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
-            var result = await _authService.RegisterAsync(registerRequest);
+            var result = await _authService.RegisterCustomerAsync(registerRequest);
+            
             if (!result.Success)
             {
-                _logger.LogWarning("Customer registration failed for username: email: {email} - {errors}", registerRequest.Email, result.Errors);
+                _logger.LogWarning("Customer registration failed for email: {email} - {errors}", registerRequest.Email, result.Errors);
                 return BadRequest(new { message = result.Errors });
             }
             

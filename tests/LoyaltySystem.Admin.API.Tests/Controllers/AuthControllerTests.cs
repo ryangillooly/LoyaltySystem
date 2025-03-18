@@ -438,6 +438,123 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
 
         #endregion
 
+        #region Register Admin Tests
+
+        [Fact]
+        public async Task RegisterAdmin_WithValidData_ReturnsCreatedAtAction()
+        {
+            // Arrange
+            var registerDto = new RegisterUserDto
+            {
+                FirstName = "Admin",
+                LastName = "User",
+                UserName = "adminuser",
+                Email = "admin@example.com",
+                Password = "password123",
+                ConfirmPassword = "password123"
+            };
+
+            // Setup repository for successful registration
+            _mockUserRepository
+                .Setup<Task<User>>(x => x.GetByEmailAsync(registerDto.Email))
+                .ReturnsAsync((User)null);
+
+            // Setup username check
+            _mockUserRepository
+                .Setup<Task<User>>(x => x.GetByUsernameAsync(registerDto.UserName))
+                .ReturnsAsync((User)null);
+
+            _mockUserRepository
+                .Setup(x => x.AddAsync(It.IsAny<User>(), It.IsAny<System.Data.IDbTransaction>()))
+                .Returns(Task.CompletedTask);
+
+            // Setup UnitOfWork
+            _mockUnitOfWork
+                .Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task>>()))
+                .Returns(Task.CompletedTask);
+                
+            // Act
+            var result = await _controller.RegisterAdmin(registerDto);
+
+            // Assert
+            var createdAtActionResult = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+            createdAtActionResult.ActionName.Should().Be(nameof(AuthController.GetUserById));
+            createdAtActionResult.Value.Should().NotBeNull();
+            
+            if (createdAtActionResult.Value is UserDto userDto)
+            {
+                userDto.Email.Should().Be(registerDto.Email);
+                userDto.UserName.Should().Be(registerDto.UserName);
+                userDto.Id.Should().StartWith("usr_");
+                userDto.Roles.Should().Contain(RoleType.Admin.ToString());
+            }
+        }
+
+        [Fact]
+        public async Task RegisterAdmin_WithPasswordMismatch_ReturnsBadRequest()
+        {
+            // Arrange
+            var registerDto = new RegisterUserDto
+            {
+                FirstName = "Admin",
+                LastName = "User",
+                UserName = "adminuser",
+                Email = "admin@example.com",
+                Password = "password123",
+                ConfirmPassword = "password456" // Mismatch
+            };
+
+            // Act
+            var result = await _controller.RegisterAdmin(registerDto);
+
+            // Assert
+            var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+            badRequestResult.Value.Should().NotBeNull();
+            
+            // Verify the error message
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            json.Should().Contain("Password and confirmation password do not match");
+        }
+
+        [Fact]
+        public async Task RegisterAdmin_WithExistingUsername_ReturnsBadRequest()
+        {
+            // Arrange
+            var registerDto = new RegisterUserDto
+            {
+                FirstName = "Admin",
+                LastName = "User",
+                UserName = "existingadmin", // Already exists
+                Email = "admin@example.com",
+                Password = "password123",
+                ConfirmPassword = "password123"
+            };
+            
+            // Setup UserRepository to return an existing user with the same username
+            var existingUser = CreateMockUser("existingadmin", "old.email@example.com");
+            
+            _mockUserRepository
+                .Setup<Task<User>>(x => x.GetByUsernameAsync(registerDto.UserName))
+                .ReturnsAsync(existingUser);
+                
+            _mockUserRepository
+                .Setup<Task<User>>(x => x.GetByEmailAsync(registerDto.Email))
+                .ReturnsAsync((User)null);
+
+            // Act
+            var result = await _controller.RegisterAdmin(registerDto);
+
+            // Assert
+            result.Should().BeOfType<BadRequestObjectResult>();
+            var badRequestResult = (BadRequestObjectResult)result;
+            
+            // Verify the error message
+            var json = JsonSerializer.Serialize(badRequestResult.Value);
+            json.Should().Contain("Username already exists");
+        }
+
+        #endregion
+
         #region Profile Tests
 
         [Fact]
