@@ -6,7 +6,7 @@ namespace LoyaltySystem.Application.Interfaces;
 
 public interface IAuthService 
 {
-    Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string username, string password);
+    Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string identifier, string password, LoginIdentifierType identifierType);
     Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerDto);
     Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto);
     Task<OperationResult<UserDto>> GetUserByIdAsync(string userId);

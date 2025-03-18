@@ -118,24 +118,44 @@ namespace LoyaltySystem.Customer.API.Controllers
         [HttpPost("login")]
         public override async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            _logger.LogInformation("Customer login attempt for email: {email}", loginRequest.Email);
+            // Determine which identifier to use and its type
+            string identifier;
+            LoginIdentifierType identifierType;
             
-            var result = await _authService.AuthenticateAsync(loginRequest.Email, loginRequest.Password);
+            if (!string.IsNullOrEmpty(loginRequest.Email))
+            {
+                identifier = loginRequest.Email;
+                identifierType = LoginIdentifierType.Email;
+                _logger.LogInformation("Customer login attempt using email: {email}", identifier);
+            }
+            else if (!string.IsNullOrEmpty(loginRequest.UserName))
+            {
+                identifier = loginRequest.UserName;
+                identifierType = LoginIdentifierType.Username;
+                _logger.LogInformation("Customer login attempt using username: {username}", identifier);
+            }
+            else
+            {
+                _logger.LogWarning("Customer login attempt with no identifier provided");
+                return BadRequest(new { message = "Email or username must be provided" });
+            }
+            
+            var result = await _authService.AuthenticateAsync(identifier, loginRequest.Password, identifierType);
             
             if (!result.Success)
             {
-                _logger.LogWarning("Customer login failed for email: {email} - {Error}", loginRequest.Email, result.Errors);
+                _logger.LogWarning("Customer login failed for: {identifier} - {Error}", identifier, result.Errors);
                 return Unauthorized(new { message = result.Errors });
             }
             
             // Verify the user has the Customer role
             if (!await HasRoles(result.Data.User.Id, new List<RoleType> { RoleType.Customer, RoleType.SuperAdmin }))
             {
-                _logger.LogWarning("Non-customer user attempted to log in through customer API: {email}", loginRequest.Email);
+                _logger.LogWarning("Non-customer user attempted to log in through customer API: {identifier}", identifier);
                 return Unauthorized(new { message = "Access denied. This API is for customers only." });
             }
             
-            _logger.LogInformation("Successful customer login for email: {email}", loginRequest.Email);
+            _logger.LogInformation("Successful customer login for: {identifier}", identifier);
             return Ok(result.Data);
         }
         

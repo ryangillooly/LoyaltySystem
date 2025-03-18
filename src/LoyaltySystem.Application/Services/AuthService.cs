@@ -37,20 +37,34 @@ namespace LoyaltySystem.Application.Services
         }
 
         /// <summary>
-        /// Authenticates a user and returns a JWT token.
+        /// Authenticates a user using either username or email, and returns a JWT token.
         /// </summary>
-        public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string username, string password)
+        public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string identifier, string password, LoginIdentifierType identifierType)
         {
-            var user = await _userRepository.GetByUsernameAsync(username);
+            User? user;
+            
+            switch (identifierType)
+            {
+                case LoginIdentifierType.Email:
+                    user = await _userRepository.GetByEmailAsync(identifier);
+                    break;
+                    
+                case LoginIdentifierType.Username:
+                    user = await _userRepository.GetByUsernameAsync(identifier);
+                    break;
+                    
+                default:
+                    return OperationResult<AuthResponseDto>.FailureResult("Invalid identifier type");
+            }
             
             if (user is null)
-                return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
+                return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
                 
             if (user.Status != UserStatus.Active)
                 return OperationResult<AuthResponseDto>.FailureResult("User account is not active");
                 
             if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-                return OperationResult<AuthResponseDto>.FailureResult("Invalid username or password");
+                return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
             
             user.RecordLogin();
             await _userRepository.UpdateAsync(user);
@@ -71,23 +85,17 @@ namespace LoyaltySystem.Application.Services
         {
             try
             {
-                // Check if username already exists
-                var existingUsername = await _userRepository.GetByEmailAsync(registerDto.Email);
+                var existingUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
                 if (existingUsername is { })
                     return OperationResult<UserDto>.FailureResult("Username already exists");
-
-                // Check if email already exists
+                
                 var existingEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
                 if (existingEmail is { })
                     return OperationResult<UserDto>.FailureResult("Email already exists");
-
-                // Create password hash
+                
                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
-
-                // Create user entity
+                
                 var user = new User(registerDto.FirstName, registerDto.LastName, registerDto.UserName, registerDto.Email, passwordHash, passwordSalt);
-
-                // Add default customer role
                 user.AddRole(RoleType.Customer);
 
                 await _unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -130,12 +138,22 @@ namespace LoyaltySystem.Application.Services
             
             if (user is null)
                 return OperationResult<UserDto>.FailureResult("User not found");
+            
+            // Check if username is changing and already exists
+            if (!string.IsNullOrEmpty(updateDto.UserName) && updateDto.UserName != user.UserName)
+            {
+                var existingUsername = await _userRepository.GetByUsernameAsync(updateDto.UserName);
+                if (existingUsername is { } && existingUsername.Id.ToString() != userId)
+                    return OperationResult<UserDto>.FailureResult("Username already exists");
+                
+                user.UpdateUserName(updateDto.UserName);
+            }
                 
             // Check if email is changing and already exists
-            if (updateDto.Email != user.Email)
+            if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != user.Email)
             {
                 var existingEmail = await _userRepository.GetByEmailAsync(updateDto.Email);
-                if (existingEmail is { })
+                if (existingEmail is { } && existingEmail.Id.ToString() != userId)
                     return OperationResult<UserDto>.FailureResult("Email already exists");
                     
                 user.UpdateEmail(updateDto.Email);
@@ -290,6 +308,7 @@ namespace LoyaltySystem.Application.Services
                 Id = user.Id.ToString(),
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                UserName = user.UserName,
                 Email = user.Email,
                 Status = user.Status.ToString(),
                 CustomerId = user.CustomerId?.ToString() ?? string.Empty,

@@ -52,6 +52,15 @@ namespace LoyaltySystem.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
         
+        public void UpdateUserName(string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                throw new ArgumentException("Username cannot be empty.", nameof(userName));
+                
+            UserName = userName;
+            UpdatedAt = DateTime.UtcNow;
+        }
+        
         public void UpdatePassword(string passwordHash, string passwordSalt)
         {
             if (string.IsNullOrWhiteSpace(passwordHash))

@@ -298,7 +298,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 UPDATE users
-                SET username = @Username,
+                SET first_name = @FirstName,
+                    last_name = @LastName,
+                    username = @UserName,
                     email = @Email,
                     password_hash = @PasswordHash,
                     password_salt = @PasswordSalt,
@@ -314,6 +316,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 Id = user.Id.Value,
                 user.FirstName,
                 user.LastName,
+                user.UserName,
                 user.Email,
                 user.PasswordHash,
                 user.PasswordSalt,

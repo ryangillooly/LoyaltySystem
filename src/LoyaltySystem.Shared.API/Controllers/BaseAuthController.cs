@@ -5,6 +5,7 @@ using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,28 +29,47 @@ namespace LoyaltySystem.Shared.API.Controllers
         [HttpPost("login")]
         public virtual async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            _logger.LogInformation("Login attempt for email: {email}", loginRequest.Email);
+            string identifier;
+            LoginIdentifierType identifierType;
             
-            var result = await _authService.AuthenticateAsync(loginRequest.Email, loginRequest.Password);
+            if (!string.IsNullOrEmpty(loginRequest.Email))
+            {
+                identifier = loginRequest.Email;
+                identifierType = LoginIdentifierType.Email;
+                _logger.LogInformation("Login attempt using email: {Email}", identifier);
+            }
+            else if (!string.IsNullOrEmpty(loginRequest.UserName))
+            {
+                identifier = loginRequest.UserName;
+                identifierType = LoginIdentifierType.Username;
+                _logger.LogInformation("Login attempt using username: {Username}", identifier);
+            }
+            else
+            {
+                _logger.LogWarning("Login attempt with no identifier provided");
+                return BadRequest(new { message = "Email or username must be provided" });
+            }
+            
+            var result = await _authService.AuthenticateAsync(identifier, loginRequest.Password, identifierType);
             
             if (!result.Success)
             {
-                _logger.LogWarning("Failed login attempt for email: {email}", loginRequest.Email);
+                _logger.LogWarning("Failed login attempt for: {Identifier}", identifier);
                 return Unauthorized(new { message = result.Errors });
             }
             
-            _logger.LogInformation("Successful login for email: {email}", loginRequest.Email);
+            _logger.LogInformation("Successful login for: {Identifier}", identifier);
             return Ok(result.Data);
         }
 
         [HttpPost("register")]
         public virtual async Task<IActionResult> RegisterUser(RegisterUserDto registerRequest)
         {
-            _logger.LogInformation("Registration attempt for email: {email}", registerRequest.Email);
+            _logger.LogInformation("Registration attempt for email: {Email}", registerRequest.Email);
             
             if (registerRequest.Password != registerRequest.ConfirmPassword)
             {
-                _logger.LogWarning("Registration failed - password mismatch for email: {email}", registerRequest.Email);
+                _logger.LogWarning("Registration failed - password mismatch for email: {Email}", registerRequest.Email);
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
@@ -57,11 +77,11 @@ namespace LoyaltySystem.Shared.API.Controllers
             
             if (!result.Success)
             {
-                _logger.LogWarning("Registration failed for email: {email} - {Error}", registerRequest.Email, result.Errors);
+                _logger.LogWarning("Registration failed for email: {Email} - {Error}", registerRequest.Email, result.Errors);
                 return BadRequest(new { message = result.Errors });
             }
             
-            _logger.LogInformation("Successful registration for email: {email}", registerRequest.Email);
+            _logger.LogInformation("Successful registration for email: {Email}", registerRequest.Email);
             return CreatedAtAction(nameof(GetUserById), new { id = result.Data.Id }, result.Data);
         }
 
