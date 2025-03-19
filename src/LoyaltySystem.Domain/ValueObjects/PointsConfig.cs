@@ -10,7 +10,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// <summary>
         /// Number of points awarded per dollar spent.
         /// </summary>
-        public decimal PointsPerPounds { get; private set; }
+        public decimal PointsPerPound { get; private set; }
 
         /// <summary>
         /// Minimum number of points required for redemption.
@@ -32,7 +32,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// </summary>
         public PointsConfig()
         {
-            PointsPerPounds = 1;
+            PointsPerPound = 1;
             MinimumPointsForRedemption = 100;
             RoundingRule = PointsRoundingRule.RoundDown;
             EnrollmentBonusPoints = 0;
@@ -56,7 +56,7 @@ namespace LoyaltySystem.Domain.ValueObjects
             if (enrollmentBonusPoints < 0)
                 throw new ArgumentException("Enrollment bonus points cannot be negative", nameof(enrollmentBonusPoints));
 
-            PointsPerPounds = pointsPerPound;
+            PointsPerPound = pointsPerPound;
             MinimumPointsForRedemption = minimumPointsForRedemption;
             RoundingRule = roundingRule;
             EnrollmentBonusPoints = enrollmentBonusPoints;
@@ -70,7 +70,7 @@ namespace LoyaltySystem.Domain.ValueObjects
             if (transactionAmount < 0)
                 throw new ArgumentException("Transaction amount cannot be negative", nameof(transactionAmount));
 
-            decimal rawPoints = transactionAmount * PointsPerPounds * tierMultiplier;
+            decimal rawPoints = transactionAmount * PointsPerPound * tierMultiplier;
 
             return RoundingRule switch
             {
@@ -90,7 +90,7 @@ namespace LoyaltySystem.Domain.ValueObjects
                 return false;
 
             var other = (PointsConfig)obj;
-            return PointsPerPounds == other.PointsPerPounds
+            return PointsPerPound == other.PointsPerPound
                 && MinimumPointsForRedemption == other.MinimumPointsForRedemption
                 && RoundingRule == other.RoundingRule
                 && EnrollmentBonusPoints == other.EnrollmentBonusPoints;
@@ -101,7 +101,7 @@ namespace LoyaltySystem.Domain.ValueObjects
         /// </summary>
         public override int GetHashCode()
         {
-            return HashCode.Combine(PointsPerPounds, MinimumPointsForRedemption, RoundingRule, EnrollmentBonusPoints);
+            return HashCode.Combine(PointsPerPound, MinimumPointsForRedemption, RoundingRule, EnrollmentBonusPoints);
         }
     }
 

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/admin/loyalty-programs")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class LoyaltyProgramsController : ControllerBase
 {
@@ -56,7 +56,7 @@ public class LoyaltyProgramsController : ControllerBase
         }
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name = "GetLoyaltyProgram")]
     public async Task<IActionResult> GetProgramAsync(string id)
     {
         try
@@ -81,7 +81,10 @@ public class LoyaltyProgramsController : ControllerBase
             var result = await _programService.CreateProgramAsync(dto);
                 
             return result.Success
-                ? CreatedAtAction(nameof(GetProgramAsync), new { id = result.Data.Id }, result.Data)
+                ? CreatedAtRoute(
+                    routeName: "GetLoyaltyProgram", 
+                    routeValues: new { id = result.Data.Id }, 
+                    value: result.Data)
                 : BadRequest(result.Errors);
         }
         catch (Exception ex)

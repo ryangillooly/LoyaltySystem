@@ -21,13 +21,8 @@ namespace LoyaltySystem.Staff.API.Controllers
             : base(authService, logger)
         {
         }
-        
-        // Override the template method to specify staff registration instead of customer registration
-        protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest)
-        {
-            // In the staff controller, we register as a staff user, not a customer
-            return await _authService.RegisterStaffAsync(registerRequest);
-        }
+        protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest) =>
+            await _authService.RegisterStaffAsync(registerRequest);
 
         [HttpPost("login")]
         public override async Task<IActionResult> Login(LoginRequestDto request)
