@@ -150,26 +150,51 @@ public class CustomersController : ControllerBase
         _logger.LogInformation("Admin enrolling customer ID: {CustomerId} in program ID: {ProgramId}", 
             id, programId);
             
+        // Validate customer exists
         var customerResult = await _customerService.GetCustomerByIdAsync(id.ToString());
         if (!customerResult.Success)
         {
             _logger.LogWarning("Customer ID: {CustomerId} not found", id);
             return NotFound("Customer not found");
         }
-            
-        /*
-        TODO: Fix
-        var result = await _cardService.CreateCardAsync();
+        
+        // Check if program ID is provided
+        if (string.IsNullOrEmpty(programId))
+        {
+            _logger.LogWarning("Program ID not provided for enrollment");
+            return BadRequest("Program ID is required");
+        }
+        
+        // Check if customer is already enrolled in this program
+        var existingCardsResult = await _cardService.GetByCustomerIdAsync(id);
+        if (existingCardsResult is { Success: true, Data: { } })
+        {
+            var cards = existingCardsResult.Data.ToList();
+            if (cards.Any(c => c.ProgramId.ToString() == programId))
+            {
+                _logger.LogWarning("Customer {CustomerId} is already enrolled in program {ProgramId}", id, programId);
+                return BadRequest($"Customer is already enrolled in this program");
+            }
+        }
+        
+        // Create loyalty card for the customer
+        var createCardDto = new CreateLoyaltyCardDto
+        {
+            CustomerId = id.ToString(),
+            ProgramId = programId,
+            Status = CardStatus.Active
+        };
+        
+        var result = await _cardService.CreateCardAsync(createCardDto);
 
         if (!result.Success)
         {
             _logger.LogWarning("Admin enroll customer failed - {Error}", result.Errors);
-            return BadRequest((object)result.Errors);
+            return BadRequest(result.Errors);
         }
 
+        _logger.LogInformation("Successfully enrolled customer {CustomerId} in program {ProgramId}", id, programId);
         return Ok(result.Data);
-        */
-        return Ok();
     }
 
     [HttpGet("analytics/signups")]

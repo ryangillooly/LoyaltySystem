@@ -23,7 +23,7 @@ public class RewardsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByProgramId(string programId)
+    public async Task<IActionResult> GetByProgramId([FromRoute] string programId)
     {
         _logger.LogInformation("Admin requesting rewards for program ID: {ProgramId}", programId);
             
