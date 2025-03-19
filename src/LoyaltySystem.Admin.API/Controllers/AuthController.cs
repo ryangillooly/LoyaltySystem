@@ -11,7 +11,7 @@ namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
 [Route("api/admin/[controller]")]
-public class AuthController : BaseAuthController
+public class AuthController : BaseAuthController 
 {
     public AuthController(IAuthService authService, ILogger<AuthController> logger)
         : base(authService, logger) { }
@@ -20,7 +20,7 @@ public class AuthController : BaseAuthController
         await _authService.RegisterAdminAsync(registerRequest);
     
     [HttpPost("register/admin")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = "SuperAdmin")] 
     public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserDto registerDto)
     {
         _logger.LogInformation("Admin registration attempt for email: {Email}", registerDto.Email);
