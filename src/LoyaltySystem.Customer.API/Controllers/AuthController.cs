@@ -52,6 +52,9 @@ public class AuthController : BaseAuthController
             return BadRequest(new { message = result.Errors });
         }
             
+        // Ensure the user has the Customer role
+        await _authService.AddRoleAsync(result.Data.Id, RoleType.Customer);
+            
         _logger.LogInformation("Successful customer registration for email: {email}", registerRequest.Email);
         return CreatedAtAction(nameof(GetProfile), null, result.Data);
     }
