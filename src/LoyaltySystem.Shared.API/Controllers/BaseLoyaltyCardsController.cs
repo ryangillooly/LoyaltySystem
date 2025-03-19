@@ -44,11 +44,9 @@ namespace LoyaltySystem.Shared.API.Controllers
             if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
             {
                 var customerIdClaim = User.FindFirstValue("CustomerId");
-                if (string.IsNullOrEmpty(customerIdClaim) || 
-                    !result.Data.CustomerId.ToString().Equals(customerIdClaim, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(customerIdClaim) || !result.Data.CustomerId.ToString().Equals(customerIdClaim, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogWarning("Unauthorized access attempt to loyalty card ID: {CardId} by user with customer ID: {CustomerId}",
-                        id, customerIdClaim);
+                    _logger.LogWarning("Unauthorized access attempt to loyalty card ID: {CardId} by user with customer ID: {CustomerId}", id, customerIdClaim);
                     return Forbid();
                 }
             }

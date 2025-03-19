@@ -16,13 +16,9 @@ namespace LoyaltySystem.Domain.ValueObjects
 
         public ContactInfo(string email, string phone, string website)
         {
-            // Regex email validation
-            if (!string.IsNullOrEmpty(email))
-            {
-                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
-                    throw new ArgumentException("Invalid email format", nameof(email));
-            }
+            // Basic validation for email format
+            if (!string.IsNullOrEmpty(email) && !email.Contains("@"))
+                throw new ArgumentException("Invalid email format", nameof(email));
 
             Email = email;
             Phone = phone;

@@ -84,6 +84,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 SELECT 
                     u.id AS ""Id"", 
+					u.first_name AS ""FirstName"",
+					u.last_name AS ""LastName"",
                     u.username AS ""Username"", 
                     u.email AS ""Email"", 
                     u.password_hash AS ""PasswordHash"", 

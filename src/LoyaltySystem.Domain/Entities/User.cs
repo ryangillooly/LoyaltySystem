@@ -40,7 +40,7 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
-        public CustomerId? CustomerId { get; private set; }
+        public CustomerId? CustomerId { get; set; }
         public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
         
         public void UpdateEmail(string email)

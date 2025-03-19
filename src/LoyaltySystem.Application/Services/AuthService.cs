@@ -139,7 +139,8 @@ namespace LoyaltySystem.Application.Services
                     registerDto.Email, 
                     passwordHash, 
                     passwordSalt);
-                
+
+                user.CustomerId = null;
                 user.AddRole(role);
                 
                 // Save the user

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Entities
 {
-    public partial class Customer : Entity<CustomerId>
+    public class Customer : Entity<CustomerId>
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
@@ -32,8 +32,8 @@ namespace LoyaltySystem.Domain.Entities
 
             if (!string.IsNullOrWhiteSpace(email))
             {
-                const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!MyRegex().IsMatch(email))
+                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
                     throw new ArgumentException("Invalid email format", nameof(email));
             }
 
@@ -108,8 +108,5 @@ namespace LoyaltySystem.Domain.Entities
             ArgumentNullException.ThrowIfNull(card);
             _loyaltyCards.Add(card);
         }
-
-        [System.Text.RegularExpressions.GeneratedRegex(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")]
-        private static partial System.Text.RegularExpressions.Regex MyRegex();
     }
 } 
