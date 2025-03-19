@@ -28,40 +28,46 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
     }
 
-    public async Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id)
+    public async Task<LoyaltyProgram?> GetByIdAsync(LoyaltyProgramId id)
     {
         const string sql = @"
             SELECT 
-                id AS Id,
-                brand_id AS BrandId,
-                name AS Name,
-                type::text AS Type,
-                stamp_threshold AS StampThreshold,
-                points_conversion_rate AS PointsConversionRate,
-                daily_stamp_limit AS DailyStampLimit,
-                minimum_transaction_amount AS MinimumTransactionAmount,
-                is_active AS IsActive,
-                created_at AS CreatedAt,
-                updated_at AS UpdatedAt,
-                has_tiers AS HasTiers,
-                points_per_pound AS PointsPerPound, 
-                minimum_points_for_redemption AS MinimumPointsForRedemption,
-                points_rounding_rule AS PointsRoundingRule,
-                enrollment_bonus_points AS EnrollmentBonusPoints,
-                description AS Description,
-                terms_and_conditions AS TermsAndConditions,
-                start_date AS StartDate,
-                end_date AS EndDate
+                id,
+                brand_id,
+                name,
+                type::text,
+                stamp_threshold,
+                points_conversion_rate,
+                daily_stamp_limit,
+                minimum_transaction_amount,
+                is_active,
+                created_at,
+                updated_at,
+                has_tiers,
+                points_per_pound, 
+                minimum_points_for_redemption,
+                points_rounding_rule,
+                enrollment_bonus_points,
+                description,
+                terms_and_conditions,
+                start_date,
+                end_date
             FROM loyalty_programs 
-            WHERE id = @Id";
+            WHERE id = @Id::uuid";
 
         var dbConnection = await _dbConnection.GetConnectionAsync();
         var parameters = new { Id = id.Value };
-        var program = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgram>(sql, parameters);
-
-        if (program is { })
-            await LoadRewardsForProgram(program);
-
+        
+        // Use a strongly-typed DTO for database mapping
+        var dto = await dbConnection.QuerySingleOrDefaultAsync<LoyaltyProgramDto>(sql, parameters);
+        
+        if (dto == null)
+            return null;
+        
+        // Convert DTO to domain entity
+        var program = dto.ToDomain();
+        
+        await LoadRewardsForProgram(program);
         return program;
     }
 
@@ -342,74 +348,82 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
     {
         const string sql = @"
             SELECT 
-                id AS Id,
-                program_id AS ProgramId,
-                title AS Title,
-                description AS Description,
-                required_value AS RequiredValue,
-                valid_from AS ValidFrom,
-                valid_to AS ValidTo,
-                is_active AS IsActive,
-                created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                id,
+                program_id,
+                title,
+                description,
+                required_value,
+                valid_from,
+                valid_to,
+                is_active,
+                created_at,
+                updated_at
             FROM rewards 
-            WHERE program_id = @ProgramId
+            WHERE program_id = @ProgramId::uuid
             ORDER BY required_value";
 
         var dbConnection = await _dbConnection.GetConnectionAsync();
         var parameters = new { ProgramId = programId.Value };
-        var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
-
-        return rewards;
+        
+        // Use RewardDto to properly map database values
+        var dtos = await dbConnection.QueryAsync<RewardDto>(sql, parameters);
+        
+        // Convert DTOs to domain entities
+        return dtos.Select(dto => dto.ToDomain());
     }
 
     public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
     {
         const string sql = @"
             SELECT 
-                id AS Id,
-                program_id AS ProgramId,
-                title AS Title,
-                description AS Description,
-                required_value AS RequiredValue,
-                valid_from AS ValidFrom,
-                valid_to AS ValidTo,
-                is_active AS IsActive,
-                created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                id,
+                program_id,
+                title,
+                description,
+                required_value,
+                valid_from,
+                valid_to,
+                is_active,
+                created_at,
+                updated_at
             FROM rewards 
-            WHERE program_id = @ProgramId AND is_active = @IsActive
+            WHERE program_id = @ProgramId::uuid AND is_active = @IsActive
             ORDER BY required_value";
 
         var dbConnection = await _dbConnection.GetConnectionAsync();
         var parameters = new { ProgramId = programId.Value, IsActive = true };
-        var rewards = await dbConnection.QueryAsync<Reward>(sql, parameters);
-
-        return rewards;
+        
+        // Use RewardDto to properly map database values
+        var dtos = await dbConnection.QueryAsync<RewardDto>(sql, parameters);
+        
+        // Convert DTOs to domain entities
+        return dtos.Select(dto => dto.ToDomain());
     }
 
     public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
     {
         const string sql = @"
             SELECT 
-                id AS Id,
-                program_id AS ProgramId,
-                title AS Title,
-                description AS Description,
-                required_value AS RequiredValue,
-                valid_from AS ValidFrom,
-                valid_to AS ValidTo,
-                is_active AS IsActive,
-                created_at AS CreatedAt,
-                updated_at AS UpdatedAt
+                id,
+                program_id,
+                title,
+                description,
+                required_value,
+                valid_from,
+                valid_to,
+                is_active,
+                created_at,
+                updated_at
             FROM rewards 
-            WHERE id = @Id";
+            WHERE id = @Id::uuid";
 
         var dbConnection = await _dbConnection.GetConnectionAsync();
         var parameters = new { Id = rewardId.Value };
-        var reward = await dbConnection.QuerySingleOrDefaultAsync<Reward>(sql, parameters);
-
-        return reward;
+        
+        // Use RewardDto to properly map database values
+        var dto = await dbConnection.QuerySingleOrDefaultAsync<RewardDto>(sql, parameters);
+        
+        return dto?.ToDomain();
     }
 
     public async Task AddRewardAsync(Reward reward)
@@ -577,31 +591,87 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         return programs;
     }
 
-    public LoyaltyProgram CreateProgramFromDto(LoyaltyProgramDto dto) 
+    // DTO class for database mapping - can be moved to a separate file later
+    private class LoyaltyProgramDto
     {
-        var a = new LoyaltyProgram
+        public Guid id { get; set; }
+        public Guid brand_id { get; set; }
+        public string name { get; set; }
+        public string type { get; set; }
+        public int stamp_threshold { get; set; }
+        public decimal points_conversion_rate { get; set; }
+        public int daily_stamp_limit { get; set; }
+        public decimal minimum_transaction_amount { get; set; }
+        public bool is_active { get; set; }
+        public DateTime created_at { get; set; }
+        public DateTime updated_at { get; set; }
+        public bool has_tiers { get; set; }
+        public int points_per_pound { get; set; }
+        public int minimum_points_for_redemption { get; set; }
+        public int points_rounding_rule { get; set; }
+        public int enrollment_bonus_points { get; set; }
+        public string description { get; set; }
+        public string terms_and_conditions { get; set; }
+        public DateTime start_date { get; set; }
+        public DateTime end_date { get; set; }
+        
+        public LoyaltyProgram ToDomain()
         {
-            Id = new LoyaltyProgramId(EntityId.Parse<LoyaltyProgramId>(dto.Id)),
-            BrandId = new BrandId(EntityId.Parse<BrandId>(dto.BrandId)),
-            Name = dto.Name,
-            Description = dto.Description,
-            Type = dto.Type,
-            ExpirationPolicy = dto.ExpirationPolicy.ToExpirationPolicy(),
-            StampThreshold = dto.StampThreshold,
-            PointsConversionRate = dto.PointsConversionRate,
-            PointsConfig = dto.PointsConfig.ToPointsConfig(),
-            DailyStampLimit = dto.DailyStampLimit,
-            MinimumTransactionAmount = dto.MinimumTransactionAmount,
-            IsActive = dto.IsActive,
-            HasTiers = dto.HasTiers,
-            TermsAndConditions = dto.TermsAndConditions,
-            EnrollmentBonusPoints = dto.EnrollmentBonusPoints,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            CreatedAt = dto.CreatedAt,
-            UpdatedAt = dto.UpdatedAt
-        };
-
-        return a;
+            return new LoyaltyProgram
+            {
+                Id = new LoyaltyProgramId(id),
+                BrandId = new BrandId(brand_id),
+                Name = name,
+                Type = Enum.Parse<LoyaltyProgramType>(type),
+                StampThreshold = stamp_threshold,
+                PointsConversionRate = points_conversion_rate,
+                DailyStampLimit = daily_stamp_limit,
+                MinimumTransactionAmount = minimum_transaction_amount,
+                IsActive = is_active,
+                CreatedAt = created_at,
+                UpdatedAt = updated_at,
+                HasTiers = has_tiers,
+                PointsPerPound = points_per_pound,
+                MinimumPointsForRedemption = minimum_points_for_redemption,
+                PointsRoundingRule = (PointsRoundingRule)points_rounding_rule,
+                EnrollmentBonusPoints = enrollment_bonus_points,
+                Description = description,
+                TermsAndConditions = terms_and_conditions,
+                StartDate = start_date,
+                EndDate = end_date
+            };
+        }
+    }
+    
+    // DTO for mapping reward data to/from the database
+    private class RewardDto
+    {
+        public Guid id { get; set; }
+        public Guid program_id { get; set; }
+        public string title { get; set; }
+        public string description { get; set; }
+        public int required_value { get; set; }
+        public DateTime? valid_from { get; set; }
+        public DateTime? valid_to { get; set; }
+        public bool is_active { get; set; }
+        public DateTime created_at { get; set; }
+        public DateTime updated_at { get; set; }
+        
+        public Reward ToDomain()
+        {
+            return new Reward
+            {
+                Id = new RewardId(id),
+                ProgramId = new LoyaltyProgramId(program_id),
+                Title = title,
+                Description = description,
+                RequiredValue = required_value,
+                ValidFrom = valid_from,
+                ValidTo = valid_to,
+                IsActive = is_active,
+                CreatedAt = created_at,
+                UpdatedAt = updated_at
+            };
+        }
     }
 }

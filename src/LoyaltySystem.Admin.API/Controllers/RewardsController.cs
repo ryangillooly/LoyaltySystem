@@ -56,7 +56,7 @@ public class RewardsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id}", Name="GetById")]
     public async Task<IActionResult> GetById(string id)
     {
         _logger.LogInformation("Admin requesting reward by ID: {RewardId}", id);
@@ -121,7 +121,15 @@ public class RewardsController : ControllerBase
                 return BadRequest(result.Errors);
             }
                 
-            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+            return CreatedAtAction(
+                actionName: nameof(GetById),
+                routeValues: new { 
+                    programId = programId, 
+                    id = result.Data.Id, 
+                    controller = "Rewards" 
+                },
+                value: result.Data
+            );
         }
         catch (ValidationException ex)
         {

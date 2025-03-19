@@ -69,10 +69,10 @@ namespace LoyaltySystem.Application.Services
                 var rewardIdObj = EntityId.Parse<RewardId>(rewardId);
                 var reward = await _rewardsRepository.GetByIdAsync(rewardIdObj);
                 
-                if (reward == null)
-                    return OperationResult<RewardDto>.FailureResult($"Reward with ID {rewardId} not found");
-                
-                return OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+                return reward == null 
+                    ? OperationResult<RewardDto>.FailureResult($"Reward with ID {rewardId} not found") 
+                    : OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+
             }
             catch (Exception ex)
             {

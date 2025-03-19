@@ -8,22 +8,21 @@ namespace LoyaltySystem.Domain.Entities
     /// </summary>
     public class Reward
     {
-        public RewardId Id { get; private set; }
-        public LoyaltyProgramId ProgramId { get; private set; }
-        public string Title { get; private set; }
-        public string Description { get; private set; }
-        public int RequiredValue { get; private set; }
-        public DateTime? ValidFrom { get; private set; }
-        public DateTime? ValidTo { get; private set; }
-        public bool IsActive { get; private set; }
-        public DateTime CreatedAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
+        public RewardId Id { get; set; }
+        public LoyaltyProgramId ProgramId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int RequiredValue { get; set; }
+        public DateTime? ValidFrom { get; set; }
+        public DateTime? ValidTo { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
 
         // Navigation property
-        public virtual LoyaltyProgram Program { get; private set; }
-
-        // Private constructor for EF Core
-        private Reward() { }
+        public virtual LoyaltyProgram Program { get; set; }
+        
+        public Reward() { }
 
         public Reward
             (LoyaltyProgramId programId,

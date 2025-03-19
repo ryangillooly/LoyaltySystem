@@ -8,7 +8,7 @@ namespace LoyaltySystem.Domain.Repositories
 {
     public interface ILoyaltyRewardsRepository
     {
-        Task<Reward> GetByIdAsync(RewardId id);
+        Task<Reward?> GetByIdAsync(RewardId id);
         Task<IEnumerable<Reward>> GetByProgramIdAsync(LoyaltyProgramId programId);
         Task<IEnumerable<Reward>> GetActiveByProgramIdAsync(LoyaltyProgramId programId);
         Task<Reward> AddAsync(Reward reward);
