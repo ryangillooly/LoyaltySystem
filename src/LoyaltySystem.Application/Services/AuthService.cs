@@ -18,19 +18,16 @@ namespace LoyaltySystem.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly ICustomerRepository _customerRepository;
-        private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
 
         public AuthService(
             IUserRepository userRepository,
-            IConfiguration configuration,
             IUnitOfWork unitOfWork,
             IJwtService jwtService,
             ICustomerRepository customerRepository)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
             _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));

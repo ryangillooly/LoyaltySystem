@@ -1,4 +1,3 @@
-using LoyaltySystem.Admin.API.Settings;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -19,6 +18,7 @@ using LoyaltySystem.Shared.API.Settings;
 using LoyaltySystem.Shared.API.Services;
 using System.Text.Json.Serialization;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Settings;
 using LoyaltySystem.Infrastructure.Json;
 using LoyaltySystem.Shared.API.Serialization;
 using LoyaltySystem.Shared.API.ModelBinding;

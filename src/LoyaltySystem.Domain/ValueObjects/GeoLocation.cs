@@ -1,6 +1,6 @@
 using System;
 
-namespace LoyaltySystem.Domain.Entities
+namespace LoyaltySystem.Domain.ValueObjects
 {
     /// <summary>
     /// Value object representing geographical coordinates.

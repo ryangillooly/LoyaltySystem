@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using Dapper;
 using LoyaltySystem.Domain.Entities;
+using LoyaltySystem.Domain.ValueObjects;
 using LoyaltySystem.Infrastructure.Json;
 using System.Text.Json;
 

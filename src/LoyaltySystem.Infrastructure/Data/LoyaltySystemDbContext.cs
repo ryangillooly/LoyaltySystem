@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using LoyaltySystem.Domain.Entities;
+using LoyaltySystem.Domain.ValueObjects;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -77,15 +78,15 @@ namespace LoyaltySystem.Infrastructure.Data
             modelBuilder.Entity<Store>().Property(s => s.OperatingHours)
                 .HasConversion(
                     new ValueConverter<OperatingHours, string>(
-                        h => System.Text.Json.JsonSerializer.Serialize(h, new System.Text.Json.JsonSerializerOptions()),
-                        h => System.Text.Json.JsonSerializer.Deserialize<OperatingHours>(h, new System.Text.Json.JsonSerializerOptions())
+                        h => JsonSerializer.Serialize(h, new JsonSerializerOptions()),
+                        h => JsonSerializer.Deserialize<OperatingHours>(h, new JsonSerializerOptions())
                     ));
                     
             modelBuilder.Entity<Transaction>().Property("Metadata")
                 .HasConversion(
                     new ValueConverter<Dictionary<string, string>, string>(
-                        m => System.Text.Json.JsonSerializer.Serialize(m, new System.Text.Json.JsonSerializerOptions()),
-                        m => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(m, new System.Text.Json.JsonSerializerOptions())
+                        m => JsonSerializer.Serialize(m, new JsonSerializerOptions()),
+                        m => JsonSerializer.Deserialize<Dictionary<string, string>>(m, new JsonSerializerOptions())
                     ));
         }
         

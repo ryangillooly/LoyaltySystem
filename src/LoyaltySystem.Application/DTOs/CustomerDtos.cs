@@ -1,5 +1,6 @@
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
+using LoyaltySystem.Domain.ValueObjects;
 using System;
 using System.ComponentModel.DataAnnotations;
 

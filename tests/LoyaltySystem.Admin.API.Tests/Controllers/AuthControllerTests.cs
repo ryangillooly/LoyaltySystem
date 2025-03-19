@@ -54,7 +54,6 @@ namespace LoyaltySystem.Admin.API.Tests.Controllers
             // Create a real instance of AuthService with mocked dependencies
             _authService = new AuthService(
                 _mockUserRepository.Object,
-                _mockConfiguration.Object,
                 _mockUnitOfWork.Object,
                 _mockJwtService.Object,
                 _customerRepository.Object

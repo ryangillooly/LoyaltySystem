@@ -86,7 +86,30 @@ namespace LoyaltySystem.Domain.Entities
             Type = type;
             StampThreshold = type == LoyaltyProgramType.Stamp ? stampThreshold : null;
             PointsConversionRate = type == LoyaltyProgramType.Points ? pointsConversionRate : null;
-            PointsConfig = type == LoyaltyProgramType.Points ? (pointsConfig ?? new PointsConfig()) : null;
+            
+            // Only initialize PointsConfig if explicitly provided or if no conversion rate
+            if (type == LoyaltyProgramType.Points)
+            {
+                if (pointsConfig != null)
+                {
+                    PointsConfig = pointsConfig;
+                }
+                else if (!pointsConversionRate.HasValue)
+                {
+                    // Only create default PointsConfig if no conversion rate provided
+                    PointsConfig = new PointsConfig();
+                }
+                else
+                {
+                    // When conversion rate is provided, don't create a default PointsConfig
+                    PointsConfig = null;
+                }
+            }
+            else
+            {
+                PointsConfig = null;
+            }
+            
             HasTiers = hasTiers;
             DailyStampLimit = dailyStampLimit;
             MinimumTransactionAmount = minimumTransactionAmount;

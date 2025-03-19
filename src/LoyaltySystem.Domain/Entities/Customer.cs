@@ -1,10 +1,11 @@
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Entities
 {
-    public class Customer : Entity<CustomerId>
+    public partial class Customer : Entity<CustomerId>
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
@@ -29,8 +30,12 @@ namespace LoyaltySystem.Domain.Entities
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new ArgumentException("LastName cannot be empty", nameof(lastName));
 
-            if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
-                throw new ArgumentException("Invalid email format", nameof(email));
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+                if (!MyRegex().IsMatch(email))
+                    throw new ArgumentException("Invalid email format", nameof(email));
+            }
 
             Id = customerId ?? new CustomerId();
             FirstName = firstName;
@@ -75,8 +80,12 @@ namespace LoyaltySystem.Domain.Entities
             if (string.IsNullOrWhiteSpace(lastName))
                 throw new ArgumentException("LastName cannot be empty", nameof(lastName));
 
-            if (!string.IsNullOrWhiteSpace(email) && !email.Contains("@"))
-                throw new ArgumentException("Invalid email format", nameof(email));
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
+                    throw new ArgumentException("Invalid email format", nameof(email));
+            }
 
             FirstName = firstName;
             LastName = lastName;
@@ -99,5 +108,8 @@ namespace LoyaltySystem.Domain.Entities
             ArgumentNullException.ThrowIfNull(card);
             _loyaltyCards.Add(card);
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
     }
 } 

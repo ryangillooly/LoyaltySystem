@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LoyaltySystem.Domain.Entities
+namespace LoyaltySystem.Domain.ValueObjects
 {
     /// <summary>
     /// Value object representing business operating hours.

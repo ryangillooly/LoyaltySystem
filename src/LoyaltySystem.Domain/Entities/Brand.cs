@@ -1,4 +1,5 @@
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 using System;
 
 namespace LoyaltySystem.Domain.Entities

@@ -4,6 +4,7 @@ using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.Services
 {
