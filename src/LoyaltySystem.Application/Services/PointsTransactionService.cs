@@ -1,9 +1,0 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using LoyaltySystem.Application.Common;
-using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Interfaces;
-using LoyaltySystem.Domain.Entities;
-using LoyaltySystem.Domain.Repositories;
-using LoyaltySystem.Domain.Common; 

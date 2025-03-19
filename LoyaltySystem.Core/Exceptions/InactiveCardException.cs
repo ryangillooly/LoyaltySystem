@@ -1,0 +1,1 @@
+namespace LoyaltySystem.Core.Exceptions;
