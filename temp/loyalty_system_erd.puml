@@ -1,0 +1,208 @@
+@startuml Loyalty System ERD
+
+!define TABLE(x) class x << (T,paleturquoise) >>
+!define PK(x) <b><color:red>PK: x</color></b>
+!define FK(x) <color:blue>FK: x</color>
+!define COLUMN(x) <color:darkgoldenrod>x</color>
+
+' Define tables with their attributes
+TABLE(Businesses) {
+  PK(Id) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(Description) NVARCHAR(500)
+  COLUMN(TaxId) NVARCHAR(50)
+  COLUMN(Logo) NVARCHAR(255)
+  COLUMN(Website) NVARCHAR(255)
+  COLUMN(FoundedDate) DATETIME2
+  COLUMN(IsActive) BIT
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(BusinessContacts) {
+  PK(BusinessId) UNIQUEIDENTIFIER
+  COLUMN(Email) NVARCHAR(100)
+  COLUMN(Phone) NVARCHAR(50)
+  COLUMN(Website) NVARCHAR(255)
+}
+
+TABLE(BusinessAddresses) {
+  PK(BusinessId) UNIQUEIDENTIFIER
+  COLUMN(Line1) NVARCHAR(100)
+  COLUMN(Line2) NVARCHAR(100)
+  COLUMN(City) NVARCHAR(100)
+  COLUMN(State) NVARCHAR(50)
+  COLUMN(PostalCode) NVARCHAR(20)
+  COLUMN(Country) NVARCHAR(50)
+}
+
+TABLE(Brands) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(BusinessId) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(Category) NVARCHAR(50)
+  COLUMN(Logo) NVARCHAR(255)
+  COLUMN(Description) NVARCHAR(500)
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(BrandContacts) {
+  PK(BrandId) UNIQUEIDENTIFIER
+  COLUMN(Email) NVARCHAR(100)
+  COLUMN(Phone) NVARCHAR(50)
+  COLUMN(Website) NVARCHAR(255)
+}
+
+TABLE(BrandAddresses) {
+  PK(BrandId) UNIQUEIDENTIFIER
+  COLUMN(Line1) NVARCHAR(100)
+  COLUMN(Line2) NVARCHAR(100)
+  COLUMN(City) NVARCHAR(100)
+  COLUMN(State) NVARCHAR(50)
+  COLUMN(PostalCode) NVARCHAR(20)
+  COLUMN(Country) NVARCHAR(50)
+}
+
+TABLE(Stores) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(BrandId) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(ContactInfo) NVARCHAR(255)
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(StoreAddresses) {
+  PK(StoreId) UNIQUEIDENTIFIER
+  COLUMN(Line1) NVARCHAR(100)
+  COLUMN(Line2) NVARCHAR(100)
+  COLUMN(City) NVARCHAR(100)
+  COLUMN(State) NVARCHAR(50)
+  COLUMN(PostalCode) NVARCHAR(20)
+  COLUMN(Country) NVARCHAR(50)
+}
+
+TABLE(StoreGeoLocations) {
+  PK(StoreId) UNIQUEIDENTIFIER
+  COLUMN(Latitude) FLOAT
+  COLUMN(Longitude) FLOAT
+}
+
+TABLE(StoreOperatingHours) {
+  PK(StoreId) UNIQUEIDENTIFIER
+  PK(DayOfWeek) INT
+  COLUMN(OpenTime) TIME
+  COLUMN(CloseTime) TIME
+}
+
+TABLE(Customers) {
+  PK(Id) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(Email) NVARCHAR(100)
+  COLUMN(Phone) NVARCHAR(50)
+  COLUMN(MarketingConsent) BIT
+  COLUMN(JoinedAt) DATETIME2
+  COLUMN(LastLoginAt) DATETIME2
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(LoyaltyPrograms) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(BrandId) UNIQUEIDENTIFIER
+  COLUMN(Name) NVARCHAR(100)
+  COLUMN(Type) INT
+  COLUMN(StampThreshold) INT
+  COLUMN(PointsConversionRate) DECIMAL(18,2)
+  COLUMN(DailyStampLimit) INT
+  COLUMN(MinimumTransactionAmount) DECIMAL(18,2)
+  COLUMN(IsActive) BIT
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(ProgramExpirationPolicies) {
+  PK(ProgramId) UNIQUEIDENTIFIER
+  COLUMN(HasExpiration) BIT
+  COLUMN(ExpirationType) INT
+  COLUMN(ExpirationValue) INT
+  COLUMN(ExpiresOnSpecificDate) BIT
+  COLUMN(ExpirationDay) INT
+  COLUMN(ExpirationMonth) INT
+}
+
+TABLE(Rewards) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(ProgramId) UNIQUEIDENTIFIER
+  COLUMN(Title) NVARCHAR(100)
+  COLUMN(Description) NVARCHAR(500)
+  COLUMN(RequiredValue) INT
+  COLUMN(ValidFrom) DATETIME2
+  COLUMN(ValidTo) DATETIME2
+  COLUMN(IsActive) BIT
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(LoyaltyCards) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(ProgramId) UNIQUEIDENTIFIER
+  FK(CustomerId) UNIQUEIDENTIFIER
+  COLUMN(Type) INT
+  COLUMN(StampsCollected) INT
+  COLUMN(PointsBalance) DECIMAL(18,2)
+  COLUMN(Status) INT
+  COLUMN(QrCode) NVARCHAR(100)
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(ExpiresAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+TABLE(Transactions) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(CardId) UNIQUEIDENTIFIER
+  COLUMN(Type) INT
+  FK(RewardId) UNIQUEIDENTIFIER
+  COLUMN(Quantity) INT
+  COLUMN(PointsAmount) DECIMAL(18,2)
+  COLUMN(TransactionAmount) DECIMAL(18,2)
+  FK(StoreId) UNIQUEIDENTIFIER
+  COLUMN(StaffId) UNIQUEIDENTIFIER
+  COLUMN(PosTransactionId) NVARCHAR(100)
+  COLUMN(Timestamp) DATETIME2
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(Metadata) NVARCHAR(MAX)
+}
+
+TABLE(CardLinks) {
+  PK(Id) UNIQUEIDENTIFIER
+  FK(CardId) UNIQUEIDENTIFIER
+  COLUMN(CardHash) NVARCHAR(255)
+  COLUMN(LinkType) INT
+  COLUMN(IsActive) BIT
+  COLUMN(CreatedAt) DATETIME2
+  COLUMN(UpdatedAt) DATETIME2
+}
+
+' Define relationships
+Businesses "1" -- "0..1" BusinessContacts
+Businesses "1" -- "0..1" BusinessAddresses
+Businesses "1" -- "*" Brands
+Brands "1" -- "0..1" BrandContacts
+Brands "1" -- "0..1" BrandAddresses
+Brands "1" -- "*" Stores
+Stores "1" -- "0..1" StoreAddresses
+Stores "1" -- "0..1" StoreGeoLocations
+Stores "1" -- "*" StoreOperatingHours
+Brands "1" -- "*" LoyaltyPrograms
+LoyaltyPrograms "1" -- "0..1" ProgramExpirationPolicies
+LoyaltyPrograms "1" -- "*" Rewards
+LoyaltyPrograms "1" -- "*" LoyaltyCards
+Customers "1" -- "*" LoyaltyCards
+LoyaltyCards "1" -- "*" Transactions
+Rewards "1" -- "*" Transactions
+Stores "1" -- "*" Transactions
+LoyaltyCards "1" -- "*" CardLinks
+
+@enduml 

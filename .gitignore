@@ -1,9 +1,250 @@
-.idea/*
-*.exe
-*.dll
+# Build results
+*[Dd]ebug*/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Enhanced exclusions for Debug folders and build outputs - more comprehensive
+[Bb]in/[Dd]ebug*/
+**/[Bb]in/[Dd]ebug*/
+**/[Bb]in/[Dd]ebug/**/*
+**/Debug/**/*
+[Oo]bj/[Dd]ebug*/
+**/[Oo]bj/[Dd]ebug*/
+**/[Oo]bj/[Dd]ebug/**/*
+**/obj/**/*.cache
+**/bin/**/*.dll
+**/bin/**/*.pdb
+**/bin/**/*.xml
+**/obj/**/*.dll
+**/obj/**/*.pdb
+**/obj/**/*.xml
+**/obj/Debug/net*/
+**/obj/Debug/net*/**/*
+**/bin/Debug/net*/
+**/bin/Debug/net*/**/*
+**/*.csproj.nuget.dgspec.json
+**/*.csproj.nuget.g.props
+**/*.csproj.nuget.g.targets
+**/*.assets.cache
+**/*.dll.config
+**/*.exe.config
+
+# Additional specific patterns for build artifacts
+**/*.csproj.AssemblyReference.cache
+**/*.AssemblyInfo.cs
+**/*.AssemblyInfoInputs.cache
+**/project.assets.json
+**/project.nuget.cache
+**/project.packagespec.json
+**/*.csproj.AssemblyReference.cache
+**/*.csproj.CopyComplete
+**/*.csproj.CoreCompileInputs.cache
+**/*.csproj.FileListAbsolute.txt
+**/*.nuget.dgspec.json
+**/*.nuget.g.targets
+
+# Explicitly exclude Debug directories and all related files
+**/[Dd]ebug/
+**/[Dd]ebug/**/*
+**/obj/[Dd]ebug/
+**/obj/[Dd]ebug/**/*
+**/*.[Dd]ebug.*
+**/*.csproj.FileListAbsolute.txt
+**/*.AssemblyInfoInputs.cache
+**/*.AssemblyInfo.cs
+**/*.cache
+**/*.CopyComplete
+
+# Catch ALL paths with 'Debug' in them (case insensitive)
+**/*[Dd]ebug*/**
+**/*[Dd]ebug*
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.csproj.user
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.JustCode
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
 *.pdb
-*rider*
-*/obj/*
-*/bin/Debug/*
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace Files
+*.e2e
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# TeamCity is a build add-in
+_TeamCity*
+
+# DotCover is a Code Coverage Tool
+*.dotCover
+
+# AxoCover is a Code Coverage Tool
+.axoCover/*
+!.axoCover/settings.json
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Build Results of an ATL Project
+[Dd]ebugPS/
+[Rr]eleasePS/
+dlldata.c
+
+# Benchmark Results
+BenchmarkDotNet.Artifacts/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/[Pp]ackages/repositories.config
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# Rider specific
+.idea/
+*.sln.iml
+.idea/*.xml
+.idea/.idea.*/*.xml
+modules.xml
+.idea/caches/build_file_checksums.ser
+.idea/encodings.xml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/shelf
+
+# User-specific files
+*.rsuser
+*.user
+*.userosscache
+*.sln.docstates
+
+# MacOS specific
 .DS_Store
-LoyaltySystem.sln.DotSettings.user
+.AppleDouble
+.LSOverride
+._*
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# Business Intelligence projects
+*.rdl.data
+*.bim.layout
+*.bim_*.settings
+*.rptproj.rsuser
+*- [Bb]ackup.rdl
+*- [Bb]ackup ([0-9]).rdl
+*- [Bb]ackup ([0-9][0-9]).rdl
+
+# Microsoft Fakes
+FakesAssemblies/
+
+# Local secrets
+*.secret
+*.secrets
+secrets.json
+
+# Code coverage
+*.coverage
+*.coveragexml
+
+# VS Code files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Explicitly exclude specific files
+src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.txt

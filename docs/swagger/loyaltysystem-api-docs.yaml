@@ -1,0 +1,1350 @@
+openapi: 3.0.3
+info:
+  title: Loyalty System API
+  description: |
+    This is the API documentation for the Loyalty System platform, covering all the endpoints required for:
+    * Customer App - Mobile application for end customers
+    * Staff App - Application for store staff to handle in-store operations
+    * Admin App - Administrative portal for business owners and managers
+  version: 1.0.0
+servers:
+  - url: https://api.loyaltysystem.com/v1
+    description: Production server
+  - url: https://staging-api.loyaltysystem.com/v1
+    description: Staging server
+  - url: http://localhost:5000
+    description: Local development server
+
+tags:
+  - name: Customer Authentication
+    description: Authentication endpoints for customer users
+  - name: Admin Authentication
+    description: Authentication endpoints for admin users
+  - name: Staff Authentication
+    description: Authentication endpoints for staff users
+  - name: Loyalty Programs
+    description: Endpoints for managing loyalty programs
+  - name: Loyalty Cards
+    description: Endpoints for managing loyalty cards
+  - name: Rewards
+    description: Endpoints for managing rewards
+  - name: Transactions
+    description: Endpoints for recording and managing transactions
+  - name: Users
+    description: Endpoints for user management
+  - name: Businesses
+    description: Endpoints for business management
+  - name: Brands
+    description: Endpoints for brand management
+  - name: Analytics
+    description: Endpoints for analytics and reporting
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Authentication schemas
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - confirmPassword
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        confirmPassword:
+          type: string
+          format: password
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        expiration:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    
+    # Loyalty Program schemas
+    LoyaltyProgram:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        businessId:
+          type: string
+          format: uuid
+        brandId:
+          type: string
+          format: uuid
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reward'
+
+    LoyaltyProgramCreateRequest:
+      type: object
+      required:
+        - name
+        - description
+        - businessId
+        - brandId
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        businessId:
+          type: string
+          format: uuid
+        brandId:
+          type: string
+          format: uuid
+        isActive:
+          type: boolean
+          default: true
+
+    # Loyalty Card schemas
+    LoyaltyCard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        loyaltyProgramId:
+          type: string
+          format: uuid
+        cardNumber:
+          type: string
+        currentPoints:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        lastUsed:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Active, Suspended, Expired]
+
+    CreateCardRequest:
+      type: object
+      required:
+        - loyaltyProgramId
+      properties:
+        loyaltyProgramId:
+          type: string
+          format: uuid
+
+    # Reward schemas
+    Reward:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        loyaltyProgramId:
+          type: string
+          format: uuid
+        pointsCost:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+    RewardCreateRequest:
+      type: object
+      required:
+        - name
+        - description
+        - loyaltyProgramId
+        - pointsCost
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        loyaltyProgramId:
+          type: string
+          format: uuid
+        pointsCost:
+          type: integer
+          minimum: 1
+        isActive:
+          type: boolean
+          default: true
+        expiresAt:
+          type: string
+          format: date-time
+
+    RedeemRewardRequest:
+      type: object
+      required:
+        - loyaltyCardId
+        - rewardId
+      properties:
+        loyaltyCardId:
+          type: string
+          format: uuid
+        rewardId:
+          type: string
+          format: uuid
+
+    RedemptionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        redemptionCode:
+          type: string
+        reward:
+          $ref: '#/components/schemas/Reward'
+
+    # Transaction schemas
+    CreateTransactionRequest:
+      type: object
+      required:
+        - loyaltyCardId
+        - amount
+        - description
+      properties:
+        loyaltyCardId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        loyaltyCardId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        pointsEarned:
+          type: integer
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    # Pagination response
+    PaginatedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+        totalItems:
+          type: integer
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+
+    # Error response
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        details:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  #-----------------------
+  # CUSTOMER API ENDPOINTS
+  #-----------------------
+  
+  # Customer Authentication
+  /api/auth/register:
+    post:
+      tags:
+        - Customer Authentication
+      summary: Register a new customer account
+      description: Creates a new customer user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request, validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Customer Authentication
+      summary: Login to customer account
+      description: Authenticates a customer user and returns JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/loyalty-summary:
+    get:
+      tags:
+        - Customer Authentication
+      summary: Get customer loyalty summary
+      description: Returns a summary of the customer's loyalty status
+      responses:
+        '200':
+          description: Successfully retrieved loyalty summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId:
+                    type: string
+                  activeProgramCount:
+                    type: integer
+                  totalPoints:
+                    type: integer
+                  totalStamps:
+                    type: integer
+                  pendingRewards:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '400':
+          description: Bad request
+
+  # Loyalty Programs (Customer)
+  /api/loyaltyPrograms:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get available loyalty programs
+      description: Returns a list of active loyalty programs available to the customer
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: brandId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved loyalty programs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/{id}:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get loyalty program by ID
+      description: Returns details of a specific loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved loyalty program
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyProgram'
+        '404':
+          description: Program not found
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/brand/{brandId}:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get loyalty programs by brand ID
+      description: Returns all loyalty programs for a specific brand
+      parameters:
+        - name: brandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved loyalty programs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoyaltyProgram'
+        '404':
+          description: Brand not found
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/{id}/rewards:
+    get:
+      tags:
+        - Rewards
+      summary: Get rewards for a loyalty program
+      description: Returns all active rewards available for a specific loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved rewards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reward'
+        '404':
+          description: Program not found
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/{id}/rewards/{rewardId}:
+    get:
+      tags:
+        - Rewards
+      summary: Get specific reward for a loyalty program
+      description: Returns details of a specific reward for a loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rewardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved reward
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reward'
+        '404':
+          description: Program or reward not found
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/nearby:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get nearby loyalty programs
+      description: Returns loyalty programs near a geographic location
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: radiusKm
+          in: query
+          schema:
+            type: number
+            format: double
+            default: 10
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successfully retrieved nearby programs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '400':
+          description: Invalid parameters
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyPrograms/search:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Search loyalty programs
+      description: Searches for loyalty programs matching a query
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '400':
+          description: Invalid parameters
+        '401':
+          description: Unauthorized
+
+  # Loyalty Cards (Customer)
+  /api/loyaltyCards:
+    post:
+      tags:
+        - Loyalty Cards
+      summary: Enroll in a loyalty program
+      description: Creates a new loyalty card for the customer in a specific program
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+      responses:
+        '201':
+          description: Successfully created loyalty card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyCard'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyCards/mine:
+    get:
+      tags:
+        - Loyalty Cards
+      summary: Get customer's loyalty cards
+      description: Returns all loyalty cards owned by the authenticated customer
+      responses:
+        '200':
+          description: Successfully retrieved loyalty cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoyaltyCard'
+        '401':
+          description: Unauthorized
+
+  /api/loyaltyCards/{id}:
+    get:
+      tags:
+        - Loyalty Cards
+      summary: Get loyalty card by ID
+      description: Returns details of a specific loyalty card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved loyalty card
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyCard'
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - card belongs to another customer
+
+  /api/loyaltyCards/{id}/transactions:
+    get:
+      tags:
+        - Loyalty Cards
+      summary: Get transactions for a loyalty card
+      description: Returns all transactions for a specific loyalty card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - card belongs to another customer
+
+  /api/loyaltyCards/{id}/qr-code:
+    get:
+      tags:
+        - Loyalty Cards
+      summary: Get QR code for a loyalty card
+      description: Returns a QR code for a specific loyalty card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved QR code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qrCode:
+                    type: string
+        '404':
+          description: Card not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - card belongs to another customer
+
+  /api/loyaltyCards/nearby-stores:
+    get:
+      tags:
+        - Loyalty Cards
+      summary: Get nearby stores
+      description: Returns stores near a geographic location
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+        - name: radiusKm
+          in: query
+          schema:
+            type: number
+            format: double
+            default: 10
+      responses:
+        '200':
+          description: Successfully retrieved nearby stores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    distance:
+                      type: number
+                      format: double
+        '400':
+          description: Invalid parameters
+        '401':
+          description: Unauthorized
+
+  # Transactions (Customer)
+  /api/transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Record a transaction
+      description: Records a purchase transaction for a loyalty card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Successfully recorded transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Loyalty card not found
+
+  # Rewards (Customer)
+  /api/rewards/redeem:
+    post:
+      tags:
+        - Rewards
+      summary: Redeem a reward
+      description: Redeems a reward using points from a loyalty card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemRewardRequest'
+      responses:
+        '200':
+          description: Successfully redeemed reward
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedemptionResponse'
+        '400':
+          description: Bad request or insufficient points
+        '401':
+          description: Unauthorized
+        '404':
+          description: Reward or loyalty card not found
+
+  #-----------------------
+  # ADMIN API ENDPOINTS
+  #-----------------------
+  
+  # Admin Authentication
+  /api/admin/auth/login:
+    post:
+      tags:
+        - Admin Authentication
+      summary: Login to admin account
+      description: Authenticates an admin user and returns JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+
+  # Business Management (Admin)
+  /api/admin/businesses:
+    get:
+      tags:
+        - Businesses
+      summary: Get all businesses
+      description: Returns all businesses the admin has access to
+      responses:
+        '200':
+          description: Successfully retrieved businesses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Businesses
+      summary: Create a new business
+      description: Creates a new business entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                address:
+                  type: object
+                contactEmail:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+      responses:
+        '201':
+          description: Successfully created business
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  # Loyalty Programs (Admin)
+  /api/admin/loyalty-programs:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get all loyalty programs
+      description: Returns all loyalty programs for admin management
+      responses:
+        '200':
+          description: Successfully retrieved loyalty programs
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Loyalty Programs
+      summary: Create a new loyalty program
+      description: Creates a new loyalty program
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoyaltyProgramCreateRequest'
+      responses:
+        '201':
+          description: Successfully created loyalty program
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/admin/loyalty-programs/{id}:
+    get:
+      tags:
+        - Loyalty Programs
+      summary: Get loyalty program by ID
+      description: Returns details of a specific loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved loyalty program
+        '404':
+          description: Program not found
+        '401':
+          description: Unauthorized
+    put:
+      tags:
+        - Loyalty Programs
+      summary: Update a loyalty program
+      description: Updates details of a specific loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoyaltyProgramCreateRequest'
+      responses:
+        '200':
+          description: Successfully updated loyalty program
+        '404':
+          description: Program not found
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+    delete:
+      tags:
+        - Loyalty Programs
+      summary: Delete a loyalty program
+      description: Deletes a specific loyalty program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Successfully deleted loyalty program
+        '404':
+          description: Program not found
+        '401':
+          description: Unauthorized
+
+  # Rewards (Admin)
+  /api/admin/rewards:
+    post:
+      tags:
+        - Rewards
+      summary: Create a new reward
+      description: Creates a new reward for a loyalty program
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RewardCreateRequest'
+      responses:
+        '201':
+          description: Successfully created reward
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/admin/rewards/{id}:
+    put:
+      tags:
+        - Rewards
+      summary: Update a reward
+      description: Updates details of a specific reward
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RewardCreateRequest'
+      responses:
+        '200':
+          description: Successfully updated reward
+        '404':
+          description: Reward not found
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+    delete:
+      tags:
+        - Rewards
+      summary: Delete a reward
+      description: Deletes a specific reward
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Successfully deleted reward
+        '404':
+          description: Reward not found
+        '401':
+          description: Unauthorized
+
+  # Analytics (Admin)
+  /api/admin/analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Get dashboard analytics
+      description: Returns analytics data for the admin dashboard
+      responses:
+        '200':
+          description: Successfully retrieved analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCustomers:
+                    type: integer
+                  activePrograms:
+                    type: integer
+                  totalTransactions:
+                    type: integer
+                  recentRedemptions:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+  /api/admin/analytics/customers:
+    get:
+      tags:
+        - Analytics
+      summary: Get customer analytics
+      description: Returns customer-related analytics data
+      responses:
+        '200':
+          description: Successfully retrieved customer analytics
+        '401':
+          description: Unauthorized
+
+  /api/admin/analytics/transactions:
+    get:
+      tags:
+        - Analytics
+      summary: Get transaction analytics
+      description: Returns transaction-related analytics data
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: programId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved transaction analytics
+        '401':
+          description: Unauthorized
+
+  #-----------------------
+  # STAFF API ENDPOINTS
+  #-----------------------
+  
+  # Staff Authentication
+  /api/staff/auth/login:
+    post:
+      tags:
+        - Staff Authentication
+      summary: Login to staff account
+      description: Authenticates a staff user and returns JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Authentication failed
+
+  # Customer Management (Staff)
+  /api/staff/customers/lookup:
+    get:
+      tags:
+        - Users
+      summary: Lookup a customer
+      description: Looks up a customer by card number, email, or phone
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Card number, email, or phone number
+      responses:
+        '200':
+          description: Successfully found customer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: '#/components/schemas/User'
+                  loyaltyCards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LoyaltyCard'
+        '404':
+          description: Customer not found
+        '401':
+          description: Unauthorized
+
+  # Transactions (Staff)
+  /api/staff/transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Record a transaction
+      description: Records a purchase transaction for a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Successfully recorded transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Loyalty card not found
+
+  # Rewards (Staff)
+  /api/staff/rewards/redeem:
+    post:
+      tags:
+        - Rewards
+      summary: Redeem a reward
+      description: Redeems a reward for a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemRewardRequest'
+      responses:
+        '200':
+          description: Successfully redeemed reward
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedemptionResponse'
+        '400':
+          description: Bad request or insufficient points
+        '401':
+          description: Unauthorized
+        '404':
+          description: Reward or loyalty card not found
+
+  /api/staff/rewards/validate/{code}:
+    get:
+      tags:
+        - Rewards
+      summary: Validate a redemption code
+      description: Validates a reward redemption code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Valid redemption code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  reward:
+                    $ref: '#/components/schemas/Reward'
+                  customer:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: Invalid or expired code
+        '401':
+          description: Unauthorized 
