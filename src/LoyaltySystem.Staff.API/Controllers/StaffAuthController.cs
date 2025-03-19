@@ -1,29 +1,36 @@
 using System.Security.Claims;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Shared.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace LoyaltySystem.Staff.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class StaffAuthController : ControllerBase
+    [Route("api/staff/[controller]")]
+    public class StaffAuthController : BaseAuthController
     {
-        private readonly IAuthService _authService;
-        private readonly ILogger<StaffAuthController> _logger;
-
         public StaffAuthController(
             IAuthService authService,
             ILogger<StaffAuthController> logger)
+            : base(authService, logger)
         {
-            _authService = authService;
-            _logger = logger;
+        }
+        
+        // Override the template method to specify staff registration instead of customer registration
+        protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest)
+        {
+            // In the staff controller, we register as a staff user, not a customer
+            return await _authService.RegisterStaffAsync(registerRequest);
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginRequestDto request)
+        public override async Task<IActionResult> Login(LoginRequestDto request)
         {
             _logger.LogInformation("Staff login attempt");
             
@@ -42,6 +49,20 @@ namespace LoyaltySystem.Staff.API.Controllers
                 
             _logger.LogInformation("Staff login successful for user: {UserId}", result.Data.User.Id);
             return Ok(result.Data);
+        }
+        
+        private string GetIdentifier(LoginRequestDto request)
+        {
+            return !string.IsNullOrEmpty(request.Email) 
+                ? request.Email 
+                : request.UserName;
+        }
+        
+        private LoginIdentifierType GetIdentifierType(LoginRequestDto request)
+        {
+            return !string.IsNullOrEmpty(request.Email) 
+                ? LoginIdentifierType.Email 
+                : LoginIdentifierType.Username;
         }
         
         [HttpPost("register")]
@@ -94,6 +115,15 @@ namespace LoyaltySystem.Staff.API.Controllers
             });
         }
         
+        // Override the profile endpoint to add Staff role authorization
+        [Authorize(Roles = "Staff")]
+        [HttpGet("profile")]
+        public override async Task<IActionResult> GetProfile()
+        {
+            // Call the base implementation to reuse its logic
+            return await base.GetProfile();
+        }
+        
         [Authorize(Roles = "Admin,Manager,SuperAdmin")]
         [HttpGet("users/{id}")]
         public async Task<IActionResult> GetUserById(string id)
@@ -110,39 +140,5 @@ namespace LoyaltySystem.Staff.API.Controllers
             
             return Ok(result.Data);
         }
-        
-        [Authorize(Roles = "Staff")]
-        [HttpGet("profile")]
-        public async Task<IActionResult> GetProfile()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-            
-            var result = await _authService.GetUserByIdAsync(userId);
-            
-            if (!result.Success)
-                return NotFound(new { message = result.Errors });
-                
-            return Ok(result.Data);
-        }
-        
-        #region Helper Methods
-        
-        private string GetIdentifier(LoginRequestDto request)
-        {
-            return !string.IsNullOrEmpty(request.Email) 
-                ? request.Email 
-                : request.UserName;
-        }
-        
-        private LoginIdentifierType GetIdentifierType(LoginRequestDto request)
-        {
-            return !string.IsNullOrEmpty(request.Email) 
-                ? LoginIdentifierType.Email 
-                : LoginIdentifierType.Username;
-        }
-        
-        #endregion
     }
 } 

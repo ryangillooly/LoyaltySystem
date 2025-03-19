@@ -24,6 +24,15 @@ public class AuthController : BaseAuthController
         _customerService = customerService;
     }
     
+    // Override the template method to explicitly specify customer registration
+    // This is technically redundant since the base class already does this,
+    // but we include it for clarity and to follow LSP properly
+    protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest)
+    {
+        // In the customer controller, we register as a customer user (same as base)
+        return await _authService.RegisterCustomerAsync(registerRequest);
+    }
+    
     [HttpPost("register")]
     public override async Task<IActionResult> RegisterUser(RegisterUserDto registerRequest)
     {
@@ -42,9 +51,6 @@ public class AuthController : BaseAuthController
             _logger.LogWarning("Customer registration failed for email: {email} - {errors}", registerRequest.Email, result.Errors);
             return BadRequest(new { message = result.Errors });
         }
-            
-        // Ensure the user has the Customer role
-        await _authService.AddRoleAsync(result.Data.Id, RoleType.Customer);
             
         _logger.LogInformation("Successful customer registration for email: {email}", registerRequest.Email);
         return CreatedAtAction(nameof(GetProfile), null, result.Data);

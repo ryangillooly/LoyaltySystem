@@ -14,9 +14,10 @@ namespace LoyaltySystem.Admin.API.Controllers;
 public class AuthController : BaseAuthController
 {
     public AuthController(IAuthService authService, ILogger<AuthController> logger)
-        : base(authService, logger)
-    {
-    }
+        : base(authService, logger) { }
+    
+    protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest) =>
+        await _authService.RegisterAdminAsync(registerRequest);
     
     [HttpPost("register/admin")]
     [Authorize(Roles = "SuperAdmin")]

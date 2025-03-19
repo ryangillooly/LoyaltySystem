@@ -73,7 +73,8 @@ namespace LoyaltySystem.Shared.API.Controllers
                 return BadRequest(new { message = "Password and confirmation password do not match" });
             }
             
-            var result = await _authService.RegisterCustomerAsync(registerRequest);
+            // Call the appropriate registration method for the specific controller type
+            var result = await ExecuteRegistrationAsync(registerRequest);
             
             if (!result.Success)
             {
@@ -83,6 +84,14 @@ namespace LoyaltySystem.Shared.API.Controllers
             
             _logger.LogInformation("Successful registration for email: {Email}", registerRequest.Email);
             return CreatedAtAction(nameof(GetUserById), new { id = result.Data.Id }, result.Data);
+        }
+
+        // Template method that derived classes should override to specify which registration method to use
+        protected virtual async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest)
+        {
+            // Default implementation assumes customer registration
+            // For other controller types (Admin, Staff), they should override this method
+            return await _authService.RegisterCustomerAsync(registerRequest);
         }
 
         [Authorize]

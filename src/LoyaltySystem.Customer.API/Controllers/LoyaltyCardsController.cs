@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Customer.API.Controllers;
 
 [ApiController]
-[Route("api/customer/loyalty-cards")]
+[Route("api/customer/[controller]")]
 [Authorize]
 public class LoyaltyCardsController : ControllerBase
 {
@@ -97,84 +97,6 @@ public class LoyaltyCardsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetCardById(string id)
-    {
-        _logger.LogInformation("Retrieving loyalty card by ID: {CardId}", id);
-        
-        var cardId = new LoyaltyCardId(EntityId.Parse<LoyaltyCardId>(id));
-        var result = await _loyaltyCardService.GetByIdAsync(cardId);
-        
-        if (!result.Success)
-        {
-            _logger.LogWarning("Get loyalty card failed for ID: {CardId} - {Error}", id, result.Errors);
-            return NotFound(result.Errors);
-        }
-        
-        // Verify ownership or staff role if not admin
-        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
-        {
-            var customerIdClaim = User.FindFirstValue("CustomerId");
-            if (string.IsNullOrEmpty(customerIdClaim) || 
-                !result.Data.CustomerId.ToString().Equals(customerIdClaim, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Unauthorized access attempt to loyalty card ID: {CardId} by user with customer ID: {CustomerId}", id, customerIdClaim);
-                return Forbid();
-            }
-        }
-        
-        return Ok(result.Data);
-    }
-
-    [HttpGet("by-customer/{customerId}")]
-    public async Task<IActionResult> GetCardsByCustomerId(string customerId)
-    {
-        _logger.LogInformation("Retrieving loyalty cards for customer ID: {CustomerId}", customerId);
-        
-        // Verify ownership or staff role if not admin
-        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
-        {
-            var userCustomerId = User.FindFirstValue("CustomerId");
-            if (string.IsNullOrEmpty(userCustomerId) || 
-                !customerId.Equals(userCustomerId, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Unauthorized access attempt to customer ID: {CustomerId} by user with customer ID: {UserCustomerId}",
-                    customerId, userCustomerId);
-                return Forbid();
-            }
-        }
-        
-        var customerIdObj = new CustomerId(EntityId.Parse<CustomerId>(customerId));
-        var result = await _loyaltyCardService.GetByCustomerIdAsync(customerIdObj);
-        
-        if (!result.Success)
-        {
-            _logger.LogWarning("Get loyalty cards failed for customer ID: {CustomerId} - {Error}", 
-                customerId, result.Errors);
-            return NotFound(result.Errors);
-        }
-        
-        return Ok(result.Data);
-    }
-
-    [HttpGet("by-program/{programId}")]
-    public async Task<IActionResult> GetCardsByProgramId(string programId)
-    {
-        _logger.LogInformation("Retrieving loyalty cards for program ID: {ProgramId}", programId);
-        
-        var programIdObj = new LoyaltyProgramId(EntityId.Parse<LoyaltyProgramId>(programId));
-        var result = await _loyaltyCardService.GetByProgramIdAsync(programIdObj);
-        
-        if (!result.Success)
-        {
-            _logger.LogWarning("Get loyalty cards failed for program ID: {ProgramId} - {Error}", 
-                programId, result.Errors);
-            return NotFound(result.Errors);
-        }
-        
-        return Ok(result.Data);
-    }
-    
     [HttpPost("enroll")]
     public async Task<IActionResult> EnrollInProgram([FromBody] EnrollmentRequest request)
     {
@@ -227,7 +149,7 @@ public class LoyaltyCardsController : ControllerBase
             return BadRequest(result.Errors);
         }
             
-        return CreatedAtAction(nameof(GetCardById), new { id = result.Data.Id }, result.Data);
+        return CreatedAtAction(nameof(GetCardTransactions), new { id = result.Data.Id }, result.Data);
     }
 
     [HttpGet("{id}/qr-code")]
@@ -304,6 +226,81 @@ public class LoyaltyCardsController : ControllerBase
             new { Id = "store_3", Name = "Store 3", Distance = 2.7 }
         });
     }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetCardById(LoyaltyCardId id)
+    {
+        _logger.LogInformation("Retrieving loyalty card by ID: {CardId}", id);
+        
+        var result = await _loyaltyCardService.GetByIdAsync(id);
+        
+        if (!result.Success)
+        {
+            _logger.LogWarning("Get loyalty card failed for ID: {CardId} - {Error}", id, result.Errors);
+            return NotFound(result.Errors);
+        }
+        
+        // Verify ownership or staff role if not admin
+        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
+        {
+            var customerIdClaim = User.FindFirstValue("CustomerId");
+            if (string.IsNullOrEmpty(customerIdClaim) || 
+                !result.Data.CustomerId.ToString().Equals(customerIdClaim, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Unauthorized access attempt to loyalty card ID: {CardId} by user with customer ID: {CustomerId}", id, customerIdClaim);
+                return Forbid();
+            }
+        }
+        
+        return Ok(result.Data);
+    }
+
+    [HttpGet("customer/{customerId}")]
+    public async Task<IActionResult> GetCardsByCustomerId(CustomerId customerId)
+    {
+        _logger.LogInformation("Retrieving loyalty cards for customer ID: {CustomerId}", customerId);
+        
+        // Verify ownership or staff role if not admin
+        if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
+        {
+            var userCustomerId = User.FindFirstValue("CustomerId");
+            if (string.IsNullOrEmpty(userCustomerId) || 
+                !customerId.ToString().Equals(userCustomerId, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Unauthorized access attempt to customer ID: {CustomerId} by user with customer ID: {UserCustomerId}",
+                    customerId, userCustomerId);
+                return Forbid();
+            }
+        }
+        
+        var result = await _loyaltyCardService.GetByCustomerIdAsync(customerId);
+        
+        if (!result.Success)
+        {
+            _logger.LogWarning("Get loyalty cards failed for customer ID: {CustomerId} - {Error}", 
+                customerId, result.Errors);
+            return NotFound(result.Errors);
+        }
+        
+        return Ok(result.Data);
+    }
+
+    [HttpGet("program/{programId}")]
+    public async Task<IActionResult> GetCardsByProgramId(LoyaltyProgramId programId)
+        {
+            _logger.LogInformation("Retrieving loyalty cards for program ID: {ProgramId}", programId);
+            
+            var result = await _loyaltyCardService.GetByProgramIdAsync(programId);
+            
+            if (!result.Success)
+            {
+                _logger.LogWarning("Get loyalty cards failed for program ID: {ProgramId} - {Error}", 
+                    programId, result.Errors);
+                return NotFound(result.Errors);
+            }
+            
+            return Ok(result.Data);
+        }
 }
 
 public class EnrollmentRequest

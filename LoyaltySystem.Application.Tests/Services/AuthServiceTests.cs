@@ -71,10 +71,10 @@ namespace LoyaltySystem.Application.Tests.Services
             var mockTransaction = new Mock<DbTransaction>();
             _unitOfWorkMock
                 .Setup(x => x.BeginTransactionAsync())
-                .ReturnsAsync(mockTransaction.Object);
+                .Returns(mockTransaction.Object.CommitAsync());
 
             _unitOfWorkMock
-                .Setup(x => x.CommitAsync(It.IsAny<DbTransaction>()))
+                .Setup(x => x.CommitTransactionAsync())
                 .Returns(Task.CompletedTask);
 
             // Act
