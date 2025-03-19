@@ -38,7 +38,7 @@ namespace LoyaltySystem.Application.DTOs.LoyaltyPrograms
             if (pointsConfig == null)
                 return;
                 
-            PointsPerPound = pointsConfig.PointsPerPounds;
+            PointsPerPound = pointsConfig.PointsPerPound;
             MinimumPointsForRedemption = pointsConfig.MinimumPointsForRedemption;
             RoundingRule = pointsConfig.RoundingRule;
             EnrollmentBonusPoints = pointsConfig.EnrollmentBonusPoints;

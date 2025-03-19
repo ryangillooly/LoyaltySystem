@@ -1,39 +1,19 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Infrastructure.Data;
-using LoyaltySystem.Infrastructure.Data.Extensions;
+using LoyaltySystem.Application.DTOs;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
-    // Define the CustomerDto for mapping database results
-    internal class CustomerDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public bool MarketingConsent { get; set; }
-        public DateTime JoinedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-    }
-
     public class CustomerRepository : ICustomerRepository
     {
         private readonly IDatabaseConnection _dbConnection;
 
-        public CustomerRepository(IDatabaseConnection connection)
-        {
+        public CustomerRepository(IDatabaseConnection connection) =>
             _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
-        }
 
         public async Task<Customer?> GetByIdAsync(CustomerId id)
         {
@@ -41,27 +21,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var parameters = new { Id = id.Value };
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dto = await dbConnection.QuerySingleOrDefaultAsync<CustomerDto>(sql, parameters);
-            
-            if (dto == null)
-                return null;
-                
-            // Map DTO to domain entity
-            var customer = CreateCustomerFromDto(dto);
-            
-            return customer;
+            var dto = await dbConnection.QuerySingleOrDefaultAsync<CustomerDbObjectDto>(sql, parameters);
+
+            return dto is { }
+                ? CreateCustomerFromDto(dto)
+                : null;
         }
 
         public async Task<IEnumerable<Customer>> GetAllAsync(int skip = 0, int limit = 50)
         {
-            const string sql = @"
-                SELECT * FROM customers
-                ORDER BY name
-                LIMIT @Limit OFFSET @Skip";
-            
             var parameters = new { Skip = skip, Limit = limit };
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(
+                """
+                    SELECT * 
+                    FROM customers
+                    ORDER BY first_name, last_name
+                    LIMIT @Limit 
+                    OFFSET @Skip
+                """, 
+                parameters
+            );
             
             // Map DTOs to domain entities
             return dtos.Select(CreateCustomerFromDto).ToList();
@@ -69,9 +49,13 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<int> GetTotalCountAsync()
         {
-            const string sql = "SELECT COUNT(*) FROM customers";
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql);
+            return await dbConnection.ExecuteScalarAsync<int>(
+                """
+                    SELECT COUNT(*) 
+                    FROM customers
+                """
+            );
         }
 
         public async Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null)
@@ -82,6 +66,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             bool ownsTransaction = transaction == null;
         
             // If no transaction was provided, create one
+            // TODO: Check this transaction logic. We are using "ExecuteInTransaction" over these calls, so i assume we can remove this ?
             transaction ??= dbConnection.BeginTransaction();
             
             try
@@ -89,18 +74,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
-                            (id, name, email, phone, marketing_consent, joined_at, last_login_at, created_at, updated_at)
+                            (id, first_name, last_name, username, email, phone, marketing_consent, last_login_at, created_at, updated_at)
                         VALUES 
-                            (@CustomerId, @Name, @Email, @Phone, @MarketingConsent, @JoinedAt, @LastLoginAt, @CreatedAt, @UpdatedAt)
+                            (@CustomerId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @LastLoginAt, @CreatedAt, @UpdatedAt)
                     ",
                     new
                     {
                         CustomerId = customer.Id.Value,
-                        customer.Name,
+                        customer.FirstName,
+                        customer.LastName,
+                        customer.UserName,
                         customer.Email,
                         customer.Phone,
                         customer.MarketingConsent,
-                        customer.JoinedAt,
                         customer.LastLoginAt,
                         customer.CreatedAt,
                         customer.UpdatedAt
@@ -130,10 +116,22 @@ namespace LoyaltySystem.Infrastructure.Repositories
         public async Task<IEnumerable<Customer>> SearchAsync(string searchTerm, int skip = 0, int limit = 50)
         {
             const string sql = @"
-                SELECT * FROM customers
-                WHERE name ILIKE @SearchTerm OR email ILIKE @SearchTerm OR phone ILIKE @SearchTerm
-                ORDER BY name
-                LIMIT @Limit OFFSET @Skip";
+                SELECT 
+                    * 
+                FROM 
+                    customers
+                WHERE 
+                    first_name ILIKE @SearchTerm OR
+                    last_name ILIKE @SearchTerm OR
+                    email ILIKE @SearchTerm OR 
+                    phone ILIKE @SearchTerm
+                ORDER BY 
+                    first_name, 
+                    last_name
+                LIMIT 
+                    @Limit 
+                OFFSET 
+                    @Skip";
             
             var parameters = new 
             { 
@@ -143,110 +141,85 @@ namespace LoyaltySystem.Infrastructure.Repositories
             };
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(sql, parameters);
             
             // Map DTOs to domain entities
-            var customers = new List<Customer>();
-            foreach (var dto in dtos)
-            {
-                var customer = CreateCustomerFromDto(dto);
-                customers.Add(customer);
-            }
-            
-            return customers;
-        }
-        
-        
-        // Helper method to set private properties using reflection
-        private void SetPrivatePropertyValue<T>(object obj, string propName, T value)
-        {
-            var prop = obj.GetType().GetProperty(propName);
-            if (prop != null)
-            {
-                prop.SetValue(obj, value, null);
-            }
+            return dtos.Select(CreateCustomerFromDto).ToList();
         }
 
-        public async Task<IEnumerable<Customer>> GetNewCustomersAsync(DateTime start, DateTime end)
+        public async Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end)
         {
             const string sql = @"
-                SELECT * FROM customers
-                WHERE joined_at BETWEEN @Start AND @End
-                ORDER BY joined_at DESC";
+                SELECT 
+                    * 
+                FROM 
+                    customers
+                WHERE 
+                    joined_at BETWEEN @Start AND @End
+                ORDER BY 
+                    joined_at DESC";
 
             var parameters = new { Start = start, End = end };
             var dbConnection = await _dbConnection.GetConnectionAsync();
-            var dtos = await dbConnection.QueryAsync<CustomerDto>(sql, parameters);
+            var dtos = await dbConnection.QueryAsync<CustomerDbObjectDto>(sql, parameters);
             
             // Map DTOs to domain entities
-            var customers = new List<Customer>();
-            foreach (var dto in dtos)
-            {
-                var customer = CreateCustomerFromDto(dto);
-                customers.Add(customer);
-            }
-            
-            return customers;
+            return dtos.Select(CreateCustomerFromDto).ToList();
         }
 
         
         // Private helper method to create a Customer entity from a DTO
-        private Customer CreateCustomerFromDto(CustomerDto dto)
-        {
-            var customer = new Customer(
-                dto.Name,
-                dto.Email,
-                dto.Phone,
-                new CustomerId(dto.Id),
-                dto.MarketingConsent);
-                
-            // Set private properties
-            SetPrivatePropertyValue(customer, "Id", new CustomerId(dto.Id));
-            SetPrivatePropertyValue(customer, "JoinedAt", dto.JoinedAt);
-            SetPrivatePropertyValue(customer, "LastLoginAt", dto.LastLoginAt);
-            SetPrivatePropertyValue(customer, "CreatedAt", dto.CreatedAt);
-            SetPrivatePropertyValue(customer, "UpdatedAt", dto.UpdatedAt);
-            
-            return customer;
-        }
+        private static Customer CreateCustomerFromDto(CustomerDbObjectDto dbObjectDto) =>
+            new ()
+            {
+                Id = new CustomerId(dbObjectDto.Id),
+                FirstName = dbObjectDto.FirstName,
+                LastName = dbObjectDto.LastName,
+                Email = dbObjectDto.Email,
+                Phone = dbObjectDto.Phone,
+                MarketingConsent = dbObjectDto.MarketingConsent,
+                LastLoginAt = dbObjectDto.LastLoginAt,
+                CreatedAt = dbObjectDto.CreatedAt,
+                UpdatedAt = dbObjectDto.UpdatedAt
+            };
 
         public async Task UpdateAsync(Customer customer)
         {
             const string sql = @"
-                UPDATE customers 
-                SET name = @Name,
+                UPDATE 
+                    customers 
+                SET 
+                    first_name = @FirstName,
+                    last_name = @LastName,          
+                    username = @UserName,
                     email = @Email,
                     phone = @Phone,
                     marketing_consent = @MarketingConsent,
                     last_login_at = @LastLoginAt,
                     updated_at = @UpdatedAt
-                WHERE id = @Id";
+                WHERE 
+                    id = @Id";
             
             if (string.IsNullOrEmpty(customer.Id.ToString()))
-            {
                 throw new ArgumentException("Customer ID cannot be null or empty");
-            }
             
-            // Try to parse the prefixed customer ID
             Guid customerId;
-            
-            // First, try to parse as a prefixed ID using CustomerId's parsing
-            if (CustomerId.TryParse<CustomerId>(customer.Id.ToString(), out var parsedId))
+            if (EntityId.TryParse<CustomerId>(customer.Id.ToString(), out var parsedId))
             {
-                // Use the GUID value from parsed ID
                 customerId = parsedId;
             }
             else if (!Guid.TryParse(customer.Id.ToString(), out customerId))
             {
-                // If both parsing methods fail, throw an exception
                 throw new ArgumentException($"Invalid customer ID format: {customer.Id}. Expected a valid prefixed ID or UUID.");
             }
-            
+
             var dbConnection = await _dbConnection.GetConnectionAsync();
             var parameters = new
             {
                 Id = customerId,
-                customer.Name,
+                customer.FirstName,
+                customer.LastName,
+                customer.UserName,
                 customer.Email,
                 customer.Phone,
                 customer.MarketingConsent,
@@ -256,19 +229,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             await dbConnection.ExecuteAsync(sql, parameters);
         }
-
-        public async Task<IEnumerable<Customer>> GetBySignupDateRangeAsync(DateTime start, DateTime end)
-        {
-            // This method is the same as GetNewCustomersAsync, just with a different name to match the interface
-            return await GetNewCustomersAsync(start, end);
-        }
-
+        
         public async Task<int> GetCustomersWithCardsCountAsync()
         {
             const string sql = @"
-                SELECT COUNT(DISTINCT c.id) 
-                FROM customers c
-                JOIN loyalty_cards lc ON c.id = lc.customer_id";
+                SELECT 
+                    COUNT(DISTINCT c.id) 
+                FROM 
+                    customers c INNER JOIN 
+                    loyalty_cards lc ON c.id = lc.customer_id";
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
             return await dbConnection.ExecuteScalarAsync<int>(sql);
@@ -276,7 +245,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<Dictionary<string, int>> GetAgeGroupsAsync()
         {
-            // Since we don't have DateOfBirth in the Customer entity, we'll return a simple placeholder
+            // TODO: Since we don't have DateOfBirth in the Customer entity, we'll return a simple placeholder
             var result = new Dictionary<string, int>
             {
                 { "Unknown", 100 }
@@ -287,7 +256,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<Dictionary<string, int>> GetGenderDistributionAsync()
         {
-            // Since we don't have Gender in the Customer entity, we'll return a simple placeholder
+            // TODO: Since we don't have Gender in the Customer entity, we'll return a simple placeholder
             var result = new Dictionary<string, int>
             {
                 { "Unknown", 100 }
@@ -298,7 +267,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<IEnumerable<KeyValuePair<string, int>>> GetTopLocationsAsync(int limit)
         {
-            // Since we don't have Address in the Customer entity, we'll return a simple placeholder
+            // TODO:  Since we don't have Address in the Customer entity, we'll return a simple placeholder
             var results = new List<KeyValuePair<string, int>>
             {
                 new KeyValuePair<string, int>("Unknown", 100)

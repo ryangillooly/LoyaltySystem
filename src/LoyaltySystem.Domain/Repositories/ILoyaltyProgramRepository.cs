@@ -16,7 +16,7 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets a loyalty program by its ID.
         /// </summary>
-        Task<LoyaltyProgram> GetByIdAsync(LoyaltyProgramId id);
+        Task<LoyaltyProgram?> GetByIdAsync(LoyaltyProgramId id);
         
         /// <summary>
         /// Gets all loyalty programs with optional paging.

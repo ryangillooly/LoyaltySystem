@@ -1,5 +1,4 @@
 using LoyaltySystem.Shared.API.Configuration;
-using LoyaltySystem.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 

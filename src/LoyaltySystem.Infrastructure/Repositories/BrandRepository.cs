@@ -3,6 +3,7 @@ using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
+using LoyaltySystem.Domain.ValueObjects;
 using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
 using LoyaltySystem.Infrastructure.Data.TypeHandlers;

@@ -84,6 +84,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 SELECT 
                     u.id AS ""Id"", 
+					u.first_name AS ""FirstName"",
+					u.last_name AS ""LastName"",
                     u.username AS ""Username"", 
                     u.email AS ""Email"", 
                     u.password_hash AS ""PasswordHash"", 
@@ -238,37 +240,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 INSERT INTO users (
-                    id, username, email, password_hash, password_salt, 
+                    id, first_name, last_name, username, email, password_hash, password_salt, 
                     customer_id, status, created_at, updated_at, last_login_at
                 ) VALUES (
-                    @Id, @Username, @Email, @PasswordHash, @PasswordSalt, 
+                    @Id, @FirstName, @LastName, @Username, @Email, @PasswordHash, @PasswordSalt, 
                     @CustomerId::uuid, @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
                 )";
 
-            // Ensure CustomerId is properly handled for database
-            object customerIdParam = DBNull.Value;
-            if (!string.IsNullOrEmpty(user.CustomerId))
-            {
-                // If it's already a GUID string, use it directly
-                if (Guid.TryParse(user.CustomerId, out var _))
-                {
-                    customerIdParam = user.CustomerId;
-                }
-                // Otherwise, try to convert from EntityId format
-                else if (CustomerId.TryParse<CustomerId>(user.CustomerId, out var customerId))
-                {
-                    customerIdParam = customerId.Value.ToString();
-                }
-                else
-                {
-                    // If we can't parse it, log a warning and use null
-                    Console.WriteLine($"Warning: Could not parse CustomerId '{user.CustomerId}' to UUID format");
-                }
-            }
-
             var connection = await _dbConnection.GetConnectionAsync();
-            
-            // Use the external transaction if provided, or create a new one if needed
             bool useExternalTransaction = externalTransaction != null;
             var transaction = externalTransaction;
             
@@ -276,18 +255,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
             {
                 // Only begin a new transaction if no external transaction is provided
                 if (!useExternalTransaction)
-                {
                     transaction = await connection.BeginTransactionAsync();
-                }
                 
                 await connection.ExecuteAsync(sql, new
                 {
                     Id = user.Id.Value,
-                    user.Username,
+                    user.FirstName,
+                    user.LastName,
+                    user.UserName,
                     user.Email,
                     user.PasswordHash,
                     user.PasswordSalt,
-                    CustomerId = customerIdParam,
+                    CustomerId = user.CustomerId?.Value ?? null,
                     Status = (int)user.Status,
                     user.CreatedAt,
                     user.UpdatedAt,
@@ -300,11 +279,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     await AddRoleInternalAsync(user.Id.Value.ToString(), userRole.Role, transaction);
                 }
                 
-                // Only commit if we created the transaction
                 if (!useExternalTransaction)
-                {
                     transaction.Commit();
-                }
             }
             catch
             {
@@ -324,7 +300,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 UPDATE users
-                SET username = @Username,
+                SET first_name = @FirstName,
+                    last_name = @LastName,
+                    username = @UserName,
                     email = @Email,
                     password_hash = @PasswordHash,
                     password_salt = @PasswordSalt,
@@ -333,37 +311,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     updated_at = @UpdatedAt,
                     last_login_at = @LastLoginAt
                 WHERE id = @Id";
-
-            // Ensure CustomerId is properly handled for database
-            object customerIdParam = DBNull.Value;
-            if (!string.IsNullOrEmpty(user.CustomerId))
-            {
-                // If it's already a GUID string, use it directly
-                if (Guid.TryParse(user.CustomerId, out var _))
-                {
-                    customerIdParam = user.CustomerId;
-                }
-                // Otherwise, try to convert from EntityId format
-                else if (CustomerId.TryParse<CustomerId>(user.CustomerId, out var customerId))
-                {
-                    customerIdParam = customerId.Value.ToString();
-                }
-                else
-                {
-                    // If we can't parse it, log a warning and use null
-                    Console.WriteLine($"Warning: Could not parse CustomerId '{user.CustomerId}' to UUID format");
-                }
-            }
-
+            
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
             {
                 Id = user.Id.Value,
-                user.Username,
+                user.FirstName,
+                user.LastName,
+                user.UserName,
                 user.Email,
                 user.PasswordHash,
                 user.PasswordSalt,
-                CustomerId = customerIdParam,
+                CustomerId = user.CustomerId?.Value ?? null,
                 Status = (int)user.Status,
                 user.UpdatedAt,
                 user.LastLoginAt

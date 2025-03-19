@@ -10,6 +10,7 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
+using System.Linq.Expressions;
 
 namespace LoyaltySystem.Application.Services
 {
@@ -61,12 +62,10 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 var card = await _cardRepository.GetByIdAsync(id);
-                if (card == null)
-                {
-                    return OperationResult<LoyaltyCardDto>.FailureResult($"Card with ID {id} not found");
-                }
+                return card == null 
+                    ? OperationResult<LoyaltyCardDto>.FailureResult($"Card with ID {id} not found") 
+                    : OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
 
-                return OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
             }
             catch (Exception ex)
             {
@@ -80,12 +79,10 @@ namespace LoyaltySystem.Application.Services
             try
             {
                 var card = await _cardRepository.GetByQrCodeAsync(qrCode);
-                if (card == null)
-                {
-                    return OperationResult<LoyaltyCardDto>.FailureResult("Card not found");
-                }
+                return card == null
+                    ? OperationResult<LoyaltyCardDto>.FailureResult("Card not found") 
+                    : OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
 
-                return OperationResult<LoyaltyCardDto>.SuccessResult(MapToDto(card));
             }
             catch (Exception ex)
             {
@@ -128,26 +125,19 @@ namespace LoyaltySystem.Application.Services
             var customerId = EntityId.Parse<CustomerId>(dto.CustomerId);
             try
             {
-                // Check if customer exists
                 var customer = await _customerRepository.GetByIdAsync(new CustomerId(customerId));
                 if (customer == null)
-                {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Customer not found");
-                }
 
                 // Check if program exists
                 var program = await _programRepository.GetByIdAsync(new LoyaltyProgramId(programId));
                 if (program == null)
-                {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Loyalty program not found");
-                }
 
                 // Check if customer already has a card for this program
                 var existingCards = await _cardRepository.GetByCustomerIdAsync(new CustomerId(customerId));
                 if (existingCards.Any(c => c.ProgramId == programId))
-                {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Customer already enrolled in this program");
-                }
 
                 // Create new card
                 // TODO: Should this create a Stamp or Points card? 
@@ -171,11 +161,9 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(id);
                 if (card == null)
-                {
                     return OperationResult<LoyaltyCardDto>.FailureResult("Card not found");
-                }
-
-                // Use the appropriate domain method based on the requested status
+                
+                
                 switch (status)
                 {
                     case CardStatus.Expired:
@@ -215,24 +203,16 @@ namespace LoyaltySystem.Application.Services
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 
                 if (card == null)
-                {
                     return OperationResult<TransactionDto>.FailureResult($"Card with ID {cardId} not found");
-                }
                 
                 if (card.Status != CardStatus.Active)
-                {
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
-                }
                 
                 if (card.Type != LoyaltyProgramType.Stamp)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Cannot issue stamps to a points-based card");
-                }
                 
                 if (stampCount <= 0)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Stamp count must be greater than zero");
-                }
                 
                 _logger.LogInformation($"Issuing {stampCount} stamps to card {cardId}");
 
@@ -273,24 +253,16 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Card not found");
-                }
 
                 if (card.Status != CardStatus.Active)
-                {
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
-                }
 
                 if (card.Type != LoyaltyProgramType.Points)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Cannot add points to a stamp-based card");
-                }
 
                 if (points <= 0)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Points amount must be greater than zero");
-                }
 
                 _logger.LogInformation($"Adding {points} points to card {cardId}");
 
@@ -328,53 +300,36 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Card not found");
-                }
 
                 if (card.Status != CardStatus.Active)
-                {
                     return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
-                }
 
                 var reward = await _programRepository.GetRewardByIdAsync(rewardId);
                 if (reward == null)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Reward not found");
-                }
 
                 if (reward.ProgramId != card.ProgramId)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Reward does not belong to the card's program");
-                }
 
                 // Check if reward is active
                 if (!reward.IsActive)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Reward is not active");
-                }
 
                 // Check if reward is within valid date range
                 var now = DateTime.UtcNow;
                 if (reward.ValidFrom.HasValue && reward.ValidFrom.Value > now)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Reward is not yet available");
-                }
 
                 if (reward.ValidTo.HasValue && reward.ValidTo.Value < now)
-                {
                     return OperationResult<TransactionDto>.FailureResult("Reward has expired");
-                }
 
                 // Check if card has enough points/stamps based on card type
                 if (card.Type == LoyaltyProgramType.Points && card.PointsBalance < reward.RequiredValue)
-                {
                     return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredValue}, Available: {card.PointsBalance}");
-                }
-                else if (card.Type == LoyaltyProgramType.Stamp && card.StampsCollected < reward.RequiredValue)
-                {
+                
+                if (card.Type == LoyaltyProgramType.Stamp && card.StampsCollected < reward.RequiredValue)
                     return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredValue}, Available: {card.StampsCollected}");
-                }
 
                 // Create transaction with the appropriate deduction values based on card type
                 var transaction = new Transaction(
@@ -386,14 +341,16 @@ namespace LoyaltySystem.Application.Services
                     storeId: storeId.Value,
                     staffId: staffId);
 
-                // Update card
-                if (card.Type == LoyaltyProgramType.Points)
+                switch (card.Type)
                 {
-                    card.PointsBalance -= reward.RequiredValue;
-                }
-                else if (card.Type == LoyaltyProgramType.Stamp)
-                {
-                    card.StampsCollected -= reward.RequiredValue;
+                    case LoyaltyProgramType.Points:
+                        card.PointsBalance -= reward.RequiredValue;
+                        break;
+                    case LoyaltyProgramType.Stamp:
+                        card.StampsCollected -= reward.RequiredValue;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(card.Type), card.Type, null);
                 }
 
                 card.UpdatedAt = DateTime.UtcNow;
@@ -417,9 +374,7 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
-                {
                     return OperationResult<string>.FailureResult("Card not found");
-                }
 
                 // Generate a unique QR code
                 var qrCode = Guid.NewGuid().ToString("N");
@@ -444,14 +399,10 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
-                {
                     return OperationResult<string>.FailureResult("Card not found");
-                }
 
                 if (!string.IsNullOrEmpty(card.QrCode))
-                {
                     return OperationResult<string>.SuccessResult(card.QrCode);
-                }
 
                 return await GenerateQrCodeAsync(cardId);
             }
@@ -468,9 +419,7 @@ namespace LoyaltySystem.Application.Services
             {
                 var card = await _cardRepository.GetByIdAsync(cardId);
                 if (card == null)
-                {
                     return OperationResult<IEnumerable<TransactionDto>>.FailureResult("Card not found");
-                }
 
                 var transactions = await _unitOfWork.TransactionRepository.GetByCardIdAsync(cardId);
                 return OperationResult<IEnumerable<TransactionDto>>.SuccessResult(transactions.Select(MapToTransactionDto));
@@ -577,13 +526,11 @@ namespace LoyaltySystem.Application.Services
                 var programIdObj = new LoyaltyProgramId(Guid.Parse(programId));
                 var cards = await _cardRepository.GetByProgramIdAsync(programIdObj);
                 
-                if (!cards.Any())
-                {
-                    return 0;
-                }
-                
-                // Since we don't have access to transactions, we'll return 0
-                return 0;
+                return !cards.Any() ? 0 :
+                    // Since we don't have access to transactions, we'll return 0
+                    // TODO: Implement this
+                    0;
+
             }
             catch (Exception ex)
             {
@@ -592,9 +539,46 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        private LoyaltyCardDto MapToDto(LoyaltyCard card)
+        /// <summary>
+        /// Verifies that a loyalty card belongs to a specific customer
+        /// </summary>
+        /// <param name="cardId">The ID of the loyalty card to check</param>
+        /// <param name="customerId">The ID of the customer</param>
+        /// <returns>Success result if the card belongs to the customer, failure otherwise</returns>
+        public async Task<OperationResult<bool>> VerifyCardOwnership(string cardId, CustomerId customerId)
         {
-            return new LoyaltyCardDto
+            try
+            {
+                // Parse the card ID
+                var loyaltyCardId = EntityId.Parse<LoyaltyCardId>(cardId);
+                
+                // Get the card from the repository
+                var card = await _cardRepository.GetByIdAsync(loyaltyCardId);
+                
+                // Check if the card exists
+                if (card == null)
+                    return OperationResult<bool>.FailureResult($"Loyalty card with ID {cardId} not found");
+                
+                // Check if the card belongs to the customer
+                if (card.CustomerId != customerId.Value)
+                {
+                    _logger.LogWarning("Card ownership verification failed: Card {CardId} doesn't belong to customer {CustomerId}", 
+                        cardId, customerId);
+                    return OperationResult<bool>.FailureResult("The loyalty card doesn't belong to the specified customer");
+                }
+                
+                return OperationResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying card ownership for card {CardId} and customer {CustomerId}", 
+                    cardId, customerId);
+                return OperationResult<bool>.FailureResult($"Error verifying card ownership: {ex.Message}");
+            }
+        }
+
+        private static LoyaltyCardDto MapToDto(LoyaltyCard card) =>
+            new ()
             {
                 Id = card.Id,
                 CustomerId = card.CustomerId,
@@ -609,11 +593,9 @@ namespace LoyaltySystem.Application.Services
                 Transactions = card.Transactions,
                 TotalTransactions = card.Transactions.Count
             };
-        }
 
-        private TransactionDto MapToTransactionDto(Transaction transaction)
-        {
-            return new TransactionDto
+        private static TransactionDto MapToTransactionDto(Transaction transaction) =>
+            new ()
             {
                 Id = transaction.Id.ToString(),
                 CardId = transaction.CardId.ToString(),
@@ -628,6 +610,5 @@ namespace LoyaltySystem.Application.Services
                 RewardTitle = transaction.Reward?.Title ?? string.Empty,
                 PosTransactionId = transaction.PosTransactionId ?? string.Empty
             };
-        }
     }
 } 

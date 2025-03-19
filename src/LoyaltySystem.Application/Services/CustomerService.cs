@@ -7,6 +7,7 @@ using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.Services
 {
@@ -92,24 +93,16 @@ namespace LoyaltySystem.Application.Services
         {
             try
             {
-                // Validate email format
                 if (!IsValidEmail(dto.Email))
                     return OperationResult<CustomerDto>.FailureResult("Invalid email format");
-                    
-                // Assuming the Customer constructor takes these parameters
-                var customer = new Customer(
-                    dto.Name,
-                    dto.Email,
-                    dto.Phone,
-                    null,
-                    false // marketingConsent default value
-                );
+                
+                var customer = MapToCustomer(dto);
 
-                await _unitOfWork.BeginTransactionAsync();
-                var newCustomer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                await _unitOfWork.CommitTransactionAsync();
-
-                return OperationResult<CustomerDto>.SuccessResult(MapToDto(newCustomer));
+                return await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    var newCustomer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
+                    return OperationResult<CustomerDto>.SuccessResult(MapToDto(newCustomer));
+                });
             }
             catch (Exception ex)
             {
@@ -128,13 +121,12 @@ namespace LoyaltySystem.Application.Services
                 if (customer == null)
                     return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
 
-                customer.Update(dto.Name, dto.Email, dto.Phone, false);
-
-                await _unitOfWork.BeginTransactionAsync();
-                await _customerRepository.UpdateAsync(customer);
-                await _unitOfWork.CommitTransactionAsync();
-
-                return OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
+                customer.Update(dto.FirstName, dto.LastName, dto.UserName, dto.Email, dto.Phone, dto.Address, false);
+                return await _unitOfWork.ExecuteInTransactionAsync(async () =>
+                {
+                    await _customerRepository.UpdateAsync(customer);
+                    return OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
+                });
             }
             catch (Exception ex)
             {
@@ -143,29 +135,16 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        public async Task<OperationResult<List<CustomerSignupDto>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end)
+        public async Task<OperationResult<IEnumerable<Customer>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end)
         {
             try
             {
                 var customers = await _customerRepository.GetBySignupDateRangeAsync(start, end);
-                var signups = new List<CustomerSignupDto>();
-
-                foreach (var customer in customers)
-                {
-                    signups.Add(new CustomerSignupDto
-                    {
-                        CustomerId = customer.Id.ToString(),
-                        Name = customer.Name,
-                        Email = customer.Email,
-                        SignupDate = customer.CreatedAt
-                    });
-                }
-
-                return OperationResult<List<CustomerSignupDto>>.SuccessResult(signups);
+                return OperationResult<IEnumerable<Customer>>.SuccessResult(customers);
             }
             catch (Exception ex)
             {
-                return OperationResult<List<CustomerSignupDto>>.FailureResult($"Failed to get customer signups: {ex.Message}");
+                return OperationResult<IEnumerable<Customer>>.FailureResult($"Failed to get customer signups: {ex.Message}");
             }
         }
 
@@ -275,17 +254,32 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
-        private static CustomerDto MapToDto(Customer customer)
-        {
-            return new CustomerDto
+        private static Customer MapToCustomer(CreateCustomerDto dto) =>
+            new Customer
+            (
+                null, // Let the class generate a new Id
+                dto.FirstName, 
+                dto.LastName, 
+                dto.UserName,
+                dto.Email, 
+                dto.Phone, 
+                dto.Address, 
+                dto.MarketingConsent
+            );
+        
+        private static CustomerDto MapToDto(Customer customer) =>
+            new ()
             {
-                Id = customer.Id,
-                Name = customer.Name,
+                Id = customer.Id.ToString(),
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
                 Email = customer.Email,
                 Phone = customer.Phone,
-                CreatedAt = customer.CreatedAt
+                CreatedAt = customer.CreatedAt,
+                UpdatedAt = customer.UpdatedAt,
+                LastLoginAt = customer.LastLoginAt,
+                MarketingConsent = customer.MarketingConsent
             };
-        }
 
         private static bool IsValidEmail(string email)
         {
@@ -299,36 +293,5 @@ namespace LoyaltySystem.Application.Services
                 return false;
             }
         }
-    }
-
-    public class CustomerDto
-    {
-        public CustomerId Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
-    }
-
-    public class CreateCustomerDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-    }
-
-    public class UpdateCustomerDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-    }
-
-    public class CustomerSignupDto
-    {
-        public string CustomerId { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public DateTime SignupDate { get; set; }
     }
 } 

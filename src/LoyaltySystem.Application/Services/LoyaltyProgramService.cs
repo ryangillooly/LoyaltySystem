@@ -200,9 +200,10 @@ public class LoyaltyProgramService : ILoyaltyProgramService
                 }
             }
 
-            await _unitOfWork.BeginTransactionAsync();
-            await _programRepository.AddAsync(program, _unitOfWork.CurrentTransaction);
-            await _unitOfWork.CommitTransactionAsync();
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                await _programRepository.AddAsync(program, _unitOfWork.CurrentTransaction);
+            });
 
             return OperationResult<LoyaltyProgramDto>.SuccessResult(MapToDto(program));
         }

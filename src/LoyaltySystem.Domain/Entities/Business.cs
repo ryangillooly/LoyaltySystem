@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Domain.Entities
 {

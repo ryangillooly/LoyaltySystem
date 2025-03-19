@@ -1,4 +1,4 @@
-namespace LoyaltySystem.Admin.API.Settings;
+namespace LoyaltySystem.Domain.Settings;
 
 public class PostgresqlSettings 
 {

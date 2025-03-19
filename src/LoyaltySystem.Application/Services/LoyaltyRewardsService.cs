@@ -69,10 +69,10 @@ namespace LoyaltySystem.Application.Services
                 var rewardIdObj = EntityId.Parse<RewardId>(rewardId);
                 var reward = await _rewardsRepository.GetByIdAsync(rewardIdObj);
                 
-                if (reward == null)
-                    return OperationResult<RewardDto>.FailureResult($"Reward with ID {rewardId} not found");
-                
-                return OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+                return reward == null 
+                    ? OperationResult<RewardDto>.FailureResult($"Reward with ID {rewardId} not found") 
+                    : OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+
             }
             catch (Exception ex)
             {
@@ -241,6 +241,106 @@ namespace LoyaltySystem.Application.Services
             {
                 _logger.LogError(ex, "Error getting analytics for program {ProgramId}", programId);
                 return OperationResult<ProgramRewardsAnalyticsDto>.FailureResult(ex.Message);
+            }
+        }
+
+        public async Task<OperationResult<bool>> CheckRewardEligibility(string rewardId, string loyaltyCardId)
+        {
+            try
+            {
+                var rewardIdObj = EntityId.Parse<RewardId>(rewardId);
+                var cardIdObj = EntityId.Parse<LoyaltyCardId>(loyaltyCardId);
+                
+                var reward = await _rewardsRepository.GetByIdAsync(rewardIdObj);
+                if (reward == null)
+                {
+                    return OperationResult<bool>.FailureResult($"Reward with ID {rewardId} not found");
+                }
+                
+                // Check if the reward is active
+                if (!reward.IsActive)
+                {
+                    return OperationResult<bool>.SuccessResult(false);
+                }
+                
+                // Additional eligibility checks would go here...
+                // For example, check if the customer has enough points/stamps
+                
+                return OperationResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking reward eligibility for reward {RewardId} and card {CardId}", rewardId, loyaltyCardId);
+                return OperationResult<bool>.FailureResult(ex.Message);
+            }
+        }
+
+        public async Task<OperationResult<RewardRedemptionDto>> RedeemReward(RedeemRewardDto redeemDto)
+        {
+            try
+            {
+                var rewardIdObj = EntityId.Parse<RewardId>(redeemDto.RewardId);
+                var cardIdObj = EntityId.Parse<LoyaltyCardId>(redeemDto.LoyaltyCardId);
+                
+                // First check eligibility
+                var eligibilityResult = await CheckRewardEligibility(redeemDto.RewardId, redeemDto.LoyaltyCardId);
+                if (!eligibilityResult.Success || !eligibilityResult.Data)
+                {
+                    return OperationResult<RewardRedemptionDto>.FailureResult(
+                        eligibilityResult.Success ? "Not eligible for reward" : eligibilityResult.Errors.ToString());
+                }
+                
+                // Process the redemption
+                // This would typically involve:
+                // 1. Create a redemption record
+                // 2. Update the loyalty card (subtract points, etc.)
+                // 3. Generate a redemption code
+                
+                var redemption = new RewardRedemptionDto
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    RewardId = redeemDto.RewardId,
+                    LoyaltyCardId = redeemDto.LoyaltyCardId,
+                    RedemptionCode = Guid.NewGuid().ToString("N"), // Generate a unique code
+                    RedeemedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddDays(7), // Example: code valid for 7 days
+                    StoreId = redeemDto.StoreId
+                };
+                
+                // Logic to save the redemption would go here
+                
+                return OperationResult<RewardRedemptionDto>.SuccessResult(redemption);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error redeeming reward for DTO: {@RedeemDto}", redeemDto);
+                return OperationResult<RewardRedemptionDto>.FailureResult(ex.Message);
+            }
+        }
+
+        public async Task<OperationResult<RewardRedemptionDto>> ValidateRedemptionCode(string redemptionCode)
+        {
+            try
+            {
+                // Implementation would typically:
+                // 1. Look up the redemption code in the database
+                // 2. Check if it's valid (not expired, not already used)
+                // 3. Return the redemption details
+                
+                // Placeholder implementation
+                if (string.IsNullOrEmpty(redemptionCode))
+                    return OperationResult<RewardRedemptionDto>.FailureResult("Redemption code cannot be empty");
+                
+                // Simulating a database lookup
+                // In a real implementation, this would query the database
+                
+                // For now, we're returning a failure since we don't have actual code validation
+                return OperationResult<RewardRedemptionDto>.FailureResult("Code validation not implemented");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating redemption code: {RedemptionCode}", redemptionCode);
+                return OperationResult<RewardRedemptionDto>.FailureResult(ex.ToString());
             }
         }
 

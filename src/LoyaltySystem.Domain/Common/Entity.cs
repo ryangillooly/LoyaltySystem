@@ -16,7 +16,7 @@ namespace LoyaltySystem.Domain.Common
             Id = id ?? throw new ArgumentNullException(nameof(id));
         }
         
-        public TId Id { get; protected set; }
+        public TId Id { get; set; }
         
         public override bool Equals(object? obj)
         {
@@ -33,7 +33,7 @@ namespace LoyaltySystem.Domain.Common
             return Id.GetHashCode();
         }
         
-        public static bool operator ==(Entity<TId>? left, Entity<TId> right)
+        public static bool operator ==(Entity<TId>? left, Entity<TId>? right)
         {
             if (left is null && right is null) return true;
             if (left is null || right is null) return false;

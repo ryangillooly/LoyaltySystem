@@ -1,6 +1,7 @@
 using LoyaltySystem.Domain.Entities;
 using System;
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 

@@ -1,16 +1,18 @@
 using LoyaltySystem.Shared.API.Configuration;
-using LoyaltySystem.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add shared services with Customer-specific configuration
+Console.WriteLine("Env:" + builder.Environment.EnvironmentName );
+
+// Explicitly configure environment-specific appsettings
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
 builder.AddSharedServices("Loyalty System Customer API");
 
-// Add Customer-specific services if needed
-
 var app = builder.Build();
-
-// Use shared middleware
 app.UseSharedMiddleware();
 
 app.Run(); 

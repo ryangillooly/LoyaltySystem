@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 
@@ -10,26 +7,32 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<UserRole> _roles = new();
         
-        // For EF Core
-        private User() { }
+        public User() : base(new UserId()) { }
         
         public User(
-            string username,
+            string firstName,
+            string lastName,
+            string userName,
             string email,
             string passwordHash,
-            string passwordSalt) : base(new UserId(Guid.NewGuid()))
+            string passwordSalt) : base(new UserId())
         {
-            Username = username;
+            FirstName = firstName;
+            LastName = lastName;
             Email = email;
+            UserName = userName;
             PasswordHash = passwordHash;
             PasswordSalt = passwordSalt;
             Status = UserStatus.Active;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
             LastLoginAt = null;
+            CustomerId = new CustomerId();
         }
         
-        public string Username { get; private set; }
+        public string FirstName { get; private set; }
+        public string LastName { get; private set; }
+        public string UserName { get; private set; }
         public string Email { get; private set; }
         public string PasswordHash { get; private set; }
         public string PasswordSalt { get; private set; }
@@ -37,7 +40,7 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
-        public string? CustomerId { get; private set; }
+        public CustomerId? CustomerId { get; set; }
         public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
         
         public void UpdateEmail(string email)
@@ -46,6 +49,15 @@ namespace LoyaltySystem.Domain.Entities
                 throw new ArgumentException("Email cannot be empty.", nameof(email));
                 
             Email = email;
+            UpdatedAt = DateTime.UtcNow;
+        }
+        
+        public void UpdateUserName(string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                throw new ArgumentException("Username cannot be empty.", nameof(userName));
+                
+            UserName = userName;
             UpdatedAt = DateTime.UtcNow;
         }
         
@@ -70,37 +82,25 @@ namespace LoyaltySystem.Domain.Entities
         
         public void LinkToCustomer(string customerId)
         {
-            CustomerId = customerId;
+            CustomerId = EntityId.Parse<CustomerId>(customerId);
             UpdatedAt = DateTime.UtcNow;
-            
-            // Add Customer role if not already present
-            if (!HasRole(RoleType.Customer))
-            {
-                AddRole(RoleType.Customer);
-            }
+            AddRole(RoleType.Customer);
         }
         
         public void AddRole(RoleType role)
         {
             if (!HasRole(role))
-            {
                 _roles.Add(new UserRole(Id, role));
-            }
         }
         
         public void RemoveRole(RoleType role)
         {
-            var roleToRemove = _roles.FirstOrDefault(r => r.Role == role);
-            if (roleToRemove != null)
-            {
+            var roleToRemove = _roles.Find(r => r.Role == role);
+            if (roleToRemove is { })
                 _roles.Remove(roleToRemove);
-            }
         }
         
-        public bool HasRole(RoleType role)
-        {
-            return _roles.Any(r => r.Role == role);
-        }
+        public bool HasRole(RoleType role) => _roles.Exists(r => r.Role == role);
         
         public void Activate()
         {

@@ -25,54 +25,26 @@ namespace LoyaltySystem.Infrastructure.Data
         private IUserRepository _userRepository;
         private IStoreRepository _storeRepository;
         
-        /// <summary>
-        /// Gets the current active transaction, if any.
-        /// </summary>
         public IDbTransaction CurrentTransaction => _transaction;
         
-        /// <summary>
-        /// Brand repository instance.
-        /// </summary>
         public IBrandRepository BrandRepository => 
             _brandRepository ??= new BrandRepository(_dbConnection);
         
-        /// <summary>
-        /// Loyalty program repository instance.
-        /// </summary>
         public ILoyaltyProgramRepository LoyaltyProgramRepository => 
             _loyaltyProgramRepository ??= new LoyaltyProgramRepository(_dbConnection);
-        
-        /// <summary>
-        /// Loyalty card repository instance.
-        /// </summary>
+
         public ILoyaltyCardRepository LoyaltyCardRepository => 
             _loyaltyCardRepository ??= new LoyaltyCardRepository(_dbConnection);
         
-        /// <summary>
-        /// Transaction repository instance.
-        /// </summary>
         public ITransactionRepository TransactionRepository => 
             _transactionRepository ??= new TransactionRepository(_dbConnection);
-        
-        /// <summary>
-        /// Creates a new unit of work with the given database connection.
-        /// </summary>
-        public UnitOfWork(IDatabaseConnection dbConnection)
-        {
+     
+        public UnitOfWork(IDatabaseConnection dbConnection) =>
             _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
-        }
         
-        /// <summary>
-        /// Begins a transaction.
-        /// </summary>
-        public async Task BeginTransactionAsync()
-        {
+        public async Task BeginTransactionAsync() =>
             _transaction = await _dbConnection.BeginTransactionAsync();
-        }
         
-        /// <summary>
-        /// Commits the current transaction.
-        /// </summary>
         public async Task CommitTransactionAsync()
         {
             if (_transaction == null)
@@ -89,9 +61,6 @@ namespace LoyaltySystem.Infrastructure.Data
             }
         }
         
-        /// <summary>
-        /// Rolls back the current transaction.
-        /// </summary>
         public async Task RollbackTransactionAsync()
         {
             if (_transaction == null)
@@ -120,14 +89,10 @@ namespace LoyaltySystem.Infrastructure.Data
             return Task.FromResult(0);
         }
         
-        /// <summary>
-        /// Executes an operation within a transaction and returns a result.
-        /// </summary>
         public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
         {
-            if (operation == null)
-                throw new ArgumentNullException(nameof(operation));
-                
+            ArgumentNullException.ThrowIfNull(operation);
+
             try
             {
                 await BeginTransactionAsync();
@@ -142,14 +107,10 @@ namespace LoyaltySystem.Infrastructure.Data
             }
         }
         
-        /// <summary>
-        /// Executes an operation within a transaction.
-        /// </summary>
         public async Task ExecuteInTransactionAsync(Func<Task> operation)
         {
-            if (operation == null)
-                throw new ArgumentNullException(nameof(operation));
-                
+            ArgumentNullException.ThrowIfNull(operation);
+
             try
             {
                 await BeginTransactionAsync();
@@ -163,18 +124,12 @@ namespace LoyaltySystem.Infrastructure.Data
             }
         }
         
-        /// <summary>
-        /// Disposes the connection and transaction.
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
         
-        /// <summary>
-        /// Disposes the connection and transaction.
-        /// </summary>
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed) 

@@ -5,6 +5,7 @@ namespace LoyaltySystem.Domain.Enums
         SuperAdmin,
         Admin,
         Staff,
+        Manager,
         Customer
     }
 } 
