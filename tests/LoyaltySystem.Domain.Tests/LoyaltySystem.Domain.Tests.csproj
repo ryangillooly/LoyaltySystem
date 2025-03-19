@@ -7,6 +7,7 @@
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
+        <RootNamespace>LoyaltySystem.Domain</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,15 +22,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\src\LoyaltySystem.Admin.API\LoyaltySystem.Admin.API.csproj" />
-        <ProjectReference Include="..\src\LoyaltySystem.Application\LoyaltySystem.Application.csproj" />
-        <ProjectReference Include="..\src\LoyaltySystem.Domain\LoyaltySystem.Domain.csproj" />
-        <ProjectReference Include="..\src\LoyaltySystem.Infrastructure\LoyaltySystem.Infrastructure.csproj" />
-        <ProjectReference Include="..\src\LoyaltySystem.Shared.API\LoyaltySystem.Shared.API.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Admin.API\LoyaltySystem.Admin.API.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Application\LoyaltySystem.Application.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Domain\LoyaltySystem.Domain.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Infrastructure\LoyaltySystem.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Shared.API\LoyaltySystem.Shared.API.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <Using Include="Xunit"/>
     </ItemGroup>
-
+    
 </Project>

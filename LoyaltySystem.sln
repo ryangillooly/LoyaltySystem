@@ -26,15 +26,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Shared.API.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Admin.API.Tests", "tests\LoyaltySystem.Admin.API.Tests\LoyaltySystem.Admin.API.Tests.csproj", "{14C0EC1B-BE17-4FB0-9995-D6E5D174E3D1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Staff.API.Tests", "LoyaltySystem.Staff.API.Tests\LoyaltySystem.Staff.API.Tests.csproj", "{4B0B0BD9-7668-4B6F-9FBC-F8C4E12BEEFF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Staff.API.Tests", "tests\LoyaltySystem.Staff.API.Tests\LoyaltySystem.Staff.API.Tests.csproj", "{4B0B0BD9-7668-4B6F-9FBC-F8C4E12BEEFF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Infrastructure.Tests", "LoyaltySystem.Infrastructure.Tests\LoyaltySystem.Infrastructure.Tests.csproj", "{BE8EA853-583B-40CF-8775-89531D4BB0C9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Infrastructure.Tests", "tests\LoyaltySystem.Infrastructure.Tests\LoyaltySystem.Infrastructure.Tests.csproj", "{BE8EA853-583B-40CF-8775-89531D4BB0C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Domain.Tests", "LoyaltySystem.Domain.Tests\LoyaltySystem.Domain.Tests.csproj", "{15BBA60B-5187-4F25-B19D-6D5D27831F35}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Domain.Tests", "tests\LoyaltySystem.Domain.Tests\LoyaltySystem.Domain.Tests.csproj", "{15BBA60B-5187-4F25-B19D-6D5D27831F35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Customer.API.Tests", "LoyaltySystem.Customer.API.Tests\LoyaltySystem.Customer.API.Tests.csproj", "{23F6E454-12B8-4BE9-AF4A-F34D5BFA2FFD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Customer.API.Tests", "tests\LoyaltySystem.Customer.API.Tests\LoyaltySystem.Customer.API.Tests.csproj", "{23F6E454-12B8-4BE9-AF4A-F34D5BFA2FFD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Application.Tests", "LoyaltySystem.Application.Tests\LoyaltySystem.Application.Tests.csproj", "{40B02CC3-A7F1-4C4B-9CB3-23CA795C9F18}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Application.Tests", "tests\LoyaltySystem.Application.Tests\LoyaltySystem.Application.Tests.csproj", "{40B02CC3-A7F1-4C4B-9CB3-23CA795C9F18}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
