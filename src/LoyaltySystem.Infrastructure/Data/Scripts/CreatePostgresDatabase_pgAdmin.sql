@@ -232,7 +232,7 @@ CREATE TABLE IF NOT EXISTS brand_addresses (
 
 -- Create Stores table
 CREATE TABLE IF NOT EXISTS stores (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     opening_hours JSONB NOT NULL,
@@ -273,7 +273,7 @@ CREATE TABLE IF NOT EXISTS store_addresses (
 CREATE INDEX IF NOT EXISTS idx_store_addresses_location ON store_addresses USING GIST (location);
 
 -- Create Customers table
-CREATE TABLE IF NOT EXISTS customers 
+CREATE TABLE IF NOT EXISTS customers
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(100) NOT NULL,
@@ -294,7 +294,8 @@ CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone) WHERE phone 
 CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
 
 -- Create LoyaltyPrograms table
-CREATE TABLE IF NOT EXISTS loyalty_programs (
+CREATE TABLE IF NOT EXISTS loyalty_programs
+(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
@@ -305,10 +306,10 @@ CREATE TABLE IF NOT EXISTS loyalty_programs (
     minimum_transaction_amount NUMERIC(18, 2) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     description VARCHAR(255) NULL,
-    points_rounding_rule INT NOT NULL,
-    enrollment_bonus_points INT NOT NULL,
-    minimum_points_for_redemption INT NOT NULL,
-    points_per_pound INT NOT NULL,
+    points_rounding_rule SMALLINT NULL,
+    enrollment_bonus_points INT NULL,
+    minimum_points_for_redemption INT NULL,
+    points_per_pound DECIMAL(10, 2) NULL,
     start_date TIMESTAMP NOT NULL,
     has_tiers BOOLEAN NOT NULL DEFAULT FALSE,
     end_date TIMESTAMP NOT NULL,
@@ -320,11 +321,38 @@ CREATE TABLE IF NOT EXISTS loyalty_programs (
     CONSTRAINT chk_points_conversion CHECK (type != 'Points' OR points_conversion_rate IS NOT NULL)
     );
 
+-- Create loyalty program tiers table
+CREATE TABLE loyalty_program_tiers
+(
+    id UUID PRIMARY KEY,
+    program_id UUID NOT NULL REFERENCES loyalty_programs(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    point_threshold INTEGER NOT NULL,
+    point_multiplier DECIMAL(5, 2) NOT NULL,
+    tier_order INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_program_tier_order UNIQUE(program_id, tier_order)
+);
+
+CREATE INDEX IF NOT EXISTS idx_loyalty_program_tiers_program_id ON loyalty_program_tiers(program_id);
 CREATE INDEX IF NOT EXISTS idx_loyalty_programs_brand_id ON loyalty_programs (brand_id);
 CREATE INDEX IF NOT EXISTS idx_loyalty_programs_type ON loyalty_programs (type);
 
+-- Create loyalty tier benefits table
+CREATE TABLE IF NOT EXISTS loyalty_tier_benefits
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tier_id UUID NOT NULL REFERENCES loyalty_program_tiers(id) ON DELETE CASCADE,
+    benefit_description TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_loyalty_tier_benefits_tier_id ON loyalty_tier_benefits(tier_id);
+
 -- Create ProgramExpirationPolicies table
-CREATE TABLE IF NOT EXISTS program_expiration_policies 
+CREATE TABLE IF NOT EXISTS program_expiration_policies
 (
     program_id UUID PRIMARY KEY,
     has_expiration BOOLEAN NOT NULL DEFAULT FALSE,
@@ -338,10 +366,10 @@ CREATE TABLE IF NOT EXISTS program_expiration_policies
     CONSTRAINT chk_expiration_value CHECK (has_expiration = FALSE OR expiration_value IS NOT NULL),
     CONSTRAINT chk_expiration_day CHECK (expires_on_specific_date = FALSE OR expiration_day BETWEEN 1 AND 31),
     CONSTRAINT chk_expiration_month CHECK (expires_on_specific_date = FALSE OR expiration_month BETWEEN 1 AND 12)
-);
+    );
 
 -- Create Rewards table
-CREATE TABLE IF NOT EXISTS rewards 
+CREATE TABLE IF NOT EXISTS rewards
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL,
@@ -492,7 +520,7 @@ CREATE TABLE IF NOT EXISTS partition_maintenance_log (
 -- Then create your users and admin after tables are created
 -- Create users table (if it doesn't exist)
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -508,14 +536,14 @@ CREATE TABLE IF NOT EXISTS users (
     );
 
 -- Create user_roles table (if it doesn't exist)
-CREATE TABLE IF NOT EXISTS user_roles 
+CREATE TABLE IF NOT EXISTS user_roles
 (
     user_id UUID NOT NULL,
     role VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role),
     CONSTRAINT fk_user_roles_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
+    );
 
 -- Add proper indexing for users table
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -530,24 +558,24 @@ DELETE FROM users WHERE username = 'admin';
 DELETE FROM users WHERE username = 'manager';
 
 -- Insert admin user with password 'Admin@123'
-INSERT INTO users 
+INSERT INTO users
 (
     id, first_name, last_name, username, email, password_hash, password_salt,
     status, created_at, updated_at
-) 
-VALUES 
-(
-     uuid_generate_v4(),
-     'tom',
-     'jim',
-     'admin',
-     'admin@loyaltysystem.com',
-     'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-     'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
-     1, -- Active status
-     CURRENT_TIMESTAMP,
-     CURRENT_TIMESTAMP
- );
+)
+VALUES
+    (
+        uuid_generate_v4(),
+        'tom',
+        'jim',
+        'admin',
+        'admin@loyaltysystem.com',
+        'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
+        'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
+        1, -- Active status
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    );
 
 -- Add SuperAdmin role to the admin user
 INSERT INTO user_roles (user_id, role)
@@ -558,17 +586,17 @@ INSERT INTO users (
     id, first_name, last_name, username, email, password_hash, password_salt,
     status, created_at, updated_at
 ) VALUES (
-     uuid_generate_v4(),
-     'tom',
-     'jim',
-     'manager',
-     'manager@loyaltysystem.com',
-     'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-     'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
-     1, -- Active status
-     CURRENT_TIMESTAMP,
-     CURRENT_TIMESTAMP
- );
+             uuid_generate_v4(),
+             'tom',
+             'jim',
+             'manager',
+             'manager@loyaltysystem.com',
+             'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
+             'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
+             1, -- Active status
+             CURRENT_TIMESTAMP,
+             CURRENT_TIMESTAMP
+         );
 
 -- Add Manager role to the manager user
 INSERT INTO user_roles (user_id, role)
@@ -685,6 +713,36 @@ CREATE INDEX IF NOT EXISTS idx_businesses_name ON businesses (name);
 CREATE INDEX IF NOT EXISTS idx_businesses_is_active ON businesses (is_active);
 END;
 $$;
+
+-- MOVED HERE: Insert the base tiers AFTER tables are created
+DO $$
+DECLARE
+program_record RECORD;
+BEGIN
+FOR program_record IN SELECT id FROM loyalty_programs WHERE type = 'Points' LOOP -- Correct comparison using ENUM literal
+  -- Insert a basic tier (necessary for compatibility)
+  -- Use ON CONFLICT to avoid errors if the script is run multiple times or tier already exists
+  INSERT INTO loyalty_program_tiers
+  (
+        id,
+        program_id,
+        name,
+        point_threshold,
+        point_multiplier,
+        tier_order
+    )
+    VALUES
+    (
+        uuid_generate_v4(), -- Use uuid_generate_v4() for consistency
+        program_record.id,
+        'Base Tier',
+        0,
+        1.0,
+        1
+    )
+    ON CONFLICT (program_id, tier_order) DO NOTHING; -- Prevent errors if tier exists
+END LOOP;
+END $$;
 
 -- Apply triggers after tables exist
 DO $$

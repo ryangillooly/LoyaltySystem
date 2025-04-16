@@ -74,9 +74,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
-                            (id, first_name, last_name, username, email, phone, marketing_consent, last_login_at, created_at, updated_at)
+                            (id, first_name, last_name, username, email, phone, marketing_consent, created_at, updated_at)
                         VALUES 
-                            (@CustomerId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @LastLoginAt, @CreatedAt, @UpdatedAt)
+                            (@CustomerId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @CreatedAt, @UpdatedAt)
                     ",
                     new
                     {
@@ -87,7 +87,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                         customer.Email,
                         customer.Phone,
                         customer.MarketingConsent,
-                        customer.LastLoginAt,
                         customer.CreatedAt,
                         customer.UpdatedAt
                     },
@@ -178,7 +177,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 Email = dbObjectDto.Email,
                 Phone = dbObjectDto.Phone,
                 MarketingConsent = dbObjectDto.MarketingConsent,
-                LastLoginAt = dbObjectDto.LastLoginAt,
                 CreatedAt = dbObjectDto.CreatedAt,
                 UpdatedAt = dbObjectDto.UpdatedAt
             };
@@ -195,7 +193,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     email = @Email,
                     phone = @Phone,
                     marketing_consent = @MarketingConsent,
-                    last_login_at = @LastLoginAt,
                     updated_at = @UpdatedAt
                 WHERE 
                     id = @Id";
@@ -223,7 +220,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 customer.Email,
                 customer.Phone,
                 customer.MarketingConsent,
-                customer.LastLoginAt,
                 customer.UpdatedAt
             };
             

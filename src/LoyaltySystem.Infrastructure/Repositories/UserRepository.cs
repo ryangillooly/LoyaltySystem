@@ -330,6 +330,26 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
 
         /// <summary>
+        /// Updates the last login timestamp for a user.
+        /// </summary>
+        public async Task UpdateLastLoginAsync(UserId userId)
+        {
+            const string sql = @"
+                UPDATE users
+                SET last_login_at = @LastLoginAt,
+                    updated_at = @UpdatedAt
+                WHERE id = @Id";
+            
+            var connection = await _dbConnection.GetConnectionAsync();
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = userId.Value,
+                LastLoginAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+
+        /// <summary>
         /// Adds a role to a user.
         /// </summary>
         public async Task AddRoleAsync(string userId, RoleType role)

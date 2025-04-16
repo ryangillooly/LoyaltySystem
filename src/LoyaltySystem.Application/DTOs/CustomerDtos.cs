@@ -38,7 +38,6 @@ public class CustomerDto
     public string Phone { get; set; } = string.Empty;
     public bool MarketingConsent { get; set; }
     public DateTime? DateOfBirth { get; set; }
-    public DateTime? LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public Address? Address { get; set; }
@@ -107,7 +106,6 @@ public class CustomerDbObjectDto
     public string Phone { get; set; } = string.Empty;
     public bool MarketingConsent { get; set; }
     public DateTime JoinedAt { get; set; }
-    public DateTime LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

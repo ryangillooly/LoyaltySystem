@@ -277,7 +277,6 @@ namespace LoyaltySystem.Application.Services
                 Phone = customer.Phone,
                 CreatedAt = customer.CreatedAt,
                 UpdatedAt = customer.UpdatedAt,
-                LastLoginAt = customer.LastLoginAt,
                 MarketingConsent = customer.MarketingConsent
             };
 

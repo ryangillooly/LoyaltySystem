@@ -1,26 +1,21 @@
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using FluentAssertions;
 using LoyaltySystem.Domain.Enums;
-using LoyaltySystem.Domain.Interfaces;
 using LoyaltySystem.Shared.API.Services;
 using LoyaltySystem.Shared.API.Settings;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
-using Xunit;
+using Serilog;
 
 namespace LoyaltySystem.Shared.API.Tests.Services
 {
     public class JwtServiceTests
     {
         private readonly Mock<IOptions<JwtSettings>> _jwtSettingsMock;
-        private readonly Mock<ILogger<JwtService>> _loggerMock;
+        private readonly Mock<ILogger> _loggerMock;
         private readonly JwtService _sut; // System Under Test
         private readonly string _jwtSecret = "thisIsAVeryLongSecretKeyUsedForTestingPurposesOnly_MakeItLongForSecurity";
         private readonly string _issuer = "test.issuer";
@@ -43,7 +38,7 @@ namespace LoyaltySystem.Shared.API.Tests.Services
             _jwtSettingsMock.Setup(x => x.Value).Returns(jwtSettings);
 
             // Setup logger
-            _loggerMock = new Mock<ILogger<JwtService>>();
+            _loggerMock = new Mock<ILogger>();
 
             // Create the System Under Test
             _sut = new JwtService(_jwtSettingsMock.Object, _loggerMock.Object);

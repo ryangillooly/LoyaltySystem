@@ -18,7 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LoyaltySystem.Application\LoyaltySystem.Application.csproj" />
     <ProjectReference Include="..\LoyaltySystem.Infrastructure\LoyaltySystem.Infrastructure.csproj" />
-    <ProjectReference Include="..\LoyaltySystem.Shared.API\LoyaltySystem.Shared.API.csproj" />
+    <ProjectReference Include="..\LoyaltySystem.Shared\LoyaltySystem.Shared.csproj" />
   </ItemGroup>
 
 </Project> 

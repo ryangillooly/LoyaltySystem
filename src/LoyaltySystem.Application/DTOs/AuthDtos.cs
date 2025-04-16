@@ -19,21 +19,22 @@ namespace LoyaltySystem.Application.DTOs
     
     public class LoginRequestDto 
     {
-        // TODO: How do we decide which to use?
-        //[Required]
+        // Username and Email validation is now handled by LoginRequestDtoValidator
         public string Email { get; set; } = string.Empty;
         
-        // [Required]
-        [StringLength(100, MinimumLength = 2)]
+        // [StringLength(100, MinimumLength = 2)] // Removed this attribute
         public string UserName { get; set; } = string.Empty;
 
-        [Required]
+        // Password validation is handled by LoginRequestDtoValidator
+        // [Required] // Removed this attribute
         public string Password { get; set; } = string.Empty;
     }
     
     public class AuthResponseDto 
     {
         public string Token { get; set; } = string.Empty;
+        public string TokenType { get; set; } = string.Empty;
+        public string ExpiresIn { get; set; } = string.Empty;
         public UserDto? User { get; set; }
     }
     

@@ -13,7 +13,7 @@ using LoyaltySystem.Domain.Tests.Entities;
 using LoyaltySystem.Domain.Tests.Enums;
 using LoyaltySystem.Domain.Tests.Interfaces;
 using LoyaltySystem.Domain.Tests.Repositories;
-using LoyaltySystem.Shared.API.Settings;
+using LoyaltySystem.Shared.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;

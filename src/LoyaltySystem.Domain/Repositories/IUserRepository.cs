@@ -14,6 +14,7 @@ namespace LoyaltySystem.Domain.Repositories
         Task<User?> GetByCustomerIdAsync(string customerId);
         Task AddAsync(User user, IDbTransaction? transaction = null);
         Task UpdateAsync(User user);
+        Task UpdateLastLoginAsync(UserId userId);
         Task AddRoleAsync(string userId, RoleType role);
         Task RemoveRoleAsync(string userId, RoleType role);
     }

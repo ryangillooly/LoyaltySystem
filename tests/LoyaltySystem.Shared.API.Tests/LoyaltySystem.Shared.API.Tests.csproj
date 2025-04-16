@@ -25,7 +25,7 @@
         <ProjectReference Include="..\..\src\LoyaltySystem.Application\LoyaltySystem.Application.csproj" />
         <ProjectReference Include="..\..\src\LoyaltySystem.Domain\LoyaltySystem.Domain.csproj" />
         <ProjectReference Include="..\..\src\LoyaltySystem.Infrastructure\LoyaltySystem.Infrastructure.csproj" />
-        <ProjectReference Include="..\..\src\LoyaltySystem.Shared.API\LoyaltySystem.Shared.API.csproj" />
+        <ProjectReference Include="..\..\src\LoyaltySystem.Shared\LoyaltySystem.Shared.csproj" />
     </ItemGroup>
     
     <ItemGroup>

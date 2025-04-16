@@ -57,7 +57,6 @@ namespace LoyaltySystem.Domain.Entities
         public string Phone { get; set; } = string.Empty;
         public bool MarketingConsent { get; set; }
         public Address? Address { get; set; }
-        public DateTime? LastLoginAt { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         
@@ -94,12 +93,6 @@ namespace LoyaltySystem.Domain.Entities
             Address = address;
             Phone = phone;
             MarketingConsent = marketingConsent;
-            UpdatedAt = DateTime.UtcNow;
-        }
-
-        public void RecordLogin()
-        {
-            LastLoginAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
         

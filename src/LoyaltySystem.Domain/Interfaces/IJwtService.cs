@@ -12,7 +12,7 @@ public interface IJwtService
         IEnumerable<string> roles, 
         IDictionary<string, string> additionalClaims = null);
     
-    ClaimsPrincipal ValidateToken(string token);
+    ClaimsPrincipal? ValidateToken(string token);
     bool TryParseTokenFromAuthHeader(string authHeader, out string token);
     string GenerateRefreshToken();
     Guid? GetUserIdFromToken(string token);

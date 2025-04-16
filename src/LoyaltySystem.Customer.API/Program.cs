@@ -1,3 +1,5 @@
+using FluentValidation;
+using LoyaltySystem.Application.Validation;
 using LoyaltySystem.Shared.API.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +13,9 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.AddSharedServices("Loyalty System Customer API");
+
+// Register FluentValidation validators
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestDtoValidator>();
 
 var app = builder.Build();
 app.UseSharedMiddleware();
