@@ -12,6 +12,11 @@ namespace LoyaltySystem.Domain.Entities
         // This field is exposed for Entity Framework Core
         internal Dictionary<string, string> _metadata;
 
+        /// <summary>
+        /// The generated human-readable prefixed ID (e.g., tx_xxxx).
+        /// Should be generated and assigned just before saving the entity for the first time.
+        /// </summary>
+        public string PrefixedId { get; set; } = string.Empty;
         public Guid Id { get; set; }
         public Guid CardId { get; set; }
         public TransactionType Type { get; set; }

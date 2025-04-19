@@ -257,14 +257,14 @@ namespace LoyaltySystem.Application.Services
         private static Customer MapToCustomer(CreateCustomerDto dto) =>
             new Customer
             (
-                null, // Let the class generate a new Id
                 dto.FirstName, 
                 dto.LastName, 
                 dto.UserName,
                 dto.Email, 
                 dto.Phone, 
                 dto.Address, 
-                dto.MarketingConsent
+                dto.MarketingConsent,
+                null
             );
         
         private static CustomerDto MapToDto(Customer customer) =>

@@ -1,4 +1,5 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Contracts.Authentication;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 
@@ -20,7 +21,14 @@ public interface IAuthService
     
     // Existing profile and user management methods
     Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto);
-    Task<OperationResult<UserDto>> GetUserByIdAsync(string userId);
+    
+    /// <summary>
+    /// Gets user profile details by user ID, potentially including associated customer data.
+    /// </summary>
+    Task<OperationResult<UserProfileDto>> GetUserByIdAsync(string userId);
+    
+    /// <summary>
+    /// Gets user details by associated customer ID.
     Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(string customerId);
     Task<OperationResult<UserDto>> AddRoleAsync(string userId, RoleType role);
     Task<OperationResult<UserDto>> RemoveRoleAsync(string userId, RoleType role);

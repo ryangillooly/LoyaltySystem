@@ -7,6 +7,7 @@ using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
+using System.Text.Json;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
@@ -176,21 +177,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task AddAsync(Transaction transaction)
         {
+            // Temporarily create a TransactionId to generate the string
+            // Consider creating a proper TransactionId : EntityId<TransactionId> if needed elsewhere
+            var txIdObj = new TransactionId(transaction.Id); 
+            transaction.PrefixedId = txIdObj.ToString();
+
             const string sql = @"
                 INSERT INTO transactions (
-                    id, card_id, type, reward_id, quantity,
+                    id, prefixed_id, card_id, type, reward_id, quantity,
                     points_amount, transaction_amount, store_id, staff_id,
                     pos_transaction_id, timestamp, created_at, metadata
                 ) VALUES (
-                    @Id, @CardId, @Type::transaction_type, @RewardId, @Quantity,
+                    @Id, @PrefixedId, @CardId, @Type::transaction_type, @RewardId, @Quantity,
                     @PointsAmount, @TransactionAmount, @StoreId, @StaffId,
-                    @PosTransactionId, @Timestamp, @CreatedAt, @Metadata
+                    @PosTransactionId, @Timestamp, @CreatedAt, @Metadata::jsonb
                 )";
 
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
             {
                 transaction.Id,
+                transaction.PrefixedId,
                 transaction.CardId,
                 Type = transaction.Type.ToString(),
                 transaction.RewardId,
@@ -202,7 +209,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 transaction.PosTransactionId,
                 transaction.Timestamp,
                 transaction.CreatedAt,
-                Metadata = transaction.Metadata
+                // Ensure metadata is passed as JSON(B) string
+                Metadata = JsonSerializer.Serialize(transaction.Metadata ?? new Dictionary<string, string>()) 
             });
         }
     }

@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Shared", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Admin.API", "src\LoyaltySystem.Admin.API\LoyaltySystem.Admin.API.csproj", "{56A5DA44-D1E7-4EA5-A58F-D2EBD631DE7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Contracts", "src\LoyaltySystem.Contracts\LoyaltySystem.Contracts.csproj", "{56A5DA44-D1E7-4EA5-A58F-D2EBD631DE7A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Staff.API", "src\LoyaltySystem.Staff.API\LoyaltySystem.Staff.API.csproj", "{71E5A55F-0D5E-4F04-9BBB-F8BD8C36AC9F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltySystem.Customer.API", "src\LoyaltySystem.Customer.API\LoyaltySystem.Customer.API.csproj", "{A6BF4EF2-5D47-48A3-8AFA-D80E5BFE2D4C}"

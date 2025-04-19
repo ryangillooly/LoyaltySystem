@@ -14,15 +14,16 @@ namespace LoyaltySystem.Domain.Entities
             _loyaltyCards = new List<LoyaltyCard>();
         }
 
-        public Customer(
-            CustomerId? customerId,
+        public Customer
+        (
             string firstName,
             string lastName,
             string username,
             string email,
             string phone,
             Address? address,
-            bool marketingConsent = false)
+            bool marketingConsent = false,
+            CustomerId? customerId = null) : base(customerId ?? new CustomerId())
         {
             if (string.IsNullOrWhiteSpace(firstName))
                 throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
@@ -36,8 +37,7 @@ namespace LoyaltySystem.Domain.Entities
                 if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
                     throw new ArgumentException("Invalid email format", nameof(email));
             }
-
-            Id = customerId ?? new CustomerId();
+            
             FirstName = firstName;
             LastName = lastName;
             UserName = username;
@@ -50,6 +50,11 @@ namespace LoyaltySystem.Domain.Entities
             _loyaltyCards = new List<LoyaltyCard>();
         }
         
+        /// <summary>
+        /// The generated human-readable prefixed ID (e.g., cus_xxxx). 
+        /// Should be generated and assigned just before saving the entity for the first time.
+        /// </summary>
+        public string PrefixedId { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;

@@ -17,7 +17,22 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<Customer?> GetByIdAsync(CustomerId id)
         {
-            const string sql = "SELECT * FROM customers WHERE id = @Id";
+            // Explicitly select columns and use PascalCase aliases matching the DTO
+            const string sql = @"
+                SELECT 
+                    id AS Id, 
+                    prefixed_id AS PrefixedId, 
+                    first_name AS FirstName, 
+                    last_name AS LastName, 
+                    username AS UserName, 
+                    email AS Email, 
+                    phone AS Phone, 
+                    marketing_consent AS MarketingConsent, 
+                    created_at AS CreatedAt, 
+                    updated_at AS UpdatedAt 
+                FROM customers 
+                WHERE id = @Id";
+                
             var parameters = new { Id = id.Value };
             
             var dbConnection = await _dbConnection.GetConnectionAsync();
@@ -58,29 +73,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
             );
         }
 
-        public async Task<Customer> AddAsync(Customer customer, IDbTransaction transaction = null)
+        public async Task<Customer> AddAsync(Customer customer, IDbTransaction? transaction = null)
         {
             var dbConnection = await _dbConnection.GetConnectionAsync();
-        
-            // Track whether we created the transaction or are using an existing one
-            bool ownsTransaction = transaction == null;
-        
-            // If no transaction was provided, create one
-            // TODO: Check this transaction logic. We are using "ExecuteInTransaction" over these calls, so i assume we can remove this ?
-            transaction ??= dbConnection.BeginTransaction();
-            
+
             try
             {
+                // Generate and assign the PrefixedId before inserting
+                var customerId = new CustomerId(customer.Id.Value); // Assuming base Entity<T> has Value property
+                customer.PrefixedId = customerId.ToString();
+
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
-                            (id, first_name, last_name, username, email, phone, marketing_consent, created_at, updated_at)
+                            (id, prefixed_id, first_name, last_name, username, email, phone, marketing_consent, created_at, updated_at)
                         VALUES 
-                            (@CustomerId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @CreatedAt, @UpdatedAt)
+                            (@CustomerId, @PrefixedId, @FirstName, @LastName, @UserName, @Email, @Phone, @MarketingConsent, @CreatedAt, @UpdatedAt)
                     ",
                     new
                     {
                         CustomerId = customer.Id.Value,
+                        customer.PrefixedId, // Add the new property
                         customer.FirstName,
                         customer.LastName,
                         customer.UserName,
@@ -93,22 +106,13 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     transaction
                 );
                 
-                if (ownsTransaction)
-                    transaction.Commit();
-                
                 return customer;
             }
             catch (Exception ex)
             {
-                if (ownsTransaction)
-                    transaction.Rollback();
-                
-                throw new Exception($"Error adding customer: {ex.Message}", ex);
-            }
-            finally
-            {
-                if (ownsTransaction && transaction != null)
-                    transaction.Dispose();
+                // Consider using a proper logging framework like Serilog or Microsoft.Extensions.Logging
+                Console.WriteLine($"Error adding customer: {ex.Message}");
+                throw; // Re-throw the exception to allow higher layers to handle it
             }
         }
                 
@@ -169,14 +173,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
         
         // Private helper method to create a Customer entity from a DTO
         private static Customer CreateCustomerFromDto(CustomerDbObjectDto dbObjectDto) =>
-            new ()
+            // Use the constructor that requires names
+            new Customer(
+                dbObjectDto.FirstName ?? string.Empty, // Handle potential DB nulls
+                dbObjectDto.LastName ?? string.Empty,  // Handle potential DB nulls
+                dbObjectDto.UserName ?? string.Empty, // Username might be null from DB if SELECT *
+                dbObjectDto.Email ?? string.Empty,    // Handle potential DB nulls
+                dbObjectDto.Phone ?? string.Empty,    // Handle potential DB nulls
+                null, // Address not selected/mapped here
+                dbObjectDto.MarketingConsent,
+                new CustomerId(dbObjectDto.Id) // Pass the ID
+            )
             {
-                Id = new CustomerId(dbObjectDto.Id),
-                FirstName = dbObjectDto.FirstName,
-                LastName = dbObjectDto.LastName,
-                Email = dbObjectDto.Email,
-                Phone = dbObjectDto.Phone,
-                MarketingConsent = dbObjectDto.MarketingConsent,
+                // Set properties not handled by this constructor (if any)
                 CreatedAt = dbObjectDto.CreatedAt,
                 UpdatedAt = dbObjectDto.UpdatedAt
             };
@@ -299,5 +308,27 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 .Replace("+", "-")
                 .Replace("=", "");
         }
+
+        #region Private DTO and Helper Methods
+        
+        /// <summary>
+        /// Internal DTO class to map database results.
+        /// Properties should match column names (Dapper handles snake_case -> PascalCase).
+        /// </summary>
+        private class CustomerDbObjectDto
+        {
+            public Guid Id { get; set; } // Maps to id
+            public string PrefixedId { get; set; } = string.Empty; // Maps to prefixed_id
+            public string FirstName { get; set; } = string.Empty; // Maps to first_name
+            public string LastName { get; set; } = string.Empty; // Maps to last_name
+            public string UserName { get; set; } = string.Empty; // Maps to username
+            public string Email { get; set; } = string.Empty; // Maps to email
+            public string Phone { get; set; } = string.Empty; // Maps to phone
+            public bool MarketingConsent { get; set; } // Maps to marketing_consent
+            public DateTime CreatedAt { get; set; } // Maps to created_at
+            public DateTime? UpdatedAt { get; set; } // Maps to updated_at
+            // Add other columns from SELECT * if needed (e.g., address related?)
+        }
+        #endregion
     }
 } 

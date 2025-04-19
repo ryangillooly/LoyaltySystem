@@ -1,0 +1,55 @@
+using FluentValidation;
+using LoyaltySystem.Application.DTOs;
+
+namespace LoyaltySystem.Application.Validation;
+
+public abstract class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
+{
+    private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
+    // Example breakdown:
+    // ^             Start of string
+    // [\+]?         Optional '+' sign
+    // [(]?          Optional '('
+    // [0-9]{3}      Three digits
+    // [)]?          Optional ')'
+    // [-\s\.]?      Optional separator (hyphen, space, dot)
+    // [0-9]{3}      Three digits
+    // [-\s\.]?      Optional separator
+    // [0-9]{4,9}    Four to nine digits (adjust max length as needed)
+    // $             End of string
+    
+    protected RegisterUserDtoValidator()
+    {
+        RuleFor(x => x.FirstName)
+            .NotEmpty().WithMessage("FirstName is required.")
+            .Length(3, 100).WithMessage("FirstName must be between 3 and 100 characters.");
+        
+        RuleFor(x => x.LastName)
+            .NotEmpty().WithMessage("LastName is required.")
+            .Length(3, 100).WithMessage("LastName must be between 3 and 100 characters.");
+        
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .When(x => !string.IsNullOrEmpty(x.Email));
+        
+        RuleFor(x => x.UserName)
+            .NotEmpty().WithMessage("Username is required.")
+            .Length(2, 100).WithMessage("Username must be between 2 and 100 characters.")
+            .When(x => !string.IsNullOrEmpty(x.UserName));
+        
+        RuleFor(x => x.Phone)
+            .MinimumLength(7).WithMessage("Phone number must be at least 7 digits.") // Adjust min length if needed
+            .MaximumLength(20).WithMessage("Phone number cannot exceed 20 characters.") // Adjust max length
+            .Matches(PhoneRegex).WithMessage("Invalid phone number format.")
+            .When(x => !string.IsNullOrEmpty(x.Phone)); // Only validate if not empty
+        
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .Length(6, 100).WithMessage("Password must be between 6 and 100 characters.");
+
+        RuleFor(x => x.ConfirmPassword)
+            .NotEmpty().WithMessage("ConfirmPassword is required.")
+            .Equal(x => x.Password).WithMessage("ConfirmPassword does not match.");
+    }
+}

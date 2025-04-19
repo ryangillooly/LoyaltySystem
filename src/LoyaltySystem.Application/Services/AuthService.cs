@@ -8,6 +8,13 @@ using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using Microsoft.Extensions.Configuration;
 using LoyaltySystem.Domain.Interfaces;
+using Serilog;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using LoyaltySystem.Contracts.Authentication;
+using LoyaltySystem.Domain.Models;
+using Microsoft.Extensions.Options;
 
 namespace LoyaltySystem.Application.Services;
 
@@ -17,19 +24,22 @@ public class AuthService : IAuthService
     private readonly ICustomerRepository _customerRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IJwtService _jwtService;
+    private readonly ILogger _logger;
 
     public AuthService
     (
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         IJwtService jwtService,
-        ICustomerRepository customerRepository
+        ICustomerRepository customerRepository,
+        ILogger logger
     )
     {
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
-        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -62,18 +72,22 @@ public class AuthService : IAuthService
         if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
             return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
             
-        // user.RecordLogin(); // We don't need the user object to update the timestamp anymore
-        // await _userRepository.UpdateAsync(user); // Use the more specific update method
-        await _userRepository.UpdateLastLoginAsync(user.Id);
-            
-        var token = GenerateJwtToken(user);
-            
-        // TODO: Remove User from Response, and include ExpiresIn, TokenType, etc.
-        return OperationResult<AuthResponseDto>.SuccessResult(new AuthResponseDto
+        user.RecordLogin();
+        await _userRepository.UpdateAsync(user);
+
+        // Generate JWT token result (includes expiry, etc.)
+        var tokenResult = GenerateTokenResult(user);
+        
+        // Prepare response DTO from TokenResult
+        var response = new AuthResponseDto
         {
-            Token = token,
-            User = MapUserToDto(user)
-        });
+            AccessToken = tokenResult.AccessToken,
+            TokenType = tokenResult.TokenType, 
+            ExpiresIn = tokenResult.ExpiresIn
+            // RefreshToken = tokenResult.RefreshToken // Assign if/when implemented
+        };
+        
+        return OperationResult<AuthResponseDto>.SuccessResult(response);
     }
         
     /// <summary>
@@ -86,371 +100,544 @@ public class AuthService : IAuthService
         IEnumerable<RoleType> allowedRoles)
     {
         // First authenticate the user
-        var authResult = await AuthenticateAsync(identifier, password, identifierType);
-        if (!authResult.Success)
-            return authResult;
-            
-        // Get detailed user info
-        var user = await _userRepository.GetByIdAsync(authResult.Data.User.Id);
-        if (user is null)
-            return OperationResult<AuthResponseDto>.FailureResult("User not found");
-                
-        // Check if user has any of the allowed roles
-        var userRoles = user.Roles.Select(r => r.Role).ToList();
-        if (!userRoles.Any(role => allowedRoles.Contains(role)))
-        {
-            return OperationResult<AuthResponseDto>.FailureResult(
-                "You don't have permission to access this application");
-        }
-            
-        // User is authorized for this application
-        return authResult;
+        return await AuthenticateAsync(identifier, password, identifierType);
     }
         
     /// <summary>
-    /// Private helper method to create a user with a specific role
-    /// </summary>
-    private async Task<OperationResult<User>> CreateUserAsync(RegisterUserDto registerDto, RoleType role)
-    {
-        try
-        {
-            // Validate username and email
-            if (string.IsNullOrEmpty(registerDto.UserName))
-                return OperationResult<User>.FailureResult("Username is required");
-                    
-            if (string.IsNullOrEmpty(registerDto.Email))
-                return OperationResult<User>.FailureResult("Email is required");
-                    
-            var existingUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
-            if (existingUsername is { })
-                return OperationResult<User>.FailureResult("Username already exists");
-                
-            var existingEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
-            if (existingEmail is { })
-                return OperationResult<User>.FailureResult("Email already exists");
-                
-            // Create password hash
-            CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
-                
-            // Create user with appropriate role
-            var user = new User(
-                registerDto.FirstName, 
-                registerDto.LastName, 
-                registerDto.UserName, 
-                registerDto.Email, 
-                passwordHash, 
-                passwordSalt);
-
-            user.CustomerId = null;
-            user.AddRole(role);
-                
-            // Save the user
-            await _userRepository.AddAsync(user);
-                
-            return OperationResult<User>.SuccessResult(user);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<User>.FailureResult(ex.Message);
-        }
-    }
-
-    /// <summary>
-    /// Registers a customer user
+    /// Registers a customer user, creating both Customer and User records atomically.
     /// </summary>
     public async Task<OperationResult<UserDto>> RegisterCustomerAsync(RegisterUserDto registerDto)
     {
-        // Create the user with Customer role
-        var userResult = await CreateUserAsync(registerDto, RoleType.Customer);
-        if (!userResult.Success)
-            return OperationResult<UserDto>.FailureResult(userResult.Errors);
-                
-        var user = userResult.Data;
-            
+        var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
+        if (existingUserByEmail is { })
+            return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
+
+        var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
+         if (existingUserByUsername is { })
+            return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
+
+        User? newUser = null;
+
         try
         {
-            // Create the customer record and link it
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var customer = new Customer(
-                    null,
+                var customer = new Customer
+                (
                     registerDto.FirstName,
                     registerDto.LastName,
                     registerDto.UserName,
                     registerDto.Email,
                     registerDto.Phone,
-                    null,
-                    false
+                    null, // Address is not in RegisterUserDto
+                    false, // Marketing consent default? Or add to DTO?
+                    null
                 );
-                        
-                // Save the customer and link to user
+                
                 customer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                user.LinkToCustomer(customer.Id.ToString());
-                        
-                // Update the user with the customer link
-                await _userRepository.UpdateAsync(user);
-            });
-                    
-            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
+                if (customer.Id is null)
+                    throw new InvalidOperationException("Failed to create customer or retrieve customer ID.");
+                
+                CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
+
+                newUser = new User
+                (
+                    registerDto.FirstName,
+                    registerDto.LastName,
+                    registerDto.UserName,
+                    registerDto.Email,
+                    passwordHash,
+                    passwordSalt,
+                    customer.Id 
+                );
+                
+                newUser.AddRole(RoleType.Customer); 
+                
+                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
+                await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
+             });
+            
+            if (newUser is null)
+            {
+                 _logger.Error("User object was null after successful customer registration transaction for email {Email}", registerDto.Email);
+                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
+            }
+            
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
         }
         catch (Exception ex)
         {
-            return OperationResult<UserDto>.FailureResult(ex.Message);
+             _logger.Error(ex, "Error during customer registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
+            return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
         }
     }
         
     /// <summary>
-    /// Registers a staff user
+    /// Registers a staff user atomically.
     /// </summary>
     public async Task<OperationResult<UserDto>> RegisterStaffAsync(RegisterUserDto registerDto)
     {
-        // Create the user with Staff role
-        var userResult = await CreateUserAsync(registerDto, RoleType.Staff);
-        if (!userResult.Success)
-            return OperationResult<UserDto>.FailureResult(userResult.Errors);
-            
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(userResult.Data));
-    }
-        
-    /// <summary>
-    /// Registers an admin user
-    /// </summary>
-    public async Task<OperationResult<UserDto>> RegisterAdminAsync(RegisterUserDto registerDto)
-    {
-        // Create the user with Admin role
-        var userResult = await CreateUserAsync(registerDto, RoleType.Admin);
-        if (!userResult.Success)
-            return OperationResult<UserDto>.FailureResult(userResult.Errors);
-            
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(userResult.Data));
-    }
-        
-    /// <summary>
-    /// Adds customer role to an existing user
-    /// </summary>
-    public async Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId)
-    {
-        // Get existing user
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-            
+        var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
+        if (existingUserByEmail is { })
+            return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
+
+        var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
+         if (existingUserByUsername is { })
+            return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
+
+        User? newUser = null;
+
         try
         {
-            // Check if user already has customer role
-            if (!user.HasRole(RoleType.Customer))
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                // Add the Customer role
-                user.AddRole(RoleType.Customer);
-                await _userRepository.AddRoleAsync(userId, RoleType.Customer);
-            }
-                
-            // Create customer entity if needed
-            if (user.CustomerId is null)
+                // 1. Create Password Hash
+                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
+
+                // 2. Create and Save User with Staff Role
+                 newUser = new User(
+                    registerDto.FirstName,
+                    registerDto.LastName,
+                    registerDto.UserName,
+                    registerDto.Email,
+                    passwordHash,
+                    passwordSalt,
+                    null // Staff users are not linked to a customer record
+                 );
+                newUser.AddRole(RoleType.Staff);
+
+                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
+                // AddAsync uses the transaction
+                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
+             });
+
+            if (newUser is null)
             {
-                await _unitOfWork.ExecuteInTransactionAsync(async () =>
-                {
-                    var customer = new Customer(
-                        null,
-                        user.FirstName,
-                        user.LastName,
-                        user.UserName,
-                        user.Email,
-                        null, // Phone may not be available
-                        null, // Address may not be available
-                        false // Default marketing consent
-                    );
-                        
-                    // Save the customer and link to user
-                    customer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                    user.LinkToCustomer(customer.Id.ToString());
-                        
-                    // Update the user with the customer link
-                    await _userRepository.UpdateAsync(user);
-                });
+                 _logger.Error("Staff User object was null after successful registration transaction for email {Email}", registerDto.Email);
+                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
             }
-                
-            return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
+
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
         }
         catch (Exception ex)
         {
-            return OperationResult<UserDto>.FailureResult(ex.Message);
+             _logger.Error(ex, "Error during staff registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
+            return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
+        }
+    }
+        
+    /// <summary>
+    /// Registers an admin user atomically.
+    /// </summary>
+    public async Task<OperationResult<UserDto>> RegisterAdminAsync(RegisterUserDto registerDto)
+    {
+        // Basic validation
+        if (string.IsNullOrEmpty(registerDto.UserName) || string.IsNullOrEmpty(registerDto.Email))
+            return OperationResult<UserDto>.FailureResult("Username and Email are required.");
+        if (registerDto.Password != registerDto.ConfirmPassword)
+             return OperationResult<UserDto>.FailureResult("Password and confirmation password do not match.");
+
+        // Check for existing user *before* transaction
+         var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
+        if (existingUserByEmail is { })
+            return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
+
+        var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
+         if (existingUserByUsername is { })
+            return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
+
+        User? newUser = null;
+
+        try
+        {
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                // 1. Create Password Hash
+                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
+
+                // 2. Create and Save User with Admin Role
+                 newUser = new User(
+                    registerDto.FirstName,
+                    registerDto.LastName,
+                    registerDto.UserName,
+                    registerDto.Email,
+                    passwordHash,
+                    passwordSalt,
+                    null // Admin users are not linked to a customer record
+                 );
+                newUser.AddRole(RoleType.Admin); // Or potentially SuperAdmin based on context? Check requirements.
+
+                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
+                // AddAsync uses the transaction
+                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
+             });
+
+             if (newUser is null)
+            {
+                 _logger.Error("Admin User object was null after successful registration transaction for email {Email}", registerDto.Email);
+                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
+            }
+
+            return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
+        }
+        catch (Exception ex)
+        {
+             _logger.Error(ex, "Error during admin registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
+            return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Updates a user's profile.
+    /// Adds the Customer role to an existing user.
+    /// </summary>
+    public async Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId)
+    {
+        UserId userIdObj;
+        try
+        {
+            userIdObj = UserId.FromString(userId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid UserId format: {ex.Message}");
+        }
+
+        var user = await _userRepository.GetByIdAsync(userIdObj);
+        if (user is null)
+            return OperationResult<UserDto>.FailureResult("User not found.");
+
+        if (user.CustomerId is null)
+            return OperationResult<UserDto>.FailureResult("User is not linked to a customer record.");
+
+        await _userRepository.AddRoleAsync(userIdObj, RoleType.Customer);
+        // Re-fetch user to get updated roles for the DTO
+        var updatedUser = await _userRepository.GetByIdAsync(userIdObj);
+        return OperationResult<UserDto>.SuccessResult(MapUserToDto(updatedUser!));
+    }
+        
+    /// <summary>
+    /// Updates a user's profile information (email, username).
+    /// Password update is handled separately.
     /// </summary>
     public async Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-            
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-            
-        // Check if username is changing and already exists
-        if (!string.IsNullOrEmpty(updateDto.UserName) && updateDto.UserName != user.UserName)
+        UserId userIdObj;
+        try
         {
-            var existingUsername = await _userRepository.GetByUsernameAsync(updateDto.UserName);
-            if (existingUsername is { } && existingUsername.Id.ToString() != userId)
-                return OperationResult<UserDto>.FailureResult("Username already exists");
-                
+            userIdObj = UserId.FromString(userId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid UserId format: {ex.Message}");
+        }
+        
+        var user = await _userRepository.GetByIdAsync(userIdObj);
+        if (user is null)
+            return OperationResult<UserDto>.FailureResult("User not found.");
+
+        // Basic validation
+        if (string.IsNullOrEmpty(updateDto.UserName) && string.IsNullOrEmpty(updateDto.Email))
+            return OperationResult<UserDto>.FailureResult("No profile information provided for update.");
+
+        // Update fields if provided
+        if (!string.IsNullOrEmpty(updateDto.UserName))
             user.UpdateUserName(updateDto.UserName);
-        }
-                
-        // Check if email is changing and already exists
-        if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != user.Email)
-        {
-            var existingEmail = await _userRepository.GetByEmailAsync(updateDto.Email);
-            if (existingEmail is { } && existingEmail.Id.ToString() != userId)
-                return OperationResult<UserDto>.FailureResult("Email already exists");
-                    
+            
+        if (!string.IsNullOrEmpty(updateDto.Email))
             user.UpdateEmail(updateDto.Email);
-        }
             
-        // Update password if provided
-        if (!string.IsNullOrEmpty(updateDto.NewPassword))
-        {
-            if (!VerifyPasswordHash(updateDto.CurrentPassword, user.PasswordHash, user.PasswordSalt))
-                return OperationResult<UserDto>.FailureResult("Current password is incorrect");
-                    
-            CreatePasswordHash(updateDto.NewPassword, out string passwordHash, out string passwordSalt);
-            user.UpdatePassword(passwordHash, passwordSalt);
-        }
-            
-        await _userRepository.UpdateAsync(user);
-            
+        // Persist changes (assuming UpdateAsync takes User object)
+        await _userRepository.UpdateAsync(user); 
+
         return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
     }
-
+        
     /// <summary>
-    /// Gets a user by ID.
+    /// Gets user profile details by user ID, including customer information if available.
     /// </summary>
-    public async Task<OperationResult<UserDto>> GetUserByIdAsync(string userId)
+    public async Task<OperationResult<UserProfileDto>> GetUserByIdAsync(string userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
+        UserId userIdObj;
+        try
+        {
+            userIdObj = UserId.FromString(userId);
+        }
+        catch (FormatException ex)
+        {
+            _logger.Error(ex, "Invalid format for UserId: {UserId}", userId);
+            return OperationResult<UserProfileDto>.FailureResult($"Invalid UserId format: {ex.Message}");
+        }
             
+        var user = await _userRepository.GetByIdAsync(userIdObj);
         if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-                
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
-    }
+        {
+            _logger.Warning("User not found for UserId: {UserId}", userId);
+            return OperationResult<UserProfileDto>.FailureResult("User not found.");
+        }
 
+        // Attempt to fetch associated Customer data
+        Customer? customer = null;
+        if (user.CustomerId != null)
+        {
+            try
+            {
+                customer = await _customerRepository.GetByIdAsync(user.CustomerId);
+                if (customer is null)
+                {
+                     // Log this situation - user has a CustomerId but customer record is missing?
+                     _logger.Warning("User {UserId} has CustomerId {CustomerId}, but the customer record was not found.", user.PrefixedId, user.CustomerId.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                 // Log error fetching customer
+                 _logger.Error(ex, "Error fetching customer details for CustomerId {CustomerId} linked to User {UserId}", user.CustomerId.ToString(), user.PrefixedId);
+                 // Continue without customer data, or return failure? Depends on requirements.
+                 // For now, we'll continue and return profile with potentially missing name.
+            }
+        }
+            
+        // *** Add Logging Here ***
+        if (customer != null)
+        {
+            _logger.Information("Fetched customer for profile: Id={CustomerId}, PrefixedId={PrefixedId}, FirstName='{FirstName}', LastName='{LastName}'", 
+                customer.Id.Value, customer.PrefixedId, customer.FirstName, customer.LastName);
+        }
+        else
+        {
+            _logger.Warning("Customer object was null when mapping profile for User {UserId}", user.PrefixedId);
+        }
+        // *** End Logging ***
+
+        // Map data from User and potentially Customer to UserProfileDto
+        var profileDto = new UserProfileDto
+        {
+            Id = user.Id.ToString(), // Use the prefixed string ID
+            FirstName = customer?.FirstName ?? user.FirstName, // Prioritize Customer.FirstName, fallback to User.FirstName (which might be empty)
+            LastName = customer?.LastName ?? user.LastName,   // Prioritize Customer.LastName, fallback to User.LastName
+            UserName = user.UserName,
+            Email = user.Email,
+            Status = user.Status.ToString(),
+            CustomerId = user.CustomerId?.ToString(), // Already a prefixed string from EntityId.ToString()
+            CreatedAt = user.CreatedAt,
+            LastLoginAt = user.LastLoginAt,
+            Roles = user.Roles.Select(ur => ur.Role.ToString()).ToList() // Correctly map Role enum
+        };
+            
+        return OperationResult<UserProfileDto>.SuccessResult(profileDto);
+    }
+        
     /// <summary>
-    /// Gets a user by customer ID.
+    /// Gets user details by associated customer ID. 
+    /// NOTE: This still returns UserDto, might need refactoring similar to GetUserByIdAsync if profile data is needed.
     /// </summary>
     public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(string customerId)
     {
-        var user = await _userRepository.GetByCustomerIdAsync(customerId);
+        CustomerId customerIdObj;
+        try
+        {
+            customerIdObj = CustomerId.FromString(customerId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid CustomerId format: {ex.Message}");
+        }
             
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-                
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
-    }
+        var user = await _userRepository.GetByCustomerIdAsync(customerIdObj);
+        
+        // Temporarily mapping to UserDto until MapUserToDto is removed or refactored
+        Func<User, UserDto> tempMapper = u => new UserDto
+        {
+            Id = u.Id.Value,
+            PrefixedId = u.PrefixedId ?? string.Empty, // Fallback
+            FirstName = u.FirstName ?? string.Empty, // Fallback
+            LastName = u.LastName ?? string.Empty,   // Fallback
+            UserName = u.UserName ?? string.Empty, // Fallback
+            Email = u.Email ?? string.Empty, // Fallback
+            Status = u.Status.ToString(),
+            CustomerId = u.CustomerId?.ToString(), // Already handles null
+            CreatedAt = u.CreatedAt,
+            LastLoginAt = u.LastLoginAt,
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList() // Role should not be null
+        };
 
+        return user is null
+            ? OperationResult<UserDto>.FailureResult("User not found for the given Customer ID.")
+            : OperationResult<UserDto>.SuccessResult(tempMapper(user)); // Use temp mapper
+    }
+        
     /// <summary>
     /// Adds a role to a user.
+    /// NOTE: This still returns UserDto, might need refactoring.
     /// </summary>
     public async Task<OperationResult<UserDto>> AddRoleAsync(string userId, RoleType role)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-            
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-                
-        user.AddRole(role);
-        await _userRepository.AddRoleAsync(userId, role);
-            
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
-    }
+        UserId userIdObj;
+        try
+        {
+            userIdObj = UserId.FromString(userId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid UserId format: {ex.Message}");
+        }
 
+        var user = await _userRepository.GetByIdAsync(userIdObj);
+        if (user is null)
+            return OperationResult<UserDto>.FailureResult("User not found.");
+            
+        await _userRepository.AddRoleAsync(userIdObj, role);
+        // Re-fetch user to get updated roles for the DTO
+        var updatedUser = await _userRepository.GetByIdAsync(userIdObj);
+        
+        // Temporarily mapping to UserDto
+        Func<User, UserDto> tempMapper = u => new UserDto 
+        {
+            Id = u.Id.Value, 
+            PrefixedId = u.PrefixedId ?? string.Empty, // Fallback
+            FirstName = u.FirstName ?? string.Empty, // Fallback
+            LastName = u.LastName ?? string.Empty, // Fallback
+            UserName = u.UserName ?? string.Empty, // Fallback
+            Email = u.Email ?? string.Empty, // Fallback
+            Status = u.Status.ToString(), 
+            CustomerId = u.CustomerId?.ToString(), // Already handles null
+            CreatedAt = u.CreatedAt, 
+            LastLoginAt = u.LastLoginAt, 
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList() // Role should not be null
+        };
+        
+        return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
+    }
+        
     /// <summary>
     /// Removes a role from a user.
+    /// NOTE: This still returns UserDto, might need refactoring.
     /// </summary>
     public async Task<OperationResult<UserDto>> RemoveRoleAsync(string userId, RoleType role)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-            
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-                
-        user.RemoveRole(role);
-        await _userRepository.RemoveRoleAsync(userId, role);
-            
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
-    }
+        UserId userIdObj;
+        try
+        {
+            userIdObj = UserId.FromString(userId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid UserId format: {ex.Message}");
+        }
 
+        var user = await _userRepository.GetByIdAsync(userIdObj);
+        if (user is null)
+            return OperationResult<UserDto>.FailureResult("User not found.");
+            
+        await _userRepository.RemoveRoleAsync(userIdObj, role);
+        // Re-fetch user to get updated roles for the DTO
+        var updatedUser = await _userRepository.GetByIdAsync(userIdObj);
+        
+        // Temporarily mapping to UserDto
+        Func<User, UserDto> tempMapper = u => new UserDto 
+        {
+            Id = u.Id.Value, PrefixedId = u.PrefixedId, FirstName = u.FirstName, LastName = u.LastName,
+            UserName = u.UserName, Email = u.Email, Status = u.Status.ToString(), CustomerId = u.CustomerId?.ToString(),
+            CreatedAt = u.CreatedAt, LastLoginAt = u.LastLoginAt, Roles = u.Roles.Select(r => r.ToString()).ToList()
+        };
+
+        return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
+    }
+        
     /// <summary>
-    /// Links a user to a customer.
+    /// Links a user account to an existing customer record.
     /// </summary>
     public async Task<OperationResult<UserDto>> LinkCustomerAsync(string userId, string customerId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-            
-        if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found");
-                
-        // Check if customer already linked to a user
-        var existingUser = await _userRepository.GetByCustomerIdAsync(customerId);
-        if (existingUser is { } && existingUser.Id.ToString() != userId)
-            return OperationResult<UserDto>.FailureResult("Customer already linked to another user");
-                
-        user.LinkToCustomer(customerId);
+        UserId userIdObj;
+        CustomerId customerIdObj;
+        try
+        {
+            userIdObj = UserId.FromString(userId);
+            customerIdObj = CustomerId.FromString(customerId);
+        }
+        catch (FormatException ex)
+        {
+            return OperationResult<UserDto>.FailureResult($"Invalid ID format: {ex.Message}");
+        }
+
+        var user = await _userRepository.GetByIdAsync(userIdObj);
+        if (user == null)
+            return OperationResult<UserDto>.FailureResult("User not found.");
+
+        var customer = await _customerRepository.GetByIdAsync(customerIdObj);
+        if (customer == null)
+            return OperationResult<UserDto>.FailureResult("Customer not found.");
+
+        if (user.CustomerId != null)
+            return OperationResult<UserDto>.FailureResult("User is already linked to a customer.");
+
+        // Directly set the CustomerId property
+        user.CustomerId = customerIdObj; 
+        user.AddRole(RoleType.Customer); // Also ensure the Customer role is added
         await _userRepository.UpdateAsync(user);
-            
-        return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
+        
+        // Temporarily mapping to UserDto
+        Func<User, UserDto> tempMapper = u => new UserDto 
+        {
+            Id = u.Id.Value, PrefixedId = u.PrefixedId, FirstName = u.FirstName, LastName = u.LastName,
+            UserName = u.UserName, Email = u.Email, Status = u.Status.ToString(), CustomerId = u.CustomerId?.ToString(),
+            CreatedAt = u.CreatedAt, LastLoginAt = u.LastLoginAt, Roles = u.Roles.Select(r => r.ToString()).ToList()
+        };
+
+        return OperationResult<UserDto>.SuccessResult(tempMapper(user));
     }
 
     #region Helper Methods
 
-    private string GenerateJwtToken(User user)
+    private TokenResult GenerateTokenResult(User user)
     {
-        var additionalClaims = new Dictionary<string, string>();
-        
-        if (user.CustomerId is { })
+        var claims = new List<Claim>
         {
-            additionalClaims.Add("CustomerId", user.CustomerId.ToString());
-            additionalClaims.Add("UserId", user.Id.ToString());
+            new (JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Use GUID for sub
+            new (ClaimTypes.NameIdentifier, user.PrefixedId),      // Use Prefixed ID for NameIdentifier
+            new (JwtRegisteredClaimNames.UniqueName, user.UserName),
+            new (JwtRegisteredClaimNames.Email, user.Email ?? string.Empty), // Fallback for potential null email
+            // Add roles as claims
+            // Add CustomerId claim if present
+            new ("UserId", user.PrefixedId) // Explicitly add prefixed user ID
+        };
+        
+        if (user.CustomerId != null)
+        {
+            claims.Add(new Claim("CustomerId", user.CustomerId.ToString())); // Add prefixed customer ID
         }
-        
-        var roles = user.Roles.Any() 
-            ? user.Roles.Select(r => r.Role.ToString()).ToList() 
-            : new List<string>{ "User" };
-        
-        return _jwtService.GenerateToken(
-            user.Id.ToString(),
-            user.FirstName,
-            user.LastName,
-            user.Email,
-            roles,
-            additionalClaims
-        );
+
+        claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Role.ToString()))); // Access Role property of UserRole
+
+        // Call the service to get the TokenResult
+        return _jwtService.GenerateToken(claims); 
     }
 
     private static bool VerifyPasswordHash(string password, string storedHash, string storedSalt)
     {
-        byte[] saltBytes = Convert.FromBase64String(storedSalt);
-        using var hmac = new HMACSHA512(saltBytes);
-            
-        var computedHash = Convert.ToBase64String(
-            hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
-        
-        return computedHash == storedHash;
+        if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(storedHash) || string.IsNullOrEmpty(storedSalt))
+            return false;
+        using var hmac = new System.Security.Cryptography.HMACSHA512(Convert.FromBase64String(storedSalt));
+        var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+        return computedHash.SequenceEqual(Convert.FromBase64String(storedHash));
     }
+
     private static void CreatePasswordHash(string password, out string passwordHash, out string passwordSalt)
     {
-        using var hmac = new HMACSHA512();
-            
+        if (string.IsNullOrEmpty(password))
+            throw new ArgumentNullException(nameof(password));
+
+        using var hmac = new System.Security.Cryptography.HMACSHA512();
         passwordSalt = Convert.ToBase64String(hmac.Key);
-        passwordHash = Convert.ToBase64String(
-            hmac.ComputeHash(Encoding.UTF8.GetBytes(password)));
+        passwordHash = Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password)));
     }
 
     private static UserDto MapUserToDto(User user) =>
         new ()
         {
-            Id = user.Id.ToString(),
+            Id = user.Id.Value,
+            PrefixedId = user.Id.ToString(),
             FirstName = user.FirstName,
             LastName = user.LastName,
             UserName = user.UserName,

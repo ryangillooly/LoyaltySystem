@@ -43,8 +43,13 @@ public class CustomerAuthController : ControllerBase
             _logger.LogWarning("Customer login failed: {Error}", result.Errors);
             return Unauthorized(new { message = result.Errors });
         }
-                
-        _logger.LogInformation("Customer login successful for user: {UserId}", result.Data.User.Id);
+        
+        if (!string.IsNullOrEmpty(request.UserName))
+            _logger.LogInformation("Customer login successful for user: {User}", request.UserName);
+        
+        if (!string.IsNullOrEmpty(request.Email))
+            _logger.LogInformation("Customer login successful for email: {Email}", request.Email);
+        
         return Ok(result.Data);
     }
         
@@ -128,7 +133,8 @@ public class CustomerAuthController : ControllerBase
         if (string.IsNullOrEmpty(userId))
             return Unauthorized();
             
-        var result = await _authService.GetUserByIdAsync(userId);
+        // Now expects UserProfileDto
+        var result = await _authService.GetUserByIdAsync(userId); 
             
         if (!result.Success)
             return NotFound(new { message = result.Errors });

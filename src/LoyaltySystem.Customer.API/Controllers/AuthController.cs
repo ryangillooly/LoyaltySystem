@@ -53,7 +53,7 @@ public class AuthController : BaseAuthController
         }
             
         // Ensure the user has the Customer role
-        await _authService.AddRoleAsync(result.Data.Id, RoleType.Customer);
+        await _authService.AddRoleAsync(result.Data.PrefixedId, RoleType.Customer);
             
         _logger.LogInformation("Successful customer registration for email: {email}", registerRequest.Email);
         return CreatedAtAction(nameof(GetProfile), null, result.Data);
@@ -91,10 +91,10 @@ public class AuthController : BaseAuthController
         };
             
         // Get the customer ID from the user
-        var userResult = await _authService.GetUserByIdAsync(result.Data.Id);
+        var userResult = await _authService.GetUserByIdAsync(result.Data.PrefixedId);
         if (!userResult.Success || userResult.Data.CustomerId == null)
         {
-            _logger.LogWarning("Customer data creation failed for user: {UserId}", result.Data.Id);
+            _logger.LogWarning("Customer data creation failed for user: {UserId}", result.Data.PrefixedId);
             return BadRequest(new { message = "Failed to create customer profile" });
         }
             
@@ -155,22 +155,15 @@ public class AuthController : BaseAuthController
             return Unauthorized(new { message = result.Errors });
         }
             
-        // Verify the user has the Customer role
-        if (!await HasRoles(result.Data.User.Id, new List<RoleType> { RoleType.Customer, RoleType.SuperAdmin }))
-        {
-            _logger.LogWarning("Non-customer user attempted to log in through customer API: {identifier}", identifier);
-            return Unauthorized(new { message = "Access denied. This API is for customers only." });
-        }
-            
         _logger.LogInformation("Successful customer login for: {identifier}", identifier);
         return Ok(result.Data);
     }
         
     // Helper method to check if a user has a specific role
-    private async Task<bool> HasRoles(string userId, List<RoleType> roles)
+    private async Task<bool> HasRoles(string userPrefixedId, List<RoleType> roles)
     {
-        // Get the user details
-        var userResult = await _authService.GetUserByIdAsync(userId);
+        // Get the user details using the prefixed ID string
+        var userResult = await _authService.GetUserByIdAsync(userPrefixedId);
         if (!userResult.Success)
             return false;
                 

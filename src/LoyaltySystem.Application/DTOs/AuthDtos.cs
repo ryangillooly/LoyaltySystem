@@ -1,41 +1,43 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace LoyaltySystem.Application.DTOs
 {
-    public class UserDto 
-    {
-        public string Id { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string CustomerId { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public List<string> Roles { get; set; } = new();
-        public DateTime CreatedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-    }
-    
     public class LoginRequestDto 
     {
-        // Username and Email validation is now handled by LoginRequestDtoValidator
         public string Email { get; set; } = string.Empty;
-        
-        // [StringLength(100, MinimumLength = 2)] // Removed this attribute
         public string UserName { get; set; } = string.Empty;
-
-        // Password validation is handled by LoginRequestDtoValidator
-        // [Required] // Removed this attribute
         public string Password { get; set; } = string.Empty;
     }
     
+    /// <summary>
+    /// Response DTO for successful authentication, following standard naming conventions.
+    /// </summary>
     public class AuthResponseDto 
     {
-        public string Token { get; set; } = string.Empty;
-        public string TokenType { get; set; } = string.Empty;
-        public string ExpiresIn { get; set; } = string.Empty;
-        public UserDto? User { get; set; }
+        /// <summary>
+        /// The JWT access token.
+        /// </summary>
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The type of token (always "Bearer" for this implementation).
+        /// </summary>
+        [JsonPropertyName("token_type")]
+        public string TokenType { get; set; } = "Bearer"; // Default to Bearer
+
+        /// <summary>
+        /// The lifetime of the access token in seconds.
+        /// </summary>
+        [JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
+
+        /// <summary>
+        /// Optional refresh token (not implemented in this version).
+        /// </summary>
+        [JsonPropertyName("refresh_token")]
+        public string? RefreshToken { get; set; } // Nullable, not currently used
     }
     
     public class RegisterUserDto

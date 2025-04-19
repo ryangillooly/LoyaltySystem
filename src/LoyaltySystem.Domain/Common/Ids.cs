@@ -7,7 +7,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class BusinessId : EntityId
     {
-        public override string Prefix => "bus_";
+        public override string Prefix => "bus";
         
         public BusinessId() : base(Guid.NewGuid()) { }
         
@@ -22,7 +22,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class StaffId : EntityId
     {
-        public override string Prefix => "stf_";
+        public override string Prefix => "sta";
         
         public StaffId() : base(Guid.NewGuid()) { }
         
@@ -37,7 +37,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class BrandId : EntityId
     {
-        public override string Prefix => "bnd_";
+        public override string Prefix => "bra";
         
         public BrandId() : base(Guid.NewGuid()) { }
         
@@ -52,7 +52,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class StoreId : EntityId
     {
-        public override string Prefix => "sto_";
+        public override string Prefix => "sto";
         
         public StoreId() : base(Guid.NewGuid()) { }
         
@@ -67,7 +67,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class CustomerId : EntityId
     {
-        public override string Prefix => "cus_";
+        public override string Prefix => "cus";
         
         public CustomerId() : base(Guid.NewGuid()) { }
         
@@ -82,7 +82,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class LoyaltyProgramId : EntityId
     {
-        public override string Prefix => "prg_";
+        public override string Prefix => "pro";
         
         public LoyaltyProgramId() : base(Guid.NewGuid()) { }
         
@@ -97,7 +97,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class LoyaltyCardId : EntityId
     {
-        public override string Prefix => "lcy_";
+        public override string Prefix => "loy";
         
         public LoyaltyCardId() : base(Guid.NewGuid()) { }
         
@@ -112,7 +112,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class RewardId : EntityId
     {
-        public override string Prefix => "rwd_";
+        public override string Prefix => "rew";
         
         public RewardId() : base(Guid.NewGuid()) { }
         
@@ -127,7 +127,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class TransactionId : EntityId
     {
-        public override string Prefix => "txn_";
+        public override string Prefix => "trx";
         
         public TransactionId() : base(Guid.NewGuid()) { }
         
@@ -142,7 +142,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class UserId : EntityId
     {
-        public override string Prefix => "usr_";
+        public override string Prefix => "usr";
         
         public UserId() : base(Guid.NewGuid()) { }
         
@@ -157,7 +157,7 @@ namespace LoyaltySystem.Domain.Common
     /// </summary>
     public class UserRoleId : EntityId
     {
-        public override string Prefix => "rol_";
+        public override string Prefix => "role";
         
         public UserRoleId() : base(Guid.NewGuid()) { }
         

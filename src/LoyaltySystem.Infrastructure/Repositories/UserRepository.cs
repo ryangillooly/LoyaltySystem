@@ -36,20 +36,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by ID.
         /// </summary>
-        public async Task<User?> GetByIdAsync(string id)
+        public async Task<User?> GetByIdAsync(UserId id)
         {
-            // Handle prefixed UserId
-            string rawUserId = id;
-            if (UserId.TryParse<UserId>(id, out var userIdObj))
-            {
-                rawUserId = userIdObj.Value.ToString();
-            }
-            else if (!Guid.TryParse(id, out _))
-            {
-                // Log warning for debugging
-                Console.WriteLine($"Warning: Invalid user ID format in GetByIdAsync: {id}");
-            }
-            
             const string sql = @"
                 SELECT 
                     u.id AS ""Id"", 
@@ -66,7 +54,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 WHERE u.id = @Id::uuid";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Id = rawUserId });
+            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Id = id.Value });
             
             if (user != null)
             {
@@ -198,15 +186,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets a user by customer ID.
         /// </summary>
-        public async Task<User?> GetByCustomerIdAsync(string customerId)
+        public async Task<User?> GetByCustomerIdAsync(CustomerId customerId)
         {
-            // Handle prefixed CustomerId
-            string rawCustomerId = customerId;
-            if (CustomerId.TryParse<CustomerId>(customerId, out var customerIdObj))
-            {
-                rawCustomerId = customerIdObj.Value.ToString();
-            }
-            
             const string sql = @"
                 SELECT 
                     u.id AS ""Id"", 
@@ -223,7 +204,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 WHERE u.customer_id = @CustomerId::uuid";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { CustomerId = rawCustomerId });
+            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { CustomerId = customerId.Value });
             
             if (user != null)
             {
@@ -234,69 +215,69 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
 
         /// <summary>
-        /// Adds a new user.
+        /// Adds a new user, potentially within a transaction.
         /// </summary>
-        public async Task AddAsync(User user, IDbTransaction? externalTransaction = null)
+        public async Task AddAsync(User user, IDbTransaction? transaction = null)
         {
+            // Generate and assign the PrefixedId before inserting
+            var userIdObj = new UserId(user.Id.Value); // Assuming base Entity<T> has Value property
+            user.PrefixedId = userIdObj.ToString();
+
             const string sql = @"
-                INSERT INTO users (
-                    id, first_name, last_name, username, email, password_hash, password_salt, 
+                INSERT INTO users 
+                (
+                    id, prefixed_id, first_name, last_name, username, email, password_hash, password_salt, 
                     customer_id, status, created_at, updated_at, last_login_at
-                ) VALUES (
-                    @Id, @FirstName, @LastName, @Username, @Email, @PasswordHash, @PasswordSalt, 
+                ) 
+                VALUES 
+                (
+                    @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @PasswordHash, @PasswordSalt, 
                     @CustomerId::uuid, @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
                 )";
 
             var connection = await _dbConnection.GetConnectionAsync();
-            bool useExternalTransaction = externalTransaction != null;
-            var transaction = externalTransaction;
             
+            // Prepare parameters, including the new PrefixedId
+            var parameters = new 
+            {
+                Id = user.Id.Value, // Explicitly name the parameter 'Id'
+                user.PrefixedId,
+                user.FirstName,
+                user.LastName,
+                user.UserName,
+                user.Email,
+                user.PasswordHash,
+                user.PasswordSalt,
+                CustomerId = user.CustomerId?.Value, // Handle nullable CustomerId
+                Status = (short)user.Status, // Cast enum to short
+                user.CreatedAt,
+                user.UpdatedAt,
+                user.LastLoginAt
+            };
+
             try
             {
-                // Only begin a new transaction if no external transaction is provided
-                if (!useExternalTransaction)
-                    transaction = await connection.BeginTransactionAsync();
-                
-                await connection.ExecuteAsync(sql, new
-                {
-                    Id = user.Id.Value,
-                    user.FirstName,
-                    user.LastName,
-                    user.UserName,
-                    user.Email,
-                    user.PasswordHash,
-                    user.PasswordSalt,
-                    CustomerId = user.CustomerId?.Value ?? null,
-                    Status = (int)user.Status,
-                    user.CreatedAt,
-                    user.UpdatedAt,
-                    user.LastLoginAt
-                }, transaction);
-                
-                // Add roles
+                await connection.ExecuteAsync(sql, parameters, transaction: transaction);
+
+                // Add roles if any are defined on the user object (within the same transaction)
                 foreach (var userRole in user.Roles)
                 {
-                    await AddRoleInternalAsync(user.Id.Value.ToString(), userRole.Role, transaction);
+                    await AddRoleInternalAsync(user.Id, userRole.Role, transaction);
                 }
-                
-                if (!useExternalTransaction)
-                    transaction.Commit();
             }
-            catch
+            catch (Exception ex)
             {
-                // Only rollback if we created the transaction
-                if (!useExternalTransaction && transaction != null)
-                {
-                    transaction.Rollback();
-                }
-                throw;
+                // Log the exception
+                Console.WriteLine($"Error adding user or roles: {ex.Message}");
+                Console.WriteLine($"User data: {System.Text.Json.JsonSerializer.Serialize(parameters)}");
+                throw; // Re-throw
             }
         }
 
         /// <summary>
         /// Updates an existing user.
         /// </summary>
-        public async Task UpdateAsync(User user)
+        public async Task UpdateAsync(User user, IDbTransaction? transaction = null)
         {
             const string sql = @"
                 UPDATE users
@@ -310,7 +291,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     status = @Status,
                     updated_at = @UpdatedAt,
                     last_login_at = @LastLoginAt
-                WHERE id = @Id";
+                WHERE id = @Id::uuid";
             
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
@@ -326,7 +307,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 Status = (int)user.Status,
                 user.UpdatedAt,
                 user.LastLoginAt
-            });
+            }, transaction);
         }
 
         /// <summary>
@@ -352,21 +333,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Adds a role to a user.
         /// </summary>
-        public async Task AddRoleAsync(string userId, RoleType role)
+        public async Task AddRoleAsync(UserId userId, RoleType role)
         {
             var connection = await _dbConnection.GetConnectionAsync();
             await AddRoleInternalAsync(userId, role, null);
         }
 
-        private async Task AddRoleInternalAsync(string userId, RoleType role, IDbTransaction? transaction = null)
+        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction? transaction = null)
         {
-            // Handle prefixed UserId
-            string rawUserId = userId;
-            if (UserId.TryParse<UserId>(userId, out var userIdObj))
-            {
-                rawUserId = userIdObj.Value.ToString();
-            }
-            
             const string sql = @"
                 INSERT INTO user_roles (user_id, role, created_at)
                 VALUES (@UserId::uuid, @Role, @CreatedAt)
@@ -375,7 +349,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
             {
-                UserId = rawUserId,
+                UserId = userId.Value,
                 Role = role.ToString(),
                 CreatedAt = DateTime.UtcNow
             }, transaction);
@@ -384,15 +358,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Removes a role from a user.
         /// </summary>
-        public async Task RemoveRoleAsync(string userId, RoleType role)
+        public async Task RemoveRoleAsync(UserId userId, RoleType role)
         {
-            // Handle prefixed UserId
-            string rawUserId = userId;
-            if (UserId.TryParse<UserId>(userId, out var userIdObj))
-            {
-                rawUserId = userIdObj.Value.ToString();
-            }
-            
             const string sql = @"
                 DELETE FROM user_roles
                 WHERE user_id = @UserId::uuid AND role = @Role";
@@ -400,7 +367,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
             {
-                UserId = rawUserId,
+                UserId = userId.Value,
                 Role = role.ToString()
             });
         }
@@ -408,30 +375,17 @@ namespace LoyaltySystem.Infrastructure.Repositories
         /// <summary>
         /// Gets all roles for a user.
         /// </summary>
-        public async Task<IEnumerable<RoleType>> GetRolesAsync(string userId)
+        public async Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId)
         {
             try
             {
-                // Handle prefixed UserId
-                string rawUserId = userId;
-                if (UserId.TryParse<UserId>(userId, out var userIdObj))
-                {
-                    rawUserId = userIdObj.Value.ToString();
-                }
-                else if (!Guid.TryParse(userId, out _))
-                {
-                    // If we can't parse it, return an empty list rather than throwing an exception
-                    Console.WriteLine($"Warning: Invalid user ID format when fetching roles: {userId}");
-                    return new List<RoleType>();
-                }
-                
                 const string sql = @"
                     SELECT role
                     FROM user_roles
                     WHERE user_id = @UserId::uuid";
 
                 var connection = await _dbConnection.GetConnectionAsync();
-                var roleStrings = await connection.QueryAsync<string>(sql, new { UserId = rawUserId });
+                var roleStrings = await connection.QueryAsync<string>(sql, new { UserId = userId.Value });
                 
                 var roles = new List<RoleType>();
                 foreach (var roleString in roleStrings)
@@ -446,7 +400,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetRolesAsync: {ex.Message}");
+                Console.WriteLine($"Error in GetRolesAsync for UserId {userId}: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 throw;
             }
@@ -454,7 +408,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         private async Task LoadRolesAsync(User user)
         {
-            var roles = await GetRolesAsync(user.Id.Value.ToString());
+            var roles = await GetRolesAsync(user.Id);
             foreach (var role in roles)
             {
                 user.AddRole(role);

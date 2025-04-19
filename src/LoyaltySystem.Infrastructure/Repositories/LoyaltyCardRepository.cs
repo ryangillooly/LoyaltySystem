@@ -178,20 +178,25 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             try
             {
+                // Generate and assign the PrefixedId before inserting
+                var cardIdObj = new LoyaltyCardId(card.Id.Value); // Assuming base Entity<T> has Value property
+                card.PrefixedId = cardIdObj.ToString();
+
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         loyalty_cards 
-                            (id, program_id, customer_id, type, stamps_collected, 
+                            (id, prefixed_id, program_id, customer_id, type, stamps_collected, 
                             points_balance, status, qr_code, created_at, expires_at, updated_at) 
                         VALUES 
-                            (@Id, @ProgramId, @CustomerId, @Type::loyalty_program_type, @StampsCollected, 
+                            (@Id, @PrefixedId, @ProgramId, @CustomerId, @Type::loyalty_program_type, @StampsCollected, 
                             @PointsBalance, @Status::card_status, @QrCode, @CreatedAt, @ExpiresAt, @UpdatedAt)
                     ", 
                     new
                     {
-                        card.Id,
-                        card.ProgramId,
-                        card.CustomerId,
+                        card.Id, // Use raw Guid
+                        card.PrefixedId,
+                        card.ProgramId, // Use raw Guid
+                        card.CustomerId, // Use raw Guid
                         Type = card.Type.ToString(),
                         card.StampsCollected,
                         card.PointsBalance,
@@ -207,15 +212,32 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 // Add any initial transactions
                 foreach (var tx in card.Transactions)
                 {
+                    // Assuming AddTransactionAsync handles its own PrefixedId generation if needed
                     await AddTransactionAsync(tx, transaction);
                 }
                 
-                transaction.Commit();
+                // Only commit if this method created the transaction
+                if (ownsTransaction)
+                {
+                    transaction.Commit();
+                }
             }
             catch
             {
-                transaction.Rollback();
+                // Only rollback if this method created the transaction
+                if (ownsTransaction && transaction != null)
+                {
+                    try { transaction.Rollback(); } catch { /* Ignore rollback exceptions */ }
+                }
                 throw;
+            }
+            finally
+            {
+                 // Only dispose if this method created the transaction
+                if (ownsTransaction && transaction != null)
+                {
+                    transaction.Dispose();
+                }
             }
         }
         

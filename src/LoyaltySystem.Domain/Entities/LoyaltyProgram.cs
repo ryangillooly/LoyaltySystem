@@ -13,6 +13,11 @@ namespace LoyaltySystem.Domain.Entities
         private readonly List<Reward> _rewards = new ();
         private readonly List<LoyaltyTier> _tiers = new ();
         
+        /// <summary>
+        /// The generated human-readable prefixed ID (e.g., lprog_xxxx).
+        /// Should be generated and assigned just before saving the entity for the first time.
+        /// </summary>
+        public string PrefixedId { get; set; } = string.Empty;
         public LoyaltyProgramId Id { get; set; }
         public BrandId BrandId { get; set; }
         public string Name { get; set; }

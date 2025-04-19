@@ -9,13 +9,15 @@ namespace LoyaltySystem.Domain.Entities
         
         public User() : base(new UserId()) { }
         
-        public User(
+        public User
+        (
             string firstName,
             string lastName,
             string userName,
             string email,
             string passwordHash,
-            string passwordSalt) : base(new UserId())
+            string passwordSalt,
+            CustomerId? customerId) : base(new UserId())
         {
             FirstName = firstName;
             LastName = lastName;
@@ -27,9 +29,14 @@ namespace LoyaltySystem.Domain.Entities
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
             LastLoginAt = null;
-            CustomerId = new CustomerId();
+            CustomerId = customerId ?? new CustomerId();
         }
         
+        /// <summary>
+        /// The generated human-readable prefixed ID (e.g., usr_xxxx).
+        /// Should be generated and assigned just before saving the entity for the first time.
+        /// </summary>
+        public string PrefixedId { get; set; } = string.Empty;
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
         public string UserName { get; private set; }

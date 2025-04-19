@@ -8,14 +8,18 @@ namespace LoyaltySystem.Domain.Repositories
 {
     public interface IUserRepository
     {
-        Task<User?> GetByIdAsync(string id);
+        Task<User?> GetByIdAsync(UserId id);
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByEmailAsync(string email);
-        Task<User?> GetByCustomerIdAsync(string customerId);
+        Task<User?> GetByCustomerIdAsync(CustomerId customerId);
         Task AddAsync(User user, IDbTransaction? transaction = null);
-        Task UpdateAsync(User user);
+        /// <summary>
+        /// Updates an existing user.
+        /// </summary>
+        Task UpdateAsync(User user, IDbTransaction? transaction = null);
         Task UpdateLastLoginAsync(UserId userId);
-        Task AddRoleAsync(string userId, RoleType role);
-        Task RemoveRoleAsync(string userId, RoleType role);
+        Task AddRoleAsync(UserId userId, RoleType role);
+        Task RemoveRoleAsync(UserId userId, RoleType role);
+        Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId);
     }
 } 

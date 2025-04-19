@@ -190,23 +190,28 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
 
         try
         {
+            // Generate and assign the PrefixedId before inserting
+            var programIdObj = new LoyaltyProgramId(program.Id.Value); // Assuming base Entity<T> has Value property
+            program.PrefixedId = programIdObj.ToString();
+
             await dbConnection.ExecuteAsync(@"
                 INSERT INTO 
                     loyalty_programs 
-                        (id, brand_id, name, type, stamp_threshold, points_conversion_rate,
+                        (id, prefixed_id, brand_id, name, type, stamp_threshold, points_conversion_rate,
                         daily_stamp_limit, minimum_transaction_amount, is_active, description, 
                         points_rounding_rule, enrollment_bonus_points, minimum_points_for_redemption,
                         points_per_pound, start_date, end_date, has_tiers, terms_and_conditions, created_at, updated_at) 
                     VALUES 
-                        (@Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
+                        (@Id, @PrefixedId, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
                         @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @Description, @PointsRoundingRule,
                         @EnrollmentBonusPoints, @MinimumPointsForRedemption, @PointsPerPound, @StartDate, @EndDate,
                         @HasTiers, @TermsAndConditions, @CreatedAt, @UpdatedAt)
                 ",
                 new
                 {
-                    program.Id,
-                    program.BrandId,
+                    program.Id, // Use raw Guid
+                    program.PrefixedId,
+                    program.BrandId, // Use raw Guid
                     program.Name,
                     Type = program.Type.ToString(),
                     program.StampThreshold,
@@ -218,7 +223,8 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                     program.PointsRoundingRule,
                     program.EnrollmentBonusPoints,
                     program.MinimumPointsForRedemption, 
-                    program.PointsConfig.PointsPerPound,
+                    // Assuming PointsConfig might be null, handle safely
+                    PointsPerPound = program.PointsConfig?.PointsPerPound ?? 0, 
                     program.StartDate,
                     program.EndDate,
                     program.HasTiers,
@@ -260,22 +266,31 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                 await AddRewardAsync(reward, transaction);
             }
 
+            // Only commit if this method created the transaction
             if (ownsTransaction)
+            {
                 transaction.Commit();
+            }
 
             return program;
         }
         catch (Exception ex)
         {
-            if (ownsTransaction)
-                transaction.Rollback();
-
-            throw new Exception($"Error adding program: {ex.Message}", ex);
+            // Only rollback if this method created the transaction
+            if (ownsTransaction && transaction != null)
+            {
+                try { transaction.Rollback(); } catch { /* Ignore rollback exceptions */ }
+            }
+            Console.WriteLine($"Error adding loyalty program: {ex.Message}");
+            throw;
         }
         finally
         {
+            // Only dispose if this method created the transaction
             if (ownsTransaction && transaction != null)
+            {
                 transaction.Dispose();
+            }
         }
     }
 

@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using LoyaltySystem.Domain.Models;
 using LoyaltySystem.Shared.API.Settings;
 using Serilog;
 using Microsoft.Extensions.Options;
@@ -38,37 +39,22 @@ public class JwtService : IJwtService
     }
 
     /// <summary>
-    /// Generates a JWT token for the specified user
+    /// Generates a JWT token based on a collection of claims.
     /// </summary>
-    public string GenerateToken(
-        string userId, 
-        string firstName,
-        string lastName,
-        string email, 
-        IEnumerable<string> roles,
-        IDictionary<string, string> additionalClaims = null)
+    /// <param name="claims">The claims to include in the token.</param>
+    /// <returns>A TokenResult object containing the access token and its metadata.</returns>
+    public TokenResult GenerateToken(IEnumerable<Claim> claims)
     {
+        if (claims == null || !claims.Any())
+        {
+            throw new ArgumentNullException(nameof(claims), "Cannot generate token with no claims.");
+        }
+        
         try
         {
-            var claims = new List<Claim>
-            {
-                new (ClaimTypes.NameIdentifier, userId),
-                new (JwtRegisteredClaimNames.Sub, userId), // Subject claim
-                new (JwtRegisteredClaimNames.Email, email),
-                new (ClaimTypes.Email, email), // Include both formats for compatibility
-                new (ClaimTypes.Name, $"{firstName} {lastName}"),
-            };
-            
-            claims.AddRange(
-                roles.Select(
-                    role => new Claim(ClaimTypes.Role, role)));
-            
-            if (additionalClaims is { })
-            {
-                claims.AddRange(
-                    additionalClaims.Select(
-                        claim => new Claim(claim.Key, claim.Value)));
-            }
+            // Get the User ID and Roles from claims for logging purposes (optional)
+            var userIdForLog = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? "unknown";
+            var rolesForLog = string.Join(", ", claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
             var symmetricKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256);
@@ -77,15 +63,19 @@ public class JwtService : IJwtService
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
-                claims: claims,
+                claims: claims, // Use the provided claims directly
                 expires: expires,
                 signingCredentials: creds
             );
 
             _logger.Information("Generated JWT token for user {UserId} with roles: {Roles}", 
-                userId, string.Join(", ", roles));
+                userIdForLog, rolesForLog);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            var expiresInSeconds = (int)expires.Subtract(DateTime.UtcNow).TotalSeconds;
+
+            // Return the TokenResult object
+            return new TokenResult(tokenString, expiresInSeconds);
         }
         catch (Exception ex)
         {

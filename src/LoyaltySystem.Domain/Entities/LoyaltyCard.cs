@@ -14,6 +14,11 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<Transaction> _transactions;
 
+        /// <summary>
+        /// The generated human-readable prefixed ID (e.g., card_xxxx).
+        /// Should be generated and assigned just before saving the entity for the first time.
+        /// </summary>
+        public string PrefixedId { get; set; } = string.Empty;
         public LoyaltyCardId Id { get; set; }
         public LoyaltyProgramId ProgramId { get; set; }
         public CustomerId CustomerId { get; set; }

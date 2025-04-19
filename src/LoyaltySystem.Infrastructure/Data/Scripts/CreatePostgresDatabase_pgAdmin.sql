@@ -154,8 +154,10 @@ $$;
 DO $$
 BEGIN
     -- Create Businesses table
-CREATE TABLE IF NOT EXISTS businesses (
-                                          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS businesses 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description VARCHAR(500) NULL,
     tax_id VARCHAR(50) NULL,
@@ -165,7 +167,7 @@ CREATE TABLE IF NOT EXISTS businesses (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
+);
 
 -- Create BusinessContacts table
 CREATE TABLE IF NOT EXISTS business_contacts (
@@ -193,8 +195,10 @@ CREATE TABLE IF NOT EXISTS business_addresses (
     );
 
 -- Create Brands table with business_id foreign key
-CREATE TABLE IF NOT EXISTS brands (
-                                      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS brands 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     business_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     category VARCHAR(50) NULL,
@@ -231,15 +235,17 @@ CREATE TABLE IF NOT EXISTS brand_addresses (
     );
 
 -- Create Stores table
-CREATE TABLE IF NOT EXISTS stores (
-                                      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+CREATE TABLE IF NOT EXISTS stores 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     opening_hours JSONB NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_stores_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
-    );
+);
 
 CREATE INDEX IF NOT EXISTS idx_stores_brand_id ON stores (brand_id);
 
@@ -276,6 +282,7 @@ CREATE INDEX IF NOT EXISTS idx_store_addresses_location ON store_addresses USING
 CREATE TABLE IF NOT EXISTS customers
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -292,11 +299,13 @@ CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email) WHERE email 
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone) WHERE phone IS NOT NULL;
 -- Add enhanced search for customers by name (using trigram similarity)
 CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
+CREATE UNIQUE INDEX IF NOT EXISTS uix_customers_prefixedid ON customers(prefixed_id);
 
 -- Create LoyaltyPrograms table
 CREATE TABLE IF NOT EXISTS loyalty_programs
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     type loyalty_program_type NOT NULL,
@@ -321,6 +330,8 @@ CREATE TABLE IF NOT EXISTS loyalty_programs
     CONSTRAINT chk_points_conversion CHECK (type != 'Points' OR points_conversion_rate IS NOT NULL)
     );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uix_loyalty_programs_prefixedid ON loyalty_programs(prefixed_id);
+
 -- Create loyalty program tiers table
 CREATE TABLE loyalty_program_tiers
 (
@@ -343,6 +354,7 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_programs_type ON loyalty_programs (type);
 CREATE TABLE IF NOT EXISTS loyalty_tier_benefits
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     tier_id UUID NOT NULL REFERENCES loyalty_program_tiers(id) ON DELETE CASCADE,
     benefit_description TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -372,6 +384,7 @@ CREATE TABLE IF NOT EXISTS program_expiration_policies
 CREATE TABLE IF NOT EXISTS rewards
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
     program_id UUID NOT NULL,
     title VARCHAR(100) NOT NULL,
     description VARCHAR(500) NULL,
@@ -394,8 +407,9 @@ CREATE INDEX IF NOT EXISTS idx_rewards_program_active ON rewards(program_id, is_
 CREATE TABLE IF NOT EXISTS loyalty_cards
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    program_id UUID NOT NULL,
-    customer_id UUID NOT NULL,
+    prefixed_id VARCHAR(35) NOT NULL,
+    program_id UUID NOT NULL REFERENCES loyalty_programs(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
     type loyalty_program_type NOT NULL,
     stamps_collected INTEGER NOT NULL DEFAULT 0,
     points_balance NUMERIC(18, 2) NOT NULL DEFAULT 0,
@@ -410,6 +424,7 @@ CREATE TABLE IF NOT EXISTS loyalty_cards
     CONSTRAINT chk_points CHECK (type != 'Points' OR points_balance >= 0)
     );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uix_loyalty_cards_prefixedid ON loyalty_cards(prefixed_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_loyalty_cards_qr_code ON loyalty_cards (qr_code);
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_program_id ON loyalty_cards (program_id);
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_customer_id ON loyalty_cards (customer_id);
@@ -419,18 +434,60 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_cards_expires_at ON loyalty_cards (expire
 -- Add composite index for common query patterns
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_program_status ON loyalty_cards(program_id, status);
 
+-- Create CardsLinks table
+CREATE TABLE IF NOT EXISTS card_links 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
+    card_id UUID NOT NULL,
+    card_hash VARCHAR(255) NOT NULL,
+    link_type card_link_type NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_card_links_loyalty_cards FOREIGN KEY (card_id) REFERENCES loyalty_cards (id)
+    );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_card_links_card_hash ON card_links (card_hash);
+CREATE INDEX IF NOT EXISTS idx_card_links_card_id ON card_links (card_id);
+
+-- MOVED HERE: Create users table BEFORE transactions table
+CREATE TABLE IF NOT EXISTS users 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    password_salt VARCHAR(255) NOT NULL,
+    customer_id UUID NULL,
+    status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NULL,
+    CONSTRAINT fk_users_customers FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE SET NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uix_users_prefixedid ON users(prefixed_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id) WHERE customer_id IS NOT NULL;
+
 -- Create Transactions table with partitioning
 CREATE TABLE IF NOT EXISTS transactions
 (
     id UUID DEFAULT uuid_generate_v4(),
-    card_id UUID NOT NULL,
+    prefixed_id VARCHAR(35) NOT NULL,
+    card_id UUID NOT NULL REFERENCES loyalty_cards(id) ON DELETE RESTRICT,
     type transaction_type NOT NULL,
-    reward_id UUID NULL,
+    reward_id UUID NULL REFERENCES rewards(id) ON DELETE SET NULL,
     quantity INTEGER NULL,
     points_amount NUMERIC(18, 2) NULL,
     transaction_amount NUMERIC(18, 2) NULL,
-    store_id UUID NOT NULL,
-    staff_id UUID NULL,
+    store_id UUID NOT NULL REFERENCES stores(id) ON DELETE SET NULL,
+    staff_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
     pos_transaction_id VARCHAR(100) NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -443,6 +500,9 @@ CREATE TABLE IF NOT EXISTS transactions
     CONSTRAINT chk_quantity CHECK (type != 'StampIssuance' OR quantity IS NOT NULL),
     CONSTRAINT chk_points CHECK (type != 'PointsIssuance' OR points_amount IS NOT NULL)
     ) PARTITION BY RANGE (timestamp);
+
+-- Modified UNIQUE index to include the partitioning key 'timestamp'
+CREATE UNIQUE INDEX IF NOT EXISTS uix_transactions_prefixedid ON transactions(prefixed_id, timestamp);
 
 -- Create partitions for transactions (past year and current year)
 CREATE TABLE IF NOT EXISTS transactions_2023 PARTITION OF transactions
@@ -466,75 +526,6 @@ CREATE INDEX IF NOT EXISTS idx_transactions_card_timestamp ON transactions(card_
 -- Use BRIN index for timestamp column (efficient for time-ordered data)
 CREATE INDEX IF NOT EXISTS idx_transactions_timestamp_brin ON transactions USING BRIN (timestamp);
 
--- Create CardLinks table
-CREATE TABLE IF NOT EXISTS card_links (
-                                          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    card_id UUID NOT NULL,
-    card_hash VARCHAR(255) NOT NULL,
-    link_type card_link_type NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_card_links_loyalty_cards FOREIGN KEY (card_id) REFERENCES loyalty_cards (id)
-    );
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_card_links_card_hash ON card_links (card_hash);
-CREATE INDEX IF NOT EXISTS idx_card_links_card_id ON card_links (card_id);
-
--- PERFORMANCE OPTIMIZATIONS FOR HIGH-VOLUME TABLES
-
--- Optimize autovacuum for transactions table (commented out for compatibility)
-/*
-ALTER TABLE transactions SET (
-    autovacuum_vacuum_scale_factor = 0.05,
-    autovacuum_analyze_scale_factor = 0.025,
-    fillfactor = 80
-);
-*/
-
--- Only set fillfactor which is widely supported
---ALTER TABLE transactions SET (fillfactor = 80);
-
--- Optimize loyalty_cards table (commented out for compatibility)
-/*
-ALTER TABLE loyalty_cards SET (
-    autovacuum_vacuum_scale_factor = 0.1,
-    autovacuum_analyze_scale_factor = 0.05,
-    fillfactor = 90
-);
-*/
-
--- Only set fillfactor which is widely supported
---ALTER TABLE loyalty_cards SET (fillfactor = 90);
-
--- PARTITION MANAGEMENT TOOLS
-
--- Create table to track partition maintenance
-CREATE TABLE IF NOT EXISTS partition_maintenance_log (
-                                                         id SERIAL PRIMARY KEY,
-                                                         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                                         year INTEGER NOT NULL,
-                                                         notes TEXT
-);
-
--- Then create your users and admin after tables are created
--- Create users table (if it doesn't exist)
-CREATE TABLE IF NOT EXISTS users (
-                                     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    password_salt VARCHAR(255) NOT NULL,
-    customer_id UUID NULL,
-    status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP NULL,
-    CONSTRAINT fk_users_customers FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE SET NULL
-    );
-
 -- Create user_roles table (if it doesn't exist)
 CREATE TABLE IF NOT EXISTS user_roles
 (
@@ -543,31 +534,36 @@ CREATE TABLE IF NOT EXISTS user_roles
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, role),
     CONSTRAINT fk_user_roles_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    );
-
--- Add proper indexing for users table
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
-CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id) WHERE customer_id IS NOT NULL;
+);
 
 -- Add proper indexing for user_roles table
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
 
--- Delete any existing admin users to avoid duplicates
+-- MOVED INSIDE main DO block: Delete any existing admin users to avoid duplicates
 DELETE FROM users WHERE username = 'admin';
-DELETE FROM users WHERE username = 'manager';
+-- We can keep the delete for manager for safety or remove if not needed
+-- DELETE FROM users WHERE username = 'manager';
 
--- Insert admin user with password 'Admin@123'
-INSERT INTO users
-(
-    id, first_name, last_name, username, email, password_hash, password_salt,
-    status, created_at, updated_at
-)
-VALUES
+-- MOVED INSIDE main DO block: Insert admin user and role within a sub-DO block (or directly)
+-- We can actually insert directly here without a nested DO block since we are already inside the main one
+DECLARE
+    admin_uuid UUID;
+BEGIN
+    -- Generate UUID for the admin user
+    admin_uuid := uuid_generate_v4();
+    
+    -- Insert admin user with the generated UUID and a hardcoded PrefixedId
+    INSERT INTO users
     (
-        uuid_generate_v4(),
-        'tom',
-        'jim',
+        id, prefixed_id, first_name, last_name, username, email, 
+        password_hash, password_salt, status, created_at, updated_at
+    )
+    VALUES
+    (
+        admin_uuid, -- Use generated UUID
+        'usr_admin_placeholder', -- Use hardcoded placeholder PrefixedId
+        'admin',
+        'admin',
         'admin',
         'admin@loyaltysystem.com',
         'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
@@ -577,30 +573,11 @@ VALUES
         CURRENT_TIMESTAMP
     );
 
--- Add SuperAdmin role to the admin user
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'SuperAdmin' FROM users WHERE username = 'admin';
-
--- Add a manager user with the same password
-INSERT INTO users (
-    id, first_name, last_name, username, email, password_hash, password_salt,
-    status, created_at, updated_at
-) VALUES (
-             uuid_generate_v4(),
-             'tom',
-             'jim',
-             'manager',
-             'manager@loyaltysystem.com',
-             'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-             'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
-             1, -- Active status
-             CURRENT_TIMESTAMP,
-             CURRENT_TIMESTAMP
-         );
-
--- Add Manager role to the manager user
-INSERT INTO user_roles (user_id, role)
-SELECT id, 'Manager' FROM users WHERE username = 'manager';
+    -- Add SuperAdmin role to the admin user using the generated UUID
+    INSERT INTO user_roles (user_id, role)
+    VALUES (admin_uuid, 'SuperAdmin');
+END;
+-- End of direct insertion logic (removed nested DO block)
 
 -- ANALYTICS SUPPORT WITH MATERIALIZED VIEWS
 
@@ -618,9 +595,9 @@ SELECT
     COALESCE(AVG(CASE WHEN t.type = 'PointsIssuance' THEN t.points_amount END), 0) AS avg_points_per_transaction,
     COALESCE(AVG(t.transaction_amount), 0) AS avg_transaction_amount
 FROM loyalty_programs p
-         JOIN brands b ON p.brand_id = b.id
-         LEFT JOIN loyalty_cards c ON p.id = c.program_id
-         LEFT JOIN transactions t ON c.id = t.card_id
+     JOIN brands b ON p.brand_id = b.id
+     LEFT JOIN loyalty_cards c ON p.id = c.program_id
+     LEFT JOIN transactions t ON c.id = t.card_id
 GROUP BY p.id, p.name, b.id, b.name
     WITH DATA;
 
@@ -650,9 +627,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_customer_metrics_customer_id ON mv_cust
 -- SECURITY WITH ROW-LEVEL SECURITY
 
 -- Create an app context for current brand/store/staff access control
-CREATE TABLE IF NOT EXISTS app_context (
-                                           key TEXT PRIMARY KEY,
-                                           value TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS app_context 
+(
+   key TEXT PRIMARY KEY,
+   value TEXT NOT NULL
 );
 
 -- Enable row-level security on tables
