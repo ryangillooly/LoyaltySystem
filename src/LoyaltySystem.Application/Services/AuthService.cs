@@ -1,20 +1,18 @@
-using System.Security.Cryptography;
-using System.Text;
+using FluentValidation;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Validation;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
-using Microsoft.Extensions.Configuration;
 using LoyaltySystem.Domain.Interfaces;
 using Serilog;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using LoyaltySystem.Contracts.Authentication;
 using LoyaltySystem.Domain.Models;
-using Microsoft.Extensions.Options;
 
 namespace LoyaltySystem.Application.Services;
 
@@ -35,11 +33,11 @@ public class AuthService : IAuthService
         ILogger logger
     )
     {
-        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -122,6 +120,7 @@ public class AuthService : IAuthService
         {
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
+                // Create new Customer in the Database
                 var customer = new Customer
                 (
                     registerDto.FirstName,
@@ -140,6 +139,7 @@ public class AuthService : IAuthService
                 
                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
 
+                // Create a new User in the database, linking to the new Customer Id
                 newUser = new User
                 (
                     registerDto.FirstName,
@@ -232,11 +232,15 @@ public class AuthService : IAuthService
     public async Task<OperationResult<UserDto>> RegisterAdminAsync(RegisterUserDto registerDto)
     {
         // Basic validation
-        if (string.IsNullOrEmpty(registerDto.UserName) || string.IsNullOrEmpty(registerDto.Email))
-            return OperationResult<UserDto>.FailureResult("Username and Email are required.");
-        if (registerDto.Password != registerDto.ConfirmPassword)
-             return OperationResult<UserDto>.FailureResult("Password and confirmation password do not match.");
+        var validator = new RegisterUserDtoValidator();
+        var validationResult = await validator.ValidateAsync(registerDto);
 
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return OperationResult<UserDto>.FailureResult(errors);
+        }
+        
         // Check for existing user *before* transaction
          var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
         if (existingUserByEmail is { })
@@ -253,10 +257,11 @@ public class AuthService : IAuthService
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 // 1. Create Password Hash
-                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
+                CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
 
                 // 2. Create and Save User with Admin Role
-                 newUser = new User(
+                newUser = new User
+                (
                     registerDto.FirstName,
                     registerDto.LastName,
                     registerDto.UserName,
@@ -264,12 +269,13 @@ public class AuthService : IAuthService
                     passwordHash,
                     passwordSalt,
                     null // Admin users are not linked to a customer record
-                 );
-                newUser.AddRole(RoleType.Admin); // Or potentially SuperAdmin based on context? Check requirements.
+                );
+                 
+                foreach (var role in registerDto.Roles) 
+                    newUser.AddRole(role); 
 
-                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
-                // AddAsync uses the transaction
-                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
+                newUser.PrefixedId = newUser.Id.ToString(); 
+                await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
              });
 
              if (newUser is null)
@@ -361,7 +367,7 @@ public class AuthService : IAuthService
         try
         {
             userIdObj = UserId.FromString(userId);
-        }
+        } 
         catch (FormatException ex)
         {
             _logger.Error(ex, "Invalid format for UserId: {UserId}", userId);
@@ -536,9 +542,17 @@ public class AuthService : IAuthService
         // Temporarily mapping to UserDto
         Func<User, UserDto> tempMapper = u => new UserDto 
         {
-            Id = u.Id.Value, PrefixedId = u.PrefixedId, FirstName = u.FirstName, LastName = u.LastName,
-            UserName = u.UserName, Email = u.Email, Status = u.Status.ToString(), CustomerId = u.CustomerId?.ToString(),
-            CreatedAt = u.CreatedAt, LastLoginAt = u.LastLoginAt, Roles = u.Roles.Select(r => r.ToString()).ToList()
+            Id = u.Id.Value, 
+            PrefixedId = u.PrefixedId, 
+            FirstName = u.FirstName, 
+            LastName = u.LastName,
+            UserName = u.UserName, 
+            Email = u.Email, 
+            Status = u.Status.ToString(), 
+            CustomerId = u.CustomerId?.ToString(),
+            CreatedAt = u.CreatedAt, 
+            LastLoginAt = u.LastLoginAt, 
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList()
         };
 
         return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
@@ -592,24 +606,25 @@ public class AuthService : IAuthService
 
     private TokenResult GenerateTokenResult(User user)
     {
-        var claims = new List<Claim>
-        {
-            new (JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Use GUID for sub
-            new (ClaimTypes.NameIdentifier, user.PrefixedId),      // Use Prefixed ID for NameIdentifier
-            new (JwtRegisteredClaimNames.UniqueName, user.UserName),
-            new (JwtRegisteredClaimNames.Email, user.Email ?? string.Empty), // Fallback for potential null email
-            // Add roles as claims
-            // Add CustomerId claim if present
-            new ("UserId", user.PrefixedId) // Explicitly add prefixed user ID
-        };
+        var claims = new List<Claim>();
         
-        if (user.CustomerId != null)
-        {
+        if (user.Id is { })
+            claims.Add(new Claim("UserId", user.Id.ToString()));
+        
+        if (!string.IsNullOrEmpty(user.UserName))
+            claims.Add(new Claim("Username", user.UserName));
+        
+        if (!string.IsNullOrEmpty(user.Email))
+            claims.Add(new Claim("Email", user.Email));
+        
+        if (user.Status is { })
+            claims.Add(new Claim("Status", user.Status.ToString()));
+        
+        if (user.CustomerId is { })
             claims.Add(new Claim("CustomerId", user.CustomerId.ToString())); // Add prefixed customer ID
-        }
 
         claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Role.ToString()))); // Access Role property of UserRole
-
+        
         // Call the service to get the TokenResult
         return _jwtService.GenerateToken(claims); 
     }

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Customer.API.Controllers;
 
 [ApiController]
-[Route("api/customer/[controller]")]
+[Route("api/customer")]
 [Authorize]
 public class CustomerController : ControllerBase
 {

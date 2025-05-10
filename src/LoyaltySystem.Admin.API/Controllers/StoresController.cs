@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/stores")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class StoresController : ControllerBase
 {

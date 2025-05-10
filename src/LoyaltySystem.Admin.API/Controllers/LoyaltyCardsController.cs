@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/loyalty-cards")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class LoyaltyCardsController : ControllerBase
 {
@@ -60,6 +60,7 @@ public class LoyaltyCardsController : ControllerBase
     }
 
     // Admin can access any customer's cards without ownership checks
+    [HttpGet("customer/{customerId}")]
     public async Task<IActionResult> GetByCustomerId(CustomerId customerId)
     {
         _logger.LogInformation("Admin requesting loyalty cards for customer ID: {CustomerId}", customerId);

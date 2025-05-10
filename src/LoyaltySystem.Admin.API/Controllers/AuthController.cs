@@ -1,102 +1,133 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
 using LoyaltySystem.Shared.API.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using ILogger = Serilog.ILogger;
 
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/auth")]
 public class AuthController : BaseAuthController 
 {
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ILogger logger)
         : base(authService, logger) { }
-    
-    protected override async Task<OperationResult<UserDto>> ExecuteRegistrationAsync(RegisterUserDto registerRequest) =>
-        await _authService.RegisterAdminAsync(registerRequest);
-    
-    [HttpPost("register/admin")]
-    [Authorize(Roles = "SuperAdmin")] 
-    public async Task<IActionResult> RegisterAdmin([FromBody] RegisterUserDto registerDto)
+
+    private const string UserId = "UserId";
+    protected override string UserType => "Admin";
+    protected override async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest) =>
+        throw new NotImplementedException();
+
+    [HttpPost("register")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public override async Task<IActionResult> Register(RegisterUserDto request)
     {
-        _logger.LogInformation("Admin registration attempt for email: {Email}", registerDto.Email);
+        _logger.Information("{UserType} registration attempt for email: {Email}", UserType, request.Email);
             
-        if (registerDto.Password != registerDto.ConfirmPassword)
+        if (request.Password != request.ConfirmPassword)
         {
-            _logger.LogWarning("Admin registration failed: Passwords don't match for {Email}", registerDto.Email);
+            _logger.Warning("{UserType} registration failed - password mismatch for email: {Email}", UserType, request.Email);
             return BadRequest(new { message = "Password and confirmation password do not match" });
         }
+        
+        if (!request.Roles.Any())
+            return BadRequest(new { message = "Role is required" });
 
-        var result = await _authService.RegisterAdminAsync(registerDto);
-            
+        // Only SuperAdmin can create Admins
+        if ((request.Roles.Contains(RoleType.Admin) || request.Roles.Contains(RoleType.SuperAdmin))
+            && !User.IsInRole(nameof(RoleType.SuperAdmin)))
+            return Forbid();
+        
+        // Admins or SuperAdmins can create Managers
+        if (request.Roles.Contains(RoleType.Manager) && 
+            !(User.IsInRole(nameof(RoleType.SuperAdmin)) || User.IsInRole(nameof(RoleType.Admin))))
+            return Forbid();
+
+        // Register the user (using admin registration logic for both roles)
+        var result = await _authService.RegisterAdminAsync(request);
+        if (!result.Success)
+            return BadRequest(new { message = result.Errors });
+
         if (!result.Success)
         {
-            _logger.LogWarning("Admin registration failed for {Email}: {Error}", registerDto.Email, string.Join(", ", result.Errors));
+            _logger.Warning("{UserType} registration failed for email: {Email} - {Error}", UserType, request.Email, result.Errors);
             return BadRequest(new { message = result.Errors });
         }
-
-        _logger.LogInformation("Admin registration successful for {Email}", registerDto.Email);
-        return CreatedAtAction(nameof(GetUserById), new { id = result.Data.Id }, result.Data);
+            
+        _logger.Information("Successful {UserType} registration for email: {Email}", UserType, request.Email);
+        return CreatedAtAction(nameof(GetProfile), result.Data);
     }
         
     [Authorize(Roles = "SuperAdmin,Admin")]
-    [HttpPost("users/roles/add")]
-    public async Task<IActionResult> AddRole(UserRoleDto roleRequest)
+    [HttpPost("users/{userId}/roles")]
+    public async Task<IActionResult> AddRole([FromRoute] string userId, [FromBody] RoleType roleType)
     {
-        _logger.LogInformation("Admin role add request: {UserId}, Role: {Role}", roleRequest.UserId, roleRequest.Role);
+        _logger.Information("Admin role add request: {UserId}, Role: {Role}", userId, roleType);
             
         // Parse the user ID using the extension method
-        var parseResult = this.TryParseId(roleRequest.UserId, out UserId userId, _logger, "UserId");
-        if (parseResult != null)
-            return parseResult;
+        if (!EntityId.TryParse<UserId>(userId, out _))
+        {
+            _logger.Warning("Invalid user ID in route: {UserId}", userId);
+            return NotFound(new { message = "User Id not found" });
+        }
                 
-        if (!Enum.TryParse<RoleType>(roleRequest.Role, out var role))
-            return BadRequest(new { message = "Invalid role type" });
-                
-        var result = await _authService.AddRoleAsync(userId.Value.ToString(), role);
+        var result = await _authService.AddRoleAsync(userId, roleType);
             
         if (!result.Success)
         {
-            _logger.LogWarning("Admin role add failed: {UserId}, Role: {Role} - {Error}", 
-                userId, roleRequest.Role, result.Errors);
+            _logger.Warning("Admin role add failed: {UserId}, Role: {Role} - {Error}", userId, roleType, result.Errors);
             return BadRequest(new { message = result.Errors });
         }
             
-        _logger.LogInformation("Admin role added successfully: {UserId}, Role: {Role}", 
-            userId, roleRequest.Role);
+        _logger.Information("Admin role added successfully: {UserId}, Role: {Role}", userId, roleType);
         return Ok(result.Data);
     }
 
-    [Authorize(Roles = "SuperAdmin,Admin")]
-    [HttpPost("users/roles/remove")]
-    public async Task<IActionResult> RemoveRole(UserRoleDto roleRequest)
+    protected override async Task<OperationResult<ProfileDto>> GetProfileInternalAsync()
     {
-        _logger.LogInformation("Admin role remove request: {UserId}, Role: {Role}", 
-            roleRequest.UserId, roleRequest.Role);
-            
+        var userIdString = User.FindFirstValue(UserId);
+        if (string.IsNullOrEmpty(userIdString) || !EntityId.TryParse<UserId>(userIdString, out var userId))
+        {
+            _logger.Warning("Invalid customer ID in token: {CustomerId}", userIdString);
+            return OperationResult<ProfileDto>.FailureResult("Invalid customer identification");
+        }
+
+        var result = await _authService.GetUserByIdAsync(userIdString);
+        return result.Success
+            ? OperationResult<ProfileDto>.SuccessResult(result.Data!)
+            : OperationResult<ProfileDto>.FailureResult(result.Errors!);
+    }
+    
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    [HttpDelete("users/{userId}/roles")]
+    public async Task<IActionResult> RemoveRole([FromRoute] string userId, [FromBody] RoleType roleType)
+    {
+        _logger.Information("Admin role remove request: {UserId}, Role: {Role}", userId, nameof(roleType));
+        
         // Parse the user ID using the extension method
-        var parseResult = this.TryParseId(roleRequest.UserId, out UserId userId, _logger, "UserId");
-        if (parseResult != null)
-            return parseResult;
-                
-        if (!Enum.TryParse<RoleType>(roleRequest.Role, out var role))
-            return BadRequest(new { message = "Invalid role type" });
-                
-        var result = await _authService.RemoveRoleAsync(userId.ToString(), role);
+        if (!EntityId.TryParse<UserId>(userId, out _))
+        {
+            _logger.Warning("Invalid user ID in route: {UserId}", userId);
+            return NotFound(new { message = "User Id not found" });
+        }
+        
+        var result = await _authService.RemoveRoleAsync(userId, roleType);
             
         if (!result.Success)
         {
-            _logger.LogWarning("Admin role remove failed: {UserId}, Role: {Role} - {Error}", 
-                userId, roleRequest.Role, result.Errors);
+            _logger.Warning("Admin role remove failed: {UserId}, Role: {Role} - {Error}", userId, nameof(roleType), result.Errors);
             return BadRequest(new { message = result.Errors });
         }
             
-        _logger.LogInformation("Admin role removed successfully: {UserId}, Role: {Role}", 
-            userId, roleRequest.Role);
+        _logger.Information("Admin role removed successfully: {UserId}, Role: {Role}", userId, nameof(roleType));
         return Ok(result.Data);
     }
 
@@ -104,14 +135,14 @@ public class AuthController : BaseAuthController
     [HttpPost("users/link-customer")]
     public async Task<IActionResult> LinkCustomer(LinkCustomerDto linkRequest)
     {
-        _logger.LogInformation("Admin link customer request: {UserId}, CustomerId: {CustomerId}", 
+        _logger.Information("Admin link customer request: {UserId}, CustomerId: {CustomerId}", 
             linkRequest.UserId, linkRequest.CustomerId);
             
         ArgumentNullException.ThrowIfNull(linkRequest.CustomerId);
         ArgumentNullException.ThrowIfNull(linkRequest.UserId);
             
         // Parse the user ID using the extension method
-        var userIdResult = this.TryParseId(linkRequest.UserId, out UserId userId, _logger, "UserId");
+        var userIdResult = this.TryParseId(linkRequest.UserId, out UserId userId, _logger, UserId);
         if (userIdResult != null)
             return userIdResult;
             
@@ -124,12 +155,12 @@ public class AuthController : BaseAuthController
             
         if (!result.Success)
         {
-            _logger.LogWarning("Admin link customer failed: {UserId}, {CustomerId} - {Error}",
+            _logger.Warning("Admin link customer failed: {UserId}, {CustomerId} - {Error}",
                 userId, customerId, result.Errors);
             return BadRequest(new { message = result.Errors });
         }
             
-        _logger.LogInformation("Customer linked successfully: {UserId}, {CustomerId}",
+        _logger.Information("Customer linked successfully: {UserId}, {CustomerId}",
             userId, customerId);
         return Ok(result.Data);
     }

@@ -1,4 +1,5 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 

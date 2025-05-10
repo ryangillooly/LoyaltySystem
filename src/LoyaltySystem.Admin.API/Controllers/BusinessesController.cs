@@ -7,20 +7,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/businesses")]
 [Authorize(Roles = "SuperAdmin,Admin")]
-public class BusinessController : ControllerBase
+public class BusinessesController : ControllerBase
 {
     private readonly IBusinessService _businessService;
     private readonly IStoreService _storeService;
     private readonly ILoyaltyProgramService _programService;
-    private readonly ILogger<BusinessController> _logger;
+    private readonly ILogger<BusinessesController> _logger;
 
-    public BusinessController(
+    public BusinessesController(
         IBusinessService businessService,
         IStoreService storeService,
         ILoyaltyProgramService programService,
-        ILogger<BusinessController> logger)
+        ILogger<BusinessesController> logger)
     {
         _businessService = businessService ?? throw new ArgumentNullException(nameof(businessService));
         _storeService = storeService ?? throw new ArgumentNullException(nameof(storeService));

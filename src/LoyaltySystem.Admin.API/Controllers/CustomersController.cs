@@ -1,4 +1,5 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/customers")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class CustomersController : ControllerBase
 {

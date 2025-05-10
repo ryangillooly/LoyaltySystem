@@ -1,24 +1,15 @@
 using FluentValidation;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.AuthDtos;
 
 namespace LoyaltySystem.Application.Validation;
 
-public abstract class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
+public class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
 {
     private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
-    // Example breakdown:
-    // ^             Start of string
-    // [\+]?         Optional '+' sign
-    // [(]?          Optional '('
-    // [0-9]{3}      Three digits
-    // [)]?          Optional ')'
-    // [-\s\.]?      Optional separator (hyphen, space, dot)
-    // [0-9]{3}      Three digits
-    // [-\s\.]?      Optional separator
-    // [0-9]{4,9}    Four to nine digits (adjust max length as needed)
-    // $             End of string
-    
-    protected RegisterUserDtoValidator()
+   
+    public RegisterUserDtoValidator()
     {
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("FirstName is required.")

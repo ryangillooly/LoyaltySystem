@@ -1,5 +1,6 @@
 using FluentValidation;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.AuthDtos;
 
 namespace LoyaltySystem.Application.Validation;
 

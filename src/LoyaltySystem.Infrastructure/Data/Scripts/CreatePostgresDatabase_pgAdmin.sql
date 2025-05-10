@@ -278,29 +278,6 @@ CREATE TABLE IF NOT EXISTS store_addresses (
 -- Create spatial index
 CREATE INDEX IF NOT EXISTS idx_store_addresses_location ON store_addresses USING GIST (location);
 
--- Create Customers table
-CREATE TABLE IF NOT EXISTS customers
-(
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    prefixed_id VARCHAR(35) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(100) NULL,
-    phone VARCHAR(50) NULL,
-    marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
-    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email) WHERE email IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone) WHERE phone IS NOT NULL;
--- Add enhanced search for customers by name (using trigram similarity)
-CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
-CREATE UNIQUE INDEX IF NOT EXISTS uix_customers_prefixedid ON customers(prefixed_id);
-
 -- Create LoyaltyPrograms table
 CREATE TABLE IF NOT EXISTS loyalty_programs
 (
@@ -403,6 +380,53 @@ CREATE INDEX IF NOT EXISTS idx_rewards_valid_period ON rewards (valid_from, vali
 -- Add index for active rewards (commonly queried)
 CREATE INDEX IF NOT EXISTS idx_rewards_program_active ON rewards(program_id, is_active) WHERE is_active = TRUE;
 
+-- MOVED HERE: Create users table BEFORE transactions table
+CREATE TABLE IF NOT EXISTS users 
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    prefixed_id VARCHAR(35) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    password_salt VARCHAR(255) NOT NULL,
+    status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uix_users_prefixedid ON users(prefixed_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
+
+-- Create Customers table
+CREATE TABLE IF NOT EXISTS customers
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    prefixed_id VARCHAR(35) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NULL,
+    phone VARCHAR(50) NULL,
+    marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_customers_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email) WHERE email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers (phone) WHERE phone IS NOT NULL;
+-- Add enhanced search for customers by name (using trigram similarity)
+CREATE INDEX IF NOT EXISTS idx_customers_name_gin ON customers USING gin(first_name gin_trgm_ops, last_name gin_trgm_ops);
+CREATE UNIQUE INDEX IF NOT EXISTS uix_customers_prefixedid ON customers(prefixed_id);
+
 -- Create LoyaltyCards table
 CREATE TABLE IF NOT EXISTS loyalty_cards
 (
@@ -422,7 +446,7 @@ CREATE TABLE IF NOT EXISTS loyalty_cards
     CONSTRAINT fk_loyalty_cards_customers FOREIGN KEY (customer_id) REFERENCES customers (id),
     CONSTRAINT chk_stamps CHECK (type != 'Stamp' OR stamps_collected >= 0),
     CONSTRAINT chk_points CHECK (type != 'Points' OR points_balance >= 0)
-    );
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uix_loyalty_cards_prefixedid ON loyalty_cards(prefixed_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_loyalty_cards_qr_code ON loyalty_cards (qr_code);
@@ -435,7 +459,7 @@ CREATE INDEX IF NOT EXISTS idx_loyalty_cards_expires_at ON loyalty_cards (expire
 CREATE INDEX IF NOT EXISTS idx_loyalty_cards_program_status ON loyalty_cards(program_id, status);
 
 -- Create CardsLinks table
-CREATE TABLE IF NOT EXISTS card_links 
+CREATE TABLE IF NOT EXISTS card_links
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     prefixed_id VARCHAR(35) NOT NULL,
@@ -450,30 +474,6 @@ CREATE TABLE IF NOT EXISTS card_links
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_card_links_card_hash ON card_links (card_hash);
 CREATE INDEX IF NOT EXISTS idx_card_links_card_id ON card_links (card_id);
-
--- MOVED HERE: Create users table BEFORE transactions table
-CREATE TABLE IF NOT EXISTS users 
-(
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    prefixed_id VARCHAR(35) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    password_salt VARCHAR(255) NOT NULL,
-    customer_id UUID NULL,
-    status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP NULL,
-    CONSTRAINT fk_users_customers FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE SET NULL
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uix_users_prefixedid ON users(prefixed_id);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
-CREATE INDEX IF NOT EXISTS idx_users_customer_id ON users(customer_id) WHERE customer_id IS NOT NULL;
 
 -- Create Transactions table with partitioning
 CREATE TABLE IF NOT EXISTS transactions
@@ -561,13 +561,13 @@ BEGIN
     VALUES
     (
         admin_uuid, -- Use generated UUID
-        'usr_admin_placeholder', -- Use hardcoded placeholder PrefixedId
+        'usr_t36klk2uczyedfc7ogufqb6111', -- Use hardcoded placeholder PrefixedId
         'admin',
         'admin',
         'admin',
         'admin@loyaltysystem.com',
-        'NlXq5sxS5LxBsDyv7234mMJi7BIGaka7ab9l7VrhnnaiceKhbTJ1eW9IcNYAjaBNF6fa6UofgtigwEHqzFSE0g==',
-        'YnJvSEcwY2Q0OExSYUlvR0M5blkrQm1KMy85SGtuUGg1aWRUeWJXeXBmbFFvY3FXWUxsdk5IYWxxdzlLYWo5RmxSbVlvR0pwZmg0VE1iOHRaMFRlNnFpWCs5Y3l3RFpibUhnT25kU3ZKc3QxcFc1UnhLelFpUS9QUEYyZnA3VDRXMUlDQ3J1blVXVXQ2Yi9EaDVNZjZXRGNYSXR5K2xSWVFsVUIxcUU1L2VBPQ==',
+        'QtZoI6iYJ8FB5aRjPRPsD7vsyt2sP2UDZKioxvSFjCQ7FfPk9bQNbWtXIe9ZSHlRpAf9ANHLVl4Ggx2ZqAp06g==',
+        'wstV48ZxxP8X5Uc/D2azxH4o8MpazEVTl8uxtg0B/v8bgt960wQsKFbawtICopuVCklb0elrkB6Pgy66sSePgMRPzHn4qVToazWAii7v86qEwuODUQpXJvub/fdfUQckna0onYq0dmEN1G2kgFAApEA3FQMJgOeiGagKXv/e1V0=',
         1, -- Active status
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP

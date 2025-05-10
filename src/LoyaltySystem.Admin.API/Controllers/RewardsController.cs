@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/programs/{programId}/[controller]")]
+[Route("api/loyalty-programs/{programId}/rewards")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class RewardsController : ControllerBase
 {

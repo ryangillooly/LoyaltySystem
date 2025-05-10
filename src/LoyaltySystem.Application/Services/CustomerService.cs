@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
@@ -29,26 +30,26 @@ namespace LoyaltySystem.Application.Services
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
-        public async Task<OperationResult<PagedResult<CustomerDto>>> GetAllAsync(int skip, int limit)
+        public async Task<OperationResult<PagedResult<CustomerProfileDto>>> GetAllAsync(int skip, int limit)
         {
             try
             {
                 var customers = await _customerRepository.GetAllAsync(skip, limit);
                 var totalCount = await _customerRepository.GetTotalCountAsync();
 
-                var customerDtos = customers.Select(MapToDto).ToList();
+                var CustomerProfileDtos = customers.Select(MapToDto).ToList();
 
-                var result = new PagedResult<CustomerDto>(customerDtos, totalCount, skip, limit);
+                var result = new PagedResult<CustomerProfileDto>(CustomerProfileDtos, totalCount, skip, limit);
 
-                return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);
+                return OperationResult<PagedResult<CustomerProfileDto>>.SuccessResult(result);
             }
             catch (Exception ex)
             {
-                return OperationResult<PagedResult<CustomerDto>>.FailureResult($"Failed to get customers: {ex.Message}");
+                return OperationResult<PagedResult<CustomerProfileDto>>.FailureResult($"Failed to get customers: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<CustomerDto>> GetCustomerByIdAsync(string id)
+        public async Task<OperationResult<CustomerProfileDto>> GetCustomerByIdAsync(string id)
         {
             try
             {
@@ -56,62 +57,62 @@ namespace LoyaltySystem.Application.Services
                 var customer = await _customerRepository.GetByIdAsync(customerId);
 
                 return customer == null 
-                    ? OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found") 
-                    : OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
+                    ? OperationResult<CustomerProfileDto>.FailureResult($"Customer with ID {id} not found") 
+                    : OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(customer));
 
             }
             catch (Exception ex)
             {
-                return OperationResult<CustomerDto>.FailureResult($"Failed to get customer: {ex.Message}");
+                return OperationResult<CustomerProfileDto>.FailureResult($"Failed to get customer: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<PagedResult<CustomerDto>>> SearchCustomersAsync(string query, int page, int pageSize)
+        public async Task<OperationResult<PagedResult<CustomerProfileDto>>> SearchCustomersAsync(string query, int page, int pageSize)
         {
             try
             {
                 var customers = await _customerRepository.SearchAsync(query, page, pageSize);
                 var totalCount = await _customerRepository.GetTotalCountAsync();
 
-                var customerDtos = new List<CustomerDto>();
+                var CustomerProfileDtos = new List<CustomerProfileDto>();
                 foreach (var customer in customers)
                 {
-                    customerDtos.Add(MapToDto(customer));
+                    CustomerProfileDtos.Add(MapToDto(customer));
                 }
 
-                var result = new PagedResult<CustomerDto>(customerDtos, totalCount, page, pageSize);
+                var result = new PagedResult<CustomerProfileDto>(CustomerProfileDtos, totalCount, page, pageSize);
 
-                return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);
+                return OperationResult<PagedResult<CustomerProfileDto>>.SuccessResult(result);
             }
             catch (Exception ex)
             {
-                return OperationResult<PagedResult<CustomerDto>>.FailureResult($"Failed to search customers: {ex.Message}");
+                return OperationResult<PagedResult<CustomerProfileDto>>.FailureResult($"Failed to search customers: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<CustomerDto>> CreateCustomerAsync(CreateCustomerDto dto)
+        public async Task<OperationResult<CustomerProfileDto>> CreateCustomerAsync(CreateCustomerDto dto)
         {
             try
             {
                 if (!IsValidEmail(dto.Email))
-                    return OperationResult<CustomerDto>.FailureResult("Invalid email format");
+                    return OperationResult<CustomerProfileDto>.FailureResult("Invalid email format");
                 
                 var customer = MapToCustomer(dto);
 
                 return await _unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
                     var newCustomer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                    return OperationResult<CustomerDto>.SuccessResult(MapToDto(newCustomer));
+                    return OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(newCustomer));
                 });
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return OperationResult<CustomerDto>.FailureResult($"Failed to create customer: {ex.Message}");
+                return OperationResult<CustomerProfileDto>.FailureResult($"Failed to create customer: {ex.Message}");
             }
         }
 
-        public async Task<OperationResult<CustomerDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto)
+        public async Task<OperationResult<CustomerProfileDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto)
         {
             try
             {
@@ -119,19 +120,19 @@ namespace LoyaltySystem.Application.Services
                 var customer = await _customerRepository.GetByIdAsync(customerId);
 
                 if (customer == null)
-                    return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
+                    return OperationResult<CustomerProfileDto>.FailureResult($"Customer with ID {id} not found");
 
                 customer.Update(dto.FirstName, dto.LastName, dto.UserName, dto.Email, dto.Phone, dto.Address, false);
                 return await _unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
                     await _customerRepository.UpdateAsync(customer);
-                    return OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
+                    return OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(customer));
                 });
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return OperationResult<CustomerDto>.FailureResult($"Failed to update customer: {ex.Message}");
+                return OperationResult<CustomerProfileDto>.FailureResult($"Failed to update customer: {ex.Message}");
             }
         }
 
@@ -267,7 +268,7 @@ namespace LoyaltySystem.Application.Services
                 null
             );
         
-        private static CustomerDto MapToDto(Customer customer) =>
+        private static CustomerProfileDto MapToDto(Customer customer) =>
             new ()
             {
                 Id = customer.Id.ToString(),

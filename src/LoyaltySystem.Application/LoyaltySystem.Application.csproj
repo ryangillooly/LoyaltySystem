@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\LoyaltySystem.Contracts\LoyaltySystem.Contracts.csproj" />
     <ProjectReference Include="..\LoyaltySystem.Domain\LoyaltySystem.Domain.csproj" />
   </ItemGroup>
 

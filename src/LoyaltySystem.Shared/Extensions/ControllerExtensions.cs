@@ -1,8 +1,6 @@
-using System;
-using System.Text;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using ILogger = Serilog.ILogger;
 
 namespace LoyaltySystem.Shared.API.Extensions
 {
@@ -34,12 +32,12 @@ namespace LoyaltySystem.Shared.API.Extensions
             // Only accept prefixed IDs
             if (EntityId.TryParse<TEntityId>(idString, out entityId))
             {
-                logger?.LogInformation("Successfully parsed prefixed {TypeName}: {Id}", typeName, entityId);
+                logger?.Information("Successfully parsed prefixed {TypeName}: {Id}", typeName, entityId);
                 return null;
             }
             
             // If we got here, parsing failed
-            logger?.LogWarning("Invalid {TypeName} format: {InvalidId}", typeName, idString);
+            logger?.Warning("Invalid {TypeName} format: {InvalidId}", typeName, idString);
             entityId = default;
             
             // Create a temporary instance to get the prefix
