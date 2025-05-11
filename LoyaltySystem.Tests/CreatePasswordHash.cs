@@ -1,17 +1,16 @@
+using LoyaltySystem.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+
 namespace LoyaltySystem.Tests;
 
-public static class CreatePasswordHashTests 
+public class CreatePasswordHashTests 
 {
-    [Theory, InlineData("admin")]
-    private static void CreatePasswordHash(string password)
+    private readonly IPasswordHasher<User> _passwordHasher = new PasswordHasher<User>();
+    
+    [Fact]
+    public async Task CreatePasswordHash()
     {
-        if (string.IsNullOrEmpty(password))
-            throw new ArgumentNullException(nameof(password));
-
-        using var hmac = new System.Security.Cryptography.HMACSHA512();
-        var passwordSalt = Convert.ToBase64String(hmac.Key);
-        var passwordHash = Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password)));
-
-        var pause = new List<string>();
+        var passwordHash = _passwordHasher.HashPassword(new User(), "admin");
+        Console.WriteLine("PasswordHash: " + passwordHash);
     }
 }

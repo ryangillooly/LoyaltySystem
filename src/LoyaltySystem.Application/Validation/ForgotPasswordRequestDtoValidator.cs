@@ -1,22 +1,20 @@
 using FluentValidation;
-using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
-using LoyaltySystem.Application.DTOs.AuthDtos;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 
 namespace LoyaltySystem.Application.Validation;
 
-public abstract class LoginRequestDtoValidator : AbstractValidator<LoginRequestDto>
+public class ForgotPasswordRequestDtoValidator : AbstractValidator<ForgotPasswordRequestDto>
 {
-    protected LoginRequestDtoValidator()
+    public ForgotPasswordRequestDtoValidator()
     {
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.");
-        
         RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
             .EmailAddress().WithMessage("A valid email address is required.")
             .When(x => !string.IsNullOrEmpty(x.Email));
         
         RuleFor(x => x.UserName)
+            .NotEmpty().WithMessage("Username is required.")
             .Length(2, 100).WithMessage("Username must be between 2 and 100 characters.")
             .When(x => !string.IsNullOrEmpty(x.UserName));
         
@@ -27,4 +25,4 @@ public abstract class LoginRequestDtoValidator : AbstractValidator<LoginRequestD
             .Must(x => !string.IsNullOrEmpty(x.Email) || !string.IsNullOrEmpty(x.UserName))
             .WithMessage("Either Email or Username is required.");
     }
-} 
+}

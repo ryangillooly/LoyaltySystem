@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
@@ -20,8 +21,13 @@ namespace LoyaltySystem.Admin.API.Controllers;
 public class AuthController : BaseAuthController 
 {
     private readonly ISocialAuthService _socialAuthService;
-    public AuthController(IAuthService authService, ISocialAuthService socialAuthService, ILogger logger)
-        : base(authService, logger) => _socialAuthService = socialAuthService;
+    public AuthController(
+        IAuthService authService, 
+        ISocialAuthService socialAuthService, 
+        ILogger logger
+    )
+        : base(authService, logger) => 
+            _socialAuthService = socialAuthService;
 
     protected override string UserType => "Admin";
     protected override Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest) =>
@@ -34,12 +40,6 @@ public class AuthController : BaseAuthController
             dto => _authService.RegisterUserAsync(dto, dto.Roles, createCustomer: false, customerData: null)
         );
 
-    //protected override async Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request) =>
-    //    await _authService.SendAdminPasswordResetAsync(request.Email);
-
-    //protected override async Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request) =>
-     //   await _authService.ResetAdminPasswordAsync(request.Email, request.Token, request.NewPassword, request.ConfirmPassword);
-    
     private const string UserId = "UserId";
     
     [HttpPost("register")]

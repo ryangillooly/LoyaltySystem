@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.DTOs.Customer;
@@ -11,23 +12,27 @@ namespace LoyaltySystem.Application.Interfaces;
 public interface IAuthService 
 {
     // Authentication methods
-    Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string identifier, string password, LoginIdentifierType identifierType);
-    Task<OperationResult<AuthResponseDto>> AuthenticateForAppAsync(string identifier, string password, LoginIdentifierType identifierType, IEnumerable<RoleType> allowedRoles);
-    
+    Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto dto);
     
     // Specialized registration methods
     Task<OperationResult<UserDto>> RegisterUserAsync(RegisterUserDto registerDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null);
     
+    
     // Cross-role functionality
     Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId);
+    
+    // Password Reset
+    Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request);
+    Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request);
+    
     
     // Existing profile and user management methods
     Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto);
     
-    /// <summary>
-    /// Gets user profile details by user ID, potentially including associated customer data.
-    /// </summary>
+    // Get User Methods (Email / Id etc)
     Task<OperationResult<UserProfileDto>> GetUserByIdAsync(string userId);
+    Task<OperationResult<UserProfileDto>> GetUserByEmailAsync(string email);
+    Task<OperationResult<UserProfileDto>> GetUserByUsernameAsync(string username);
     
     /// <summary>
     /// Gets user details by associated customer ID.

@@ -54,8 +54,9 @@ public static class ApiConfiguration
             .AddJwtAuthentication(builder.Configuration)
             .AddJwtAuthorisation()
             .AddScoped<IDatabaseConnection>(_ => new PostgresConnection(postgresqlSettings.ConnectionString))
+            .AddAuthServices()
             .AddRepositories()
-            .AddServices()
+            .AddServices(builder.Configuration)
             .AddScoped<IUnitOfWork, UnitOfWork>()
             .AddScoped<IEventPublisher, ConsoleEventPublisher>()
             .AddSwagger(apiTitle);

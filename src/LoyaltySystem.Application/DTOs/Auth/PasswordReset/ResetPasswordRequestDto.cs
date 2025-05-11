@@ -1,4 +1,4 @@
-namespace LoyaltySystem.Application.DTOs.Auth;
+namespace LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 
 public class ResetPasswordRequestDto
 {

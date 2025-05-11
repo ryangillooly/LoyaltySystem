@@ -390,7 +390,6 @@ CREATE TABLE IF NOT EXISTS users
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    password_salt VARCHAR(255) NOT NULL,
     status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -556,7 +555,7 @@ BEGIN
     INSERT INTO users
     (
         id, prefixed_id, first_name, last_name, username, email, 
-        password_hash, password_salt, status, created_at, updated_at
+        password_hash, status, created_at, updated_at
     )
     VALUES
     (
@@ -566,8 +565,7 @@ BEGIN
         'admin',
         'admin',
         'admin@loyaltysystem.com',
-        'QtZoI6iYJ8FB5aRjPRPsD7vsyt2sP2UDZKioxvSFjCQ7FfPk9bQNbWtXIe9ZSHlRpAf9ANHLVl4Ggx2ZqAp06g==',
-        'wstV48ZxxP8X5Uc/D2azxH4o8MpazEVTl8uxtg0B/v8bgt960wQsKFbawtICopuVCklb0elrkB6Pgy66sSePgMRPzHn4qVToazWAii7v86qEwuODUQpXJvub/fdfUQckna0onYq0dmEN1G2kgFAApEA3FQMJgOeiGagKXv/e1V0=',
+        'AQAAAAIAAYagAAAAEMhipWjYGgWGXfBRQ3CIOi7X5sU2iAKpcZZi4rCmvnLtgzMTrHWvwuAe7LTdNCUqnA==',
         1, -- Active status
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
@@ -804,5 +802,18 @@ DROP POLICY IF EXISTS business_isolation ON businesses;
         );
 END;
 $$;
+
+-- Create Password Reset Table
+CREATE TABLE password_reset_tokens
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES Users(id),
+    token VARCHAR(256) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_passwordresettokens_userid ON password_reset_tokens(user_id);
+CREATE INDEX idx_passwordresettokens_token ON password_reset_tokens(token);
 
 COMMIT; 

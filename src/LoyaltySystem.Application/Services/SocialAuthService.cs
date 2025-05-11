@@ -90,7 +90,7 @@ public class SocialAuthService : ISocialAuthService
    
            // 5. Generate JWT
            
-           var tokenResult = GenerateTokenResult(user, request);
+           var tokenResult = _jwtService.GenerateTokenResult(user);
    
            return OperationResult<SocialAuthResponseDto>.SuccessResult(new SocialAuthResponseDto
            {
@@ -119,34 +119,6 @@ public class SocialAuthService : ISocialAuthService
            // Use Apple API to validate the token and extract user info
            // Return SocialUserInfo { Id, Email, FirstName, LastName }
            throw new NotImplementedException();
-       }
-       
-       private TokenResult GenerateTokenResult(User user, SocialAuthRequestDto request)
-       {
-           var claims = new List<Claim>();
-        
-           if (user.Id is { })
-               claims.Add(new Claim("UserId", user.Id.ToString()));
-        
-           if (!string.IsNullOrEmpty(user.UserName))
-               claims.Add(new Claim("Username", user.UserName));
-        
-           if (!string.IsNullOrEmpty(user.Email))
-               claims.Add(new Claim("Email", user.Email));
-        
-           if (user.Status is { })
-               claims.Add(new Claim("Status", user.Status.ToString()));
-        
-           if (user.CustomerId is { })
-               claims.Add(new Claim("CustomerId", user.CustomerId.ToString())); // Add prefixed customer ID
-
-           if (request.Provider is { })
-               claims.Add(new Claim("Provider", request.Provider.ToString()));
-           
-           claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Role.ToString()))); // Access Role property of UserRole
-        
-           // Call the service to get the TokenResult
-           return _jwtService.GenerateToken(claims); 
        }
    }
    

@@ -1,13 +1,12 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
-using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using ILogger = Serilog.ILogger;
@@ -20,10 +19,11 @@ public class AuthController : BaseAuthController
 {
     private readonly ISocialAuthService _socialAuthService;
     private readonly ICustomerService _customerService;
+    
     public AuthController(
         IAuthService authService, 
         ICustomerService customerService, 
-        ISocialAuthService socialAuthService, 
+        ISocialAuthService socialAuthService,
         ILogger logger)
         : base(authService, logger)
     {
@@ -47,10 +47,6 @@ public class AuthController : BaseAuthController
             new[] { RoleType.Customer },
             dto => _authService.RegisterUserAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
         );
-    // protected override Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request) =>
-       // throw new NotImplementedException();
-    // protected override Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request) =>
-       // throw new NotImplementedException();
 
     protected override async Task<OperationResult<ProfileDto>> GetProfileInternalAsync()
     {

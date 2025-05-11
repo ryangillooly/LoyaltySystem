@@ -1,3 +1,4 @@
+using LoyaltySystem.Domain.Entities;
 using System.Security.Claims;
 using LoyaltySystem.Domain.Models;
 
@@ -18,5 +19,6 @@ public interface IJwtService
     Guid? GetUserIdFromToken(string token);
     string GetRoleFromToken(string token);
     bool IsTokenValid(string token);
+    public TokenResult GenerateTokenResult(User user);
     DateTime GetTokenExpirationTime(string token);
 }

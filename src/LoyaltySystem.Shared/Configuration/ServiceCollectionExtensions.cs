@@ -1,11 +1,15 @@
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
+using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Repositories;
+using LoyaltySystem.Infrastructure.Services;
 using LoyaltySystem.Shared.API.Attributes;
 using LoyaltySystem.Shared.API.Settings;
+using LoyaltySystem.Shared.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -67,17 +71,39 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    public static IServiceCollection AddServices(this IServiceCollection services)
+
+    public static IServiceCollection AddAuthServices(this IServiceCollection services)
     {
         services
-            .AddScoped<IAuthService, AuthService>()
+            .AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
+            .AddScoped<ITokenService, TokenService>()
+            .AddScoped<IPasswordHasher<User>, PasswordHasher<User>>()
+            .AddScoped<IAuthService, AuthService>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddEmailService(this IServiceCollection services, IConfiguration configuration)
+    {
+        var smtpSection = configuration.GetSection("Smtp");
+        services.
+            Configure<SmtpSettings>(smtpSection)
+            .AddScoped<IEmailService, EmailService>();
+        
+        return services;
+    }
+    
+    public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services
             .AddScoped<ILoyaltyCardService, LoyaltyCardService>()
             .AddScoped<ILoyaltyRewardsService, LoyaltyRewardsService>()
             .AddScoped<ILoyaltyProgramService, LoyaltyProgramService>()
             .AddScoped<IBusinessService, BusinessService>()
             .AddScoped<IBrandService, BrandService>()
             .AddScoped<IStoreService, StoreService>()
-            .AddScoped<ICustomerService, CustomerService>();
+            .AddScoped<ICustomerService, CustomerService>()
+            .AddEmailService(configuration);
 
         return services;
     }

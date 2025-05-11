@@ -1,3 +1,5 @@
+using LoyaltySystem.Application.DTOs.Auth.Social;
+using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -51,7 +53,7 @@ public class JwtService : IJwtService
         {
             // Get the User ID and Roles from claims for logging purposes (optional)
             var enumerable = claims.ToList();
-            var userIdForLog = enumerable.Single(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? "unknown";
+            var userIdForLog = enumerable.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? "unknown";
             var rolesForLog = string.Join(", ", enumerable.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
             var symmetricKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
@@ -166,5 +168,32 @@ public class JwtService : IJwtService
             _logger.Warning(ex, "Error extracting token expiration time");
             return DateTime.MinValue;
         }
+    }
+    
+    public TokenResult GenerateTokenResult(User user)
+    {
+        var claims = new List<Claim>();
+        
+        if (user.Id is { })
+        {
+            claims.Add(new Claim("UserId", user.Id.ToString()));
+            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()));
+        }
+
+        if (!string.IsNullOrEmpty(user.UserName))
+            claims.Add(new Claim("Username", user.UserName));
+        
+        if (!string.IsNullOrEmpty(user.Email))
+            claims.Add(new Claim("Email", user.Email));
+        
+        if (user.Status is { })
+            claims.Add(new Claim("Status", user.Status.ToString()));
+        
+        if (user.CustomerId is { })
+            claims.Add(new Claim("CustomerId", user.CustomerId.ToString())); // Add prefixed customer ID
+
+        claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role.Role.ToString()))); // Access Role property of UserRole
+        
+        return GenerateToken(claims); 
     }
 }

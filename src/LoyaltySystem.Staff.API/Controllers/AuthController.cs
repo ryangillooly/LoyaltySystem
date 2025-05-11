@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
@@ -47,8 +48,4 @@ public class AuthController : BaseAuthController
     }
     protected override Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
         throw new NotImplementedException();
-    //protected override Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request) =>
-      //  throw new NotImplementedException();
-    // protected override Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request) =>
-       // throw new NotImplementedException();
 }

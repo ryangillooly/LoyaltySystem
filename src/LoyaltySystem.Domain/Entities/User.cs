@@ -16,7 +16,6 @@ namespace LoyaltySystem.Domain.Entities
             string userName,
             string email,
             string passwordHash,
-            string passwordSalt,
             CustomerId? customerId) : base(new UserId())
         {
             ArgumentNullException.ThrowIfNull(firstName);
@@ -24,14 +23,12 @@ namespace LoyaltySystem.Domain.Entities
             ArgumentNullException.ThrowIfNull(userName);
             ArgumentNullException.ThrowIfNull(email);
             ArgumentNullException.ThrowIfNull(passwordHash);
-            ArgumentNullException.ThrowIfNull(passwordSalt);
             
             FirstName = firstName;
             LastName = lastName;
             Email = email;
             UserName = userName;
             PasswordHash = passwordHash;
-            PasswordSalt = passwordSalt;
             Status = UserStatus.Active;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
@@ -44,8 +41,7 @@ namespace LoyaltySystem.Domain.Entities
         public string LastName { get; private set; }
         public string UserName { get; private set; }
         public string Email { get; private set; }
-        public string PasswordHash { get; private set; }
-        public string PasswordSalt { get; private set; }
+        public string PasswordHash { get; set; }
         public UserStatus Status { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
@@ -69,13 +65,11 @@ namespace LoyaltySystem.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
         
-        public void UpdatePassword(string passwordHash, string passwordSalt)
+        public void UpdatePassword(string passwordHash)
         {
             ArgumentNullException.ThrowIfNull(passwordHash, nameof(passwordHash));
-            ArgumentNullException.ThrowIfNull(passwordSalt, nameof(passwordSalt));
                 
             PasswordHash = passwordHash;
-            PasswordSalt = passwordSalt;
             UpdatedAt = DateTime.UtcNow;
         }
         

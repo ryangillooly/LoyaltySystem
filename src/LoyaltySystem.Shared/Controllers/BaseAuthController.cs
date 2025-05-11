@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
@@ -14,12 +15,14 @@ namespace LoyaltySystem.Shared.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public abstract class BaseAuthController : ControllerBase
+public abstract class BaseAuthController : ControllerBase 
 {
     protected readonly IAuthService _authService;
     protected readonly ILogger _logger;
     
-    protected BaseAuthController(IAuthService authService, ILogger logger)
+    protected BaseAuthController(
+        IAuthService authService,  
+        ILogger logger)
     {
         _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -48,8 +51,8 @@ public abstract class BaseAuthController : ControllerBase
     {
         switch (request.IdentifierType)
         {
-            case LoginIdentifierType.Email:
-            case LoginIdentifierType.Username:
+            case AuthIdentifierType.Email:
+            case AuthIdentifierType.Username:
                 _logger.Information("{UserType} login attempt using {IdentifierType}: {IdentifierValue}", UserType, request.IdentifierType, request.Identifier);
                 break;
 
@@ -58,11 +61,9 @@ public abstract class BaseAuthController : ControllerBase
                 return OperationResult<AuthResponseDto>.FailureResult(new [] { "Email or username must be provided" });
         }
             
-        return await _authService.AuthenticateAsync(request.Identifier, request.Password, request.IdentifierType);
+        return await _authService.AuthenticateAsync(request);
     }
-
     
-    [AllowAnonymous]
     [HttpPost("register")]
     public virtual async Task<IActionResult> Register(RegisterUserDto request)
     {
@@ -136,33 +137,35 @@ public abstract class BaseAuthController : ControllerBase
     public virtual async Task<IActionResult> SocialLogin([FromBody] SocialAuthRequestDto request)
     {
         var result = await SocialLoginInternalAsync(request);
+        
         if (!result.Success)
             return Unauthorized(new { message = result.Errors });
+        
         return Ok(result.Data);
     }
     protected abstract Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request);
-
-    /*
+    
     [AllowAnonymous]
     [HttpPost("forgot-password")]
     public virtual async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
     {
-        var result = await ForgotPasswordInternalAsync(request);
+        var result = await _authService.ForgotPasswordAsync(request);
+        
         if (!result.Success)
             return BadRequest(new { message = result.Errors });
+        
         return Ok(new { message = "If the account exists, a password reset email has been sent." });
     }
-    protected abstract Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request);
 
     [AllowAnonymous]
     [HttpPost("reset-password")]
     public virtual async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
     {
-        var result = await ResetPasswordInternalAsync(request);
+        var result = await _authService.ResetPasswordAsync(request);
+        
         if (!result.Success)
             return BadRequest(new { message = result.Errors });
+        
         return Ok(new { message = "Password has been reset." });
     }
-    protected abstract Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request);
-    */
 }

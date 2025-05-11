@@ -44,7 +44,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     u.username AS ""Username"", 
                     u.email AS ""Email"", 
                     u.password_hash AS ""PasswordHash"", 
-                    u.password_salt AS ""PasswordSalt"", 
                     COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
                     u.created_at AS ""CreatedAt"", 
                     u.updated_at AS ""UpdatedAt"", 
@@ -76,7 +75,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     u.username AS ""Username"", 
                     u.email AS ""Email"", 
                     u.password_hash AS ""PasswordHash"", 
-                    u.password_salt AS ""PasswordSalt"", 
                     COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
                     u.created_at AS ""CreatedAt"", 
                     u.updated_at AS ""UpdatedAt"", 
@@ -117,17 +115,21 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    u.id AS ""Id"", 
-                    u.username AS ""Username"", 
-                    u.email AS ""Email"", 
-                    u.password_hash AS ""PasswordHash"", 
-                    u.password_salt AS ""PasswordSalt"", 
-                    COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
-                    u.created_at AS ""CreatedAt"", 
-                    u.updated_at AS ""UpdatedAt"", 
-                    u.last_login_at AS ""LastLoginAt""
-                FROM users u
-                WHERE u.email = @Email";
+                    u.id AS Id, 
+                    u.prefixed_id as PrefixedId,
+                    u.first_name AS FirstName,
+                    u.last_name AS LastName,
+                    u.username AS Username, 
+                    u.email AS Email, 
+                    u.password_hash AS PasswordHash, 
+                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
+                    u.created_at AS CreatedAt, 
+                    u.updated_at AS UpdatedAt, 
+                    u.last_login_at AS LastLoginAt
+                FROM 
+                    users u
+                WHERE 
+                    u.email = @Email";
 
             var connection = await _dbConnection.GetConnectionAsync();
             var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Email = email });
@@ -147,20 +149,25 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    u.id AS ""Id"", 
-                    u.username AS ""Username"", 
-                    u.email AS ""Email"", 
-                    u.password_hash AS ""PasswordHash"", 
-                    u.password_salt AS ""PasswordSalt"", 
-                    COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
-                    u.created_at AS ""CreatedAt"", 
-                    u.updated_at AS ""UpdatedAt"", 
-                    u.last_login_at AS ""LastLoginAt""
-                FROM users u
-                JOIN user_roles ur ON u.id = ur.user_id
-                WHERE ur.role = @Role
-                ORDER BY u.created_at DESC
-                LIMIT @Take OFFSET @Skip";
+                    u.id AS Id, 
+                    u.username AS Username, 
+                    u.email AS Email, 
+                    u.password_hash AS PasswordHash, 
+                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
+                    u.created_at AS CreatedAt, 
+                    u.updated_at AS UpdatedAt, 
+                    u.last_login_at AS LastLoginAt
+                FROM 
+                    users       u INNER JOIN
+                    user_roles ur ON u.id = ur.user_id
+                WHERE 
+                    ur.role = @Role
+                ORDER BY 
+                    u.created_at DESC
+                LIMIT 
+                    @Take 
+                OFFSET 
+                    @Skip";
 
             var connection = await _dbConnection.GetConnectionAsync();
             var users = await connection.QueryAsync<User>(sql, new 
@@ -186,16 +193,15 @@ namespace LoyaltySystem.Infrastructure.Repositories
         {
             const string sql = @"
                 SELECT 
-                    u.id AS ""Id"", 
-                    u.username AS ""Username"", 
-                    u.email AS ""Email"", 
-                    u.password_hash AS ""PasswordHash"", 
-                    u.password_salt AS ""PasswordSalt"", 
-                    COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
-                    u.created_at AS ""CreatedAt"", 
-                    u.updated_at AS ""UpdatedAt"", 
-                    u.last_login_at AS ""LastLoginAt"",
-                    c.id AS ""CustomerId""
+                    u.id AS Id, 
+                    u.username AS Username, 
+                    u.email AS Email, 
+                    u.password_hash AS PasswordHash, 
+                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
+                    u.created_at AS CreatedAt, 
+                    u.updated_at AS UpdatedAt, 
+                    u.last_login_at AS LastLoginAt,
+                    c.id AS CustomerId
                 FROM 
                     users u INNER JOIN
                     customers c ON u.id = c.user_id
@@ -225,12 +231,12 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = @"
                 INSERT INTO users 
                 (
-                    id, prefixed_id, first_name, last_name, username, email, password_hash, password_salt, 
+                    id, prefixed_id, first_name, last_name, username, email, password_hash, 
                     status, created_at, updated_at, last_login_at
                 ) 
                 VALUES 
                 (
-                    @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @PasswordHash, @PasswordSalt, 
+                    @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @PasswordHash, 
                     @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
                 )";
 
@@ -246,7 +252,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.UserName,
                 user.Email,
                 user.PasswordHash,
-                user.PasswordSalt,
                 Status = (short)user.Status, // Cast enum to short
                 user.CreatedAt,
                 user.UpdatedAt,
@@ -286,7 +291,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     username = @UserName,
                     email = @Email,
                     password_hash = @PasswordHash,
-                    password_salt = @PasswordSalt,
                     status = @Status,
                     updated_at = @UpdatedAt,
                     last_login_at = @LastLoginAt
@@ -302,7 +306,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.UserName,
                 user.Email,
                 user.PasswordHash,
-                user.PasswordSalt,
                 Status = (int)user.Status,
                 user.UpdatedAt,
                 user.LastLoginAt
