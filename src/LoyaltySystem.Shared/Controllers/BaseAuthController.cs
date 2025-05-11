@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
@@ -25,26 +26,8 @@ public abstract class BaseAuthController : ControllerBase
     }
 
     protected abstract string UserType { get; }
-    protected abstract Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest);
-    protected virtual async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto request)
-    {
-        switch (request.IdentifierType)
-        {
-            case LoginIdentifierType.Email:
-            case LoginIdentifierType.Username:
-                _logger.Information("{UserType} login attempt using {IdentifierType}: {IdentifierValue}", UserType, request.IdentifierType, request.Identifier);
-                break;
-
-            default:
-                _logger.Warning("{UserType} login attempt with no identifier provided", UserType);
-                return OperationResult<AuthResponseDto>.FailureResult(new [] { "Email or username must be provided" });
-        }
-            
-        return await _authService.AuthenticateAsync(request.Identifier, request.Password, request.IdentifierType);
-    }
     
-    protected abstract Task<OperationResult<ProfileDto>> GetProfileInternalAsync();
-    
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
@@ -61,7 +44,25 @@ public abstract class BaseAuthController : ControllerBase
         _logger.Information("Successful {UserType} login for {Type} {Id}", UserType, request.IdentifierType.ToString(), request.Identifier);
         return Ok(result.Data);
     }
+    protected virtual async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto request)
+    {
+        switch (request.IdentifierType)
+        {
+            case LoginIdentifierType.Email:
+            case LoginIdentifierType.Username:
+                _logger.Information("{UserType} login attempt using {IdentifierType}: {IdentifierValue}", UserType, request.IdentifierType, request.Identifier);
+                break;
 
+            default:
+                _logger.Warning("{UserType} login attempt with no identifier provided", UserType);
+                return OperationResult<AuthResponseDto>.FailureResult(new [] { "Email or username must be provided" });
+        }
+            
+        return await _authService.AuthenticateAsync(request.Identifier, request.Password, request.IdentifierType);
+    }
+
+    
+    [AllowAnonymous]
     [HttpPost("register")]
     public virtual async Task<IActionResult> Register(RegisterUserDto request)
     {
@@ -85,7 +86,8 @@ public abstract class BaseAuthController : ControllerBase
         _logger.Information("Successful {UserType} registration for email: {Email}", UserType, request.Email);
         return CreatedAtAction(nameof(GetProfile), result.Data);
     }
-
+    protected abstract Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest);
+    
     // TODO: Add Customer Profile as well as user profile info
     [Authorize]
     [HttpGet("profile")]
@@ -100,6 +102,7 @@ public abstract class BaseAuthController : ControllerBase
             
         return Ok(result.Data);
     }
+    protected abstract Task<OperationResult<ProfileDto>> GetProfileInternalAsync();
 
     [Authorize]
     [HttpPut("/users/{userId}/profile")]
@@ -127,4 +130,39 @@ public abstract class BaseAuthController : ControllerBase
         _logger.Information("Profile updated successfully for user ID: {UserId}", userId);
         return Ok(result.Data);
     }
+    
+    [AllowAnonymous]
+    [HttpPost("social-login")]
+    public virtual async Task<IActionResult> SocialLogin([FromBody] SocialAuthRequestDto request)
+    {
+        var result = await SocialLoginInternalAsync(request);
+        if (!result.Success)
+            return Unauthorized(new { message = result.Errors });
+        return Ok(result.Data);
+    }
+    protected abstract Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request);
+
+    /*
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public virtual async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+    {
+        var result = await ForgotPasswordInternalAsync(request);
+        if (!result.Success)
+            return BadRequest(new { message = result.Errors });
+        return Ok(new { message = "If the account exists, a password reset email has been sent." });
+    }
+    protected abstract Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request);
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public virtual async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+    {
+        var result = await ResetPasswordInternalAsync(request);
+        if (!result.Success)
+            return BadRequest(new { message = result.Errors });
+        return Ok(new { message = "Password has been reset." });
+    }
+    protected abstract Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request);
+    */
 }

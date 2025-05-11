@@ -19,6 +19,13 @@ namespace LoyaltySystem.Domain.Entities
             string passwordSalt,
             CustomerId? customerId) : base(new UserId())
         {
+            ArgumentNullException.ThrowIfNull(firstName);
+            ArgumentNullException.ThrowIfNull(lastName);
+            ArgumentNullException.ThrowIfNull(userName);
+            ArgumentNullException.ThrowIfNull(email);
+            ArgumentNullException.ThrowIfNull(passwordHash);
+            ArgumentNullException.ThrowIfNull(passwordSalt);
+            
             FirstName = firstName;
             LastName = lastName;
             Email = email;
@@ -32,10 +39,6 @@ namespace LoyaltySystem.Domain.Entities
             CustomerId = customerId ?? new CustomerId();
         }
         
-        /// <summary>
-        /// The generated human-readable prefixed ID (e.g., usr_xxxx).
-        /// Should be generated and assigned just before saving the entity for the first time.
-        /// </summary>
         public string PrefixedId { get; set; } = string.Empty;
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
@@ -52,8 +55,7 @@ namespace LoyaltySystem.Domain.Entities
         
         public void UpdateEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email cannot be empty.", nameof(email));
+            ArgumentNullException.ThrowIfNull(email, nameof(email));
                 
             Email = email;
             UpdatedAt = DateTime.UtcNow;
@@ -61,8 +63,7 @@ namespace LoyaltySystem.Domain.Entities
         
         public void UpdateUserName(string userName)
         {
-            if (string.IsNullOrWhiteSpace(userName))
-                throw new ArgumentException("Username cannot be empty.", nameof(userName));
+            ArgumentNullException.ThrowIfNull(userName, nameof(userName));
                 
             UserName = userName;
             UpdatedAt = DateTime.UtcNow;
@@ -70,11 +71,8 @@ namespace LoyaltySystem.Domain.Entities
         
         public void UpdatePassword(string passwordHash, string passwordSalt)
         {
-            if (string.IsNullOrWhiteSpace(passwordHash))
-                throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
-                
-            if (string.IsNullOrWhiteSpace(passwordSalt))
-                throw new ArgumentException("Password salt cannot be empty.", nameof(passwordSalt));
+            ArgumentNullException.ThrowIfNull(passwordHash, nameof(passwordHash));
+            ArgumentNullException.ThrowIfNull(passwordSalt, nameof(passwordSalt));
                 
             PasswordHash = passwordHash;
             PasswordSalt = passwordSalt;
@@ -89,6 +87,8 @@ namespace LoyaltySystem.Domain.Entities
         
         public void LinkToCustomer(string customerId)
         {
+            ArgumentNullException.ThrowIfNull(customerId, nameof(customerId));
+            
             CustomerId = EntityId.Parse<CustomerId>(customerId);
             UpdatedAt = DateTime.UtcNow;
             AddRole(RoleType.Customer);
@@ -96,19 +96,27 @@ namespace LoyaltySystem.Domain.Entities
         
         public void AddRole(RoleType role)
         {
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            
             if (!HasRole(role))
                 _roles.Add(new UserRole(Id, role));
         }
         
         public void RemoveRole(RoleType role)
         {
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            
             var roleToRemove = _roles.Find(r => r.Role == role);
             if (roleToRemove is { })
                 _roles.Remove(roleToRemove);
         }
-        
-        public bool HasRole(RoleType role) => _roles.Exists(r => r.Role == role);
-        
+
+        public bool HasRole(RoleType role)
+        {
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            return _roles.Exists(r => r.Role == role);
+        }
+
         public void Activate()
         {
             Status = UserStatus.Active;

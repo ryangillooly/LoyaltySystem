@@ -26,6 +26,12 @@ public static class ServiceCollectionExtensions
             .WriteTo.Console());
     }
 
+    public static IServiceCollection AddSocialAuth(this IServiceCollection services)
+    {
+        services.AddScoped<ISocialAuthService, SocialAuthService>();
+        return services;
+    }
+    
     public static IServiceCollection AddSwagger(this IServiceCollection services, string apiTitle)
     {
         services.AddSwaggerGen(c =>

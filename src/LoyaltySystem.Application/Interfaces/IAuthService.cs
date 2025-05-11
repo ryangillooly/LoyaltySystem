@@ -1,6 +1,8 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
+using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 
@@ -12,10 +14,9 @@ public interface IAuthService
     Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string identifier, string password, LoginIdentifierType identifierType);
     Task<OperationResult<AuthResponseDto>> AuthenticateForAppAsync(string identifier, string password, LoginIdentifierType identifierType, IEnumerable<RoleType> allowedRoles);
     
+    
     // Specialized registration methods
-    Task<OperationResult<UserDto>> RegisterCustomerAsync(RegisterUserDto registerDto);
-    Task<OperationResult<UserDto>> RegisterStaffAsync(RegisterUserDto registerDto);
-    Task<OperationResult<UserDto>> RegisterAdminAsync(RegisterUserDto registerDto);
+    Task<OperationResult<UserDto>> RegisterUserAsync(RegisterUserDto registerDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null);
     
     // Cross-role functionality
     Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId);

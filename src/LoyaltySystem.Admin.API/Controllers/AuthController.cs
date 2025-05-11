@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
@@ -18,14 +19,29 @@ namespace LoyaltySystem.Admin.API.Controllers;
 [Route("api/auth")]
 public class AuthController : BaseAuthController 
 {
-    public AuthController(IAuthService authService, ILogger logger)
-        : base(authService, logger) { }
+    private readonly ISocialAuthService _socialAuthService;
+    public AuthController(IAuthService authService, ISocialAuthService socialAuthService, ILogger logger)
+        : base(authService, logger) => _socialAuthService = socialAuthService;
 
-    private const string UserId = "UserId";
     protected override string UserType => "Admin";
-    protected override async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest) =>
+    protected override Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest) =>
         throw new NotImplementedException();
 
+    protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
+        await _socialAuthService.AuthenticateAsync(
+            request,
+            new[] { RoleType.Admin, RoleType.Manager, RoleType.User },
+            dto => _authService.RegisterUserAsync(dto, dto.Roles, createCustomer: false, customerData: null)
+        );
+
+    //protected override async Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request) =>
+    //    await _authService.SendAdminPasswordResetAsync(request.Email);
+
+    //protected override async Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request) =>
+     //   await _authService.ResetAdminPasswordAsync(request.Email, request.Token, request.NewPassword, request.ConfirmPassword);
+    
+    private const string UserId = "UserId";
+    
     [HttpPost("register")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public override async Task<IActionResult> Register(RegisterUserDto request)
@@ -52,7 +68,7 @@ public class AuthController : BaseAuthController
             return Forbid();
 
         // Register the user (using admin registration logic for both roles)
-        var result = await _authService.RegisterAdminAsync(request);
+        var result = await _authService.RegisterUserAsync(request, new [] { RoleType.Admin });
         if (!result.Success)
             return BadRequest(new { message = result.Errors });
 

@@ -165,7 +165,7 @@ public class RewardsController : ControllerBase
         }
     }
 
-    [HttpDelete("/{rewardId}")]
+    [HttpDelete("{rewardId}")]
     public async Task<IActionResult> DeleteAsync(string programId, string rewardId)
     {
         _logger.LogInformation("Admin deleting reward ID: {RewardId} from program ID: {ProgramId}", 

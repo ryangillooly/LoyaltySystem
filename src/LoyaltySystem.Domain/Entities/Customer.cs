@@ -25,18 +25,15 @@ namespace LoyaltySystem.Domain.Entities
             bool marketingConsent = false,
             CustomerId? customerId = null) : base(customerId ?? new CustomerId())
         {
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+            ArgumentNullException.ThrowIfNull(firstName);
+            ArgumentNullException.ThrowIfNull(lastName);
+            ArgumentNullException.ThrowIfNull(username);
+            ArgumentNullException.ThrowIfNull(email);
+            ArgumentNullException.ThrowIfNull(phone);
             
-            if (string.IsNullOrWhiteSpace(lastName))
-                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
-
-            if (!string.IsNullOrWhiteSpace(email))
-            {
-                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
-                    throw new ArgumentException("Invalid email format", nameof(email));
-            }
+            const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
+                throw new ArgumentException("Invalid email format", nameof(email));
             
             FirstName = firstName;
             LastName = lastName;
@@ -49,11 +46,7 @@ namespace LoyaltySystem.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
             _loyaltyCards = new List<LoyaltyCard>();
         }
-        
-        /// <summary>
-        /// The generated human-readable prefixed ID (e.g., cus_xxxx). 
-        /// Should be generated and assigned just before saving the entity for the first time.
-        /// </summary>
+
         public string PrefixedId { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
@@ -66,8 +59,6 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime? UpdatedAt { get; set; }
         
         public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
-
-        
         
         public void Update(
             string firstName,
@@ -78,18 +69,15 @@ namespace LoyaltySystem.Domain.Entities
             Address? address,
             bool marketingConsent)
         {
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+            ArgumentNullException.ThrowIfNull(firstName);
+            ArgumentNullException.ThrowIfNull(lastName);
+            ArgumentNullException.ThrowIfNull(username);
+            ArgumentNullException.ThrowIfNull(email);
+            ArgumentNullException.ThrowIfNull(phone);
             
-            if (string.IsNullOrWhiteSpace(lastName))
-                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
-
-            if (!string.IsNullOrWhiteSpace(email))
-            {
-                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
-                    throw new ArgumentException("Invalid email format", nameof(email));
-            }
+            const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
+                throw new ArgumentException("Invalid email format", nameof(email));
 
             FirstName = firstName;
             LastName = lastName;

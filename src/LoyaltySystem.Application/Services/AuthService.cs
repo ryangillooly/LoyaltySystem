@@ -2,6 +2,7 @@ using FluentValidation;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
 using LoyaltySystem.Application.DTOs.AuthDtos;
+using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Validation;
 using LoyaltySystem.Domain.Common;
@@ -40,9 +41,6 @@ public class AuthService : IAuthService
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
     }
 
-    /// <summary>
-    /// Authenticates a user using either username or email, and returns a JWT token.
-    /// </summary>
     public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(string identifier, string password, LoginIdentifierType identifierType)
     {
         User? user;
@@ -87,10 +85,7 @@ public class AuthService : IAuthService
         
         return OperationResult<AuthResponseDto>.SuccessResult(response);
     }
-        
-    /// <summary>
-    /// Authenticates a user for a specific application, checking they have the required roles.
-    /// </summary>
+    
     public async Task<OperationResult<AuthResponseDto>> AuthenticateForAppAsync(
         string identifier, 
         string password, 
@@ -101,153 +96,24 @@ public class AuthService : IAuthService
         return await AuthenticateAsync(identifier, password, identifierType);
     }
         
-    /// <summary>
-    /// Registers a customer user, creating both Customer and User records atomically.
-    /// </summary>
-    public async Task<OperationResult<UserDto>> RegisterCustomerAsync(RegisterUserDto registerDto)
+    
+    public async Task<OperationResult<UserDto>> RegisterUserAsync(RegisterUserDto registerDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
     {
-        var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
-        if (existingUserByEmail is { })
-            return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
-
-        var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
-         if (existingUserByUsername is { })
-            return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
-
-        User? newUser = null;
-
-        try
-        {
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
-            {
-                // Create new Customer in the Database
-                var customer = new Customer
-                (
-                    registerDto.FirstName,
-                    registerDto.LastName,
-                    registerDto.UserName,
-                    registerDto.Email,
-                    registerDto.Phone,
-                    null, // Address is not in RegisterUserDto
-                    false, // Marketing consent default? Or add to DTO?
-                    null
-                );
-                
-                customer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                if (customer.Id is null)
-                    throw new InvalidOperationException("Failed to create customer or retrieve customer ID.");
-                
-                CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
-
-                // Create a new User in the database, linking to the new Customer Id
-                newUser = new User
-                (
-                    registerDto.FirstName,
-                    registerDto.LastName,
-                    registerDto.UserName,
-                    registerDto.Email,
-                    passwordHash,
-                    passwordSalt,
-                    customer.Id 
-                );
-                
-                newUser.AddRole(RoleType.Customer); 
-                
-                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
-                await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
-             });
-            
-            if (newUser is null)
-            {
-                 _logger.Error("User object was null after successful customer registration transaction for email {Email}", registerDto.Email);
-                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
-            }
-            
-            return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
-        }
-        catch (Exception ex)
-        {
-             _logger.Error(ex, "Error during customer registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
-            return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
-        }
-    }
-        
-    /// <summary>
-    /// Registers a staff user atomically.
-    /// </summary>
-    public async Task<OperationResult<UserDto>> RegisterStaffAsync(RegisterUserDto registerDto)
-    {
-        var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
-        if (existingUserByEmail is { })
-            return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
-
-        var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
-         if (existingUserByUsername is { })
-            return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
-
-        User? newUser = null;
-
-        try
-        {
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
-            {
-                // 1. Create Password Hash
-                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
-
-                // 2. Create and Save User with Staff Role
-                 newUser = new User(
-                    registerDto.FirstName,
-                    registerDto.LastName,
-                    registerDto.UserName,
-                    registerDto.Email,
-                    passwordHash,
-                    passwordSalt,
-                    null // Staff users are not linked to a customer record
-                 );
-                newUser.AddRole(RoleType.Staff);
-
-                newUser.PrefixedId = newUser.Id.ToString(); // Set the prefixed ID before saving
-                // AddAsync uses the transaction
-                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
-             });
-
-            if (newUser is null)
-            {
-                 _logger.Error("Staff User object was null after successful registration transaction for email {Email}", registerDto.Email);
-                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
-            }
-
-            return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
-        }
-        catch (Exception ex)
-        {
-             _logger.Error(ex, "Error during staff registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
-            return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
-        }
-    }
-        
-    /// <summary>
-    /// Registers an admin user atomically.
-    /// </summary>
-    public async Task<OperationResult<UserDto>> RegisterAdminAsync(RegisterUserDto registerDto)
-    {
-        // Basic validation
         var validator = new RegisterUserDtoValidator();
-        var validationResult = await validator.ValidateAsync(registerDto);
-
-        if (!validationResult.IsValid)
+        var result = await validator.ValidateAsync(registerDto);
+        
+        if (!result.IsValid)
         {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            var errors = result.Errors.Select(e => e.ErrorMessage).ToList();
             return OperationResult<UserDto>.FailureResult(errors);
         }
         
-        // Check for existing user *before* transaction
-         var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
+        var existingUserByEmail = await _userRepository.GetByEmailAsync(registerDto.Email);
         if (existingUserByEmail is { })
             return OperationResult<UserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
 
         var existingUserByUsername = await _userRepository.GetByUsernameAsync(registerDto.UserName);
-         if (existingUserByUsername is { })
+        if (existingUserByUsername is { })
             return OperationResult<UserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
 
         User? newUser = null;
@@ -256,11 +122,28 @@ public class AuthService : IAuthService
         {
             await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                // 1. Create Password Hash
+                CustomerId customerId = null;
+                if (createCustomer)
+                {
+                    // Create new Customer in the Database
+                    var customer = new Customer
+                    (
+                        registerDto.FirstName,
+                        registerDto.LastName,
+                        registerDto.UserName,
+                        registerDto.Email,
+                        registerDto.Phone,
+                        customerData?.Address,
+                        customerData?.MarketingConsent ?? false,
+                        null
+                    );
+                    var customerOutput = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
+                    customerId = customerOutput.Id ?? throw new InvalidOperationException("Failed to create customer or retrieve customer ID.");
+                }
+
                 CreatePasswordHash(registerDto.Password, out string passwordHash, out string passwordSalt);
 
-                // 2. Create and Save User with Admin Role
-                newUser = new User
+                newUser = new User 
                 (
                     registerDto.FirstName,
                     registerDto.LastName,
@@ -268,34 +151,31 @@ public class AuthService : IAuthService
                     registerDto.Email,
                     passwordHash,
                     passwordSalt,
-                    null // Admin users are not linked to a customer record
+                    customerId
                 );
-                 
-                foreach (var role in registerDto.Roles) 
-                    newUser.AddRole(role); 
 
-                newUser.PrefixedId = newUser.Id.ToString(); 
+                foreach (var role in roles) 
+                    newUser.AddRole(role);
+
+                newUser.PrefixedId = newUser.Id.ToString();
                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
-             });
+            });
 
-             if (newUser is null)
+            if (newUser is null)
             {
-                 _logger.Error("Admin User object was null after successful registration transaction for email {Email}", registerDto.Email);
-                 return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
+                _logger.Error("User object was null after registration transaction for email {Email}", registerDto.Email);
+                return OperationResult<UserDto>.FailureResult("Registration completed but failed to retrieve user details.");
             }
 
             return OperationResult<UserDto>.SuccessResult(MapUserToDto(newUser));
         }
         catch (Exception ex)
         {
-             _logger.Error(ex, "Error during admin registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
+            _logger.Error(ex, "Error during registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
             return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
         }
     }
-
-    /// <summary>
-    /// Adds the Customer role to an existing user.
-    /// </summary>
+    
     public async Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId)
     {
         UserId userIdObj;
@@ -320,11 +200,6 @@ public class AuthService : IAuthService
         var updatedUser = await _userRepository.GetByIdAsync(userIdObj);
         return OperationResult<UserDto>.SuccessResult(MapUserToDto(updatedUser!));
     }
-        
-    /// <summary>
-    /// Updates a user's profile information (email, username).
-    /// Password update is handled separately.
-    /// </summary>
     public async Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto)
     {
         UserId userIdObj;
@@ -357,10 +232,6 @@ public class AuthService : IAuthService
 
         return OperationResult<UserDto>.SuccessResult(MapUserToDto(user));
     }
-        
-    /// <summary>
-    /// Gets user profile details by user ID, including customer information if available.
-    /// </summary>
     public async Task<OperationResult<UserProfileDto>> GetUserByIdAsync(string userId)
     {
         UserId userIdObj;
@@ -432,11 +303,6 @@ public class AuthService : IAuthService
             
         return OperationResult<UserProfileDto>.SuccessResult(profileDto);
     }
-        
-    /// <summary>
-    /// Gets user details by associated customer ID. 
-    /// NOTE: This still returns UserDto, might need refactoring similar to GetUserByIdAsync if profile data is needed.
-    /// </summary>
     public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(string customerId)
     {
         CustomerId customerIdObj;
@@ -471,11 +337,6 @@ public class AuthService : IAuthService
             ? OperationResult<UserDto>.FailureResult("User not found for the given Customer ID.")
             : OperationResult<UserDto>.SuccessResult(tempMapper(user)); // Use temp mapper
     }
-        
-    /// <summary>
-    /// Adds a role to a user.
-    /// NOTE: This still returns UserDto, might need refactoring.
-    /// </summary>
     public async Task<OperationResult<UserDto>> AddRoleAsync(string userId, RoleType role)
     {
         UserId userIdObj;
@@ -514,11 +375,6 @@ public class AuthService : IAuthService
         
         return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
     }
-        
-    /// <summary>
-    /// Removes a role from a user.
-    /// NOTE: This still returns UserDto, might need refactoring.
-    /// </summary>
     public async Task<OperationResult<UserDto>> RemoveRoleAsync(string userId, RoleType role)
     {
         UserId userIdObj;
@@ -557,10 +413,6 @@ public class AuthService : IAuthService
 
         return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
     }
-        
-    /// <summary>
-    /// Links a user account to an existing customer record.
-    /// </summary>
     public async Task<OperationResult<UserDto>> LinkCustomerAsync(string userId, string customerId)
     {
         UserId userIdObj;

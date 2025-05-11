@@ -45,16 +45,14 @@ public class JwtService : IJwtService
     /// <returns>A TokenResult object containing the access token and its metadata.</returns>
     public TokenResult GenerateToken(IEnumerable<Claim> claims)
     {
-        if (claims == null || !claims.Any())
-        {
-            throw new ArgumentNullException(nameof(claims), "Cannot generate token with no claims.");
-        }
+        ArgumentNullException.ThrowIfNull(claims);
         
         try
         {
             // Get the User ID and Roles from claims for logging purposes (optional)
-            var userIdForLog = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? "unknown";
-            var rolesForLog = string.Join(", ", claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
+            var enumerable = claims.ToList();
+            var userIdForLog = enumerable.Single(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ?? "unknown";
+            var rolesForLog = string.Join(", ", enumerable.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value));
 
             var symmetricKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256);
@@ -63,7 +61,7 @@ public class JwtService : IJwtService
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
-                claims: claims, // Use the provided claims directly
+                claims: enumerable, // Use the provided claims directly
                 expires: expires,
                 signingCredentials: creds
             );

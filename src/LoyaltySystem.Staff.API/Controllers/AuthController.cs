@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
@@ -13,7 +14,7 @@ using ILogger = Serilog.ILogger;
 namespace LoyaltySystem.Staff.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : BaseAuthController
 {
     public AuthController(IAuthService authService, ILogger logger) 
@@ -44,4 +45,10 @@ public class AuthController : BaseAuthController
             ? OperationResult<ProfileDto>.SuccessResult(result.Data!)
             : OperationResult<ProfileDto>.FailureResult(result.Errors!);
     }
+    protected override Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
+        throw new NotImplementedException();
+    //protected override Task<OperationResult<bool>> ForgotPasswordInternalAsync(ForgotPasswordRequestDto request) =>
+      //  throw new NotImplementedException();
+    // protected override Task<OperationResult<bool>> ResetPasswordInternalAsync(ResetPasswordRequestDto request) =>
+       // throw new NotImplementedException();
 }

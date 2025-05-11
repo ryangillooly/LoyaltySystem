@@ -20,7 +20,7 @@ namespace LoyaltySystem.Shared.API.Configuration;
 
 public static class ApiConfiguration
 {
-    public static void AddSharedServices(this WebApplicationBuilder builder, string apiTitle)
+    public static IServiceCollection AddSharedServices(this WebApplicationBuilder builder, string apiTitle)
     {
         var postgresSection = builder.Configuration.GetSection("PostgreSQL");
         builder.Services.Configure<PostgresqlSettings>(postgresSection);
@@ -59,6 +59,8 @@ public static class ApiConfiguration
             .AddScoped<IUnitOfWork, UnitOfWork>()
             .AddScoped<IEventPublisher, ConsoleEventPublisher>()
             .AddSwagger(apiTitle);
+
+        return builder.Services;
     }
 
     public static void UseSharedMiddleware(this WebApplication application)
