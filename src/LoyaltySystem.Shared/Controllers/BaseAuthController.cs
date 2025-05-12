@@ -9,6 +9,7 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using ILogger = Serilog.ILogger;
 
 namespace LoyaltySystem.Shared.API.Controllers;
@@ -60,7 +61,7 @@ public abstract class BaseAuthController : ControllerBase
                 _logger.Warning("{UserType} login attempt with no identifier provided", UserType);
                 return OperationResult<AuthResponseDto>.FailureResult(new [] { "Email or username must be provided" });
         }
-            
+        
         return await _authService.AuthenticateAsync(request);
     }
     
@@ -88,6 +89,17 @@ public abstract class BaseAuthController : ControllerBase
         return CreatedAtAction(nameof(GetProfile), result.Data);
     }
     protected abstract Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest);
+
+    [AllowAnonymous]
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        var user = await _authService.VerifyEmailAsync(token);
+        if (!user.Success)
+            return BadRequest(user.Errors);
+        
+        return Ok("Email verified successfully!");
+    }
     
     // TODO: Add Customer Profile as well as user profile info
     [Authorize]

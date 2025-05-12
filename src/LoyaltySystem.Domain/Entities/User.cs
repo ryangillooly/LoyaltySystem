@@ -47,6 +47,9 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime UpdatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
         public CustomerId? CustomerId { get; set; }
+        public bool IsEmailConfirmed { get; set; }
+        public DateTime? EmailConfirmationTokenExpiresAt { get; set; } = null;
+        public string? EmailConfirmationToken { get; set; } = null;
         public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
         
         public void UpdateEmail(string email)

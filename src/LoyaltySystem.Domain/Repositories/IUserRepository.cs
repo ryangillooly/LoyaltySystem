@@ -12,14 +12,16 @@ namespace LoyaltySystem.Domain.Repositories
         Task<User?> GetByUsernameAsync(string username);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByCustomerIdAsync(CustomerId customerId);
+        Task<User?> GetByEmailConfirmationTokenAsync(string token);
+        Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId);
+        
         Task AddAsync(User user, IDbTransaction? transaction = null);
-        /// <summary>
-        /// Updates an existing user.
-        /// </summary>
+        
         Task UpdateAsync(User user, IDbTransaction? transaction = null);
         Task UpdateLastLoginAsync(UserId userId);
         Task AddRoleAsync(UserId userId, RoleType role);
+        
         Task RemoveRoleAsync(UserId userId, RoleType role);
-        Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId);
+        
     }
 } 

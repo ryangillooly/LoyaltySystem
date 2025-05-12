@@ -1,5 +1,5 @@
 using LoyaltySystem.Domain.Common;
-using LoyaltySystem.Infrastructure.Entities;
+using LoyaltySystem.Domain.Entities;
 
 namespace LoyaltySystem.Domain.Repositories;
 

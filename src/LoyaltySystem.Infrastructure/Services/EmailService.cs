@@ -29,6 +29,13 @@ public class EmailService : IEmailService
             "Password Reset Request", 
             $"To reset your password, use this token: {resetToken}"
         );
+    
+    public async Task SendEmailConfirmationEmailAsync(string toEmail, string confirmationToken) =>
+        await SendEmailAsync(
+            toEmail, 
+            "Email Verification", 
+            $"To verify your email, use this token: {confirmationToken}"
+        );
 
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {

@@ -1,31 +1,27 @@
+using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
-using LoyaltySystem.Infrastructure.Entities;
-using System.Security.Cryptography;
 
-namespace LoyaltySystem.Application.Services;
+namespace LoyaltySystem.Application.Services.TokenServices;
 
-public class TokenService : ITokenService
+public class PasswordResetTokenService : IPasswordResetTokenService 
 {
     private readonly IPasswordResetTokenRepository _tokenRepository;
-    private readonly TimeSpan _tokenLifetime = TimeSpan.FromHours(1);
 
-    public TokenService(IPasswordResetTokenRepository tokenRepository) =>
+    public PasswordResetTokenService(IPasswordResetTokenRepository tokenRepository) =>
         _tokenRepository = tokenRepository;
-
-    public async Task<string> GeneratePasswordResetTokenAsync(User user)
+    
+    public async Task<string> GenerateTokenAsync(User user)
     {
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        var expiry = DateTime.UtcNow.Add(_tokenLifetime);
-
+        var token = SecurityUtils.GenerateSecureToken();
         await _tokenRepository.SaveAsync
         (
             new PasswordResetToken
             (
                 userId: user.Id,
                 token: token,
-                expiresAt: expiry,
+                expiresAt: DateTime.UtcNow.AddMinutes(30),
                 isUsed: false, 
                 null
             )
@@ -33,8 +29,7 @@ public class TokenService : ITokenService
 
         return token;
     }
-
-    public async Task<bool> ValidatePasswordResetTokenAsync(User user, string token)
+    public async Task<bool> ValidateTokenAsync(User user, string token)
     {
         var record = await _tokenRepository.GetByUserIdAndTokenAsync(user.Id, token);
         
@@ -43,7 +38,7 @@ public class TokenService : ITokenService
             record.ExpiresAt >= DateTime.UtcNow;
     }
 
-    public async Task InvalidatePasswordResetTokenAsync(User user, string token)
+    public async Task InvalidateTokenAsync(User user, string token)
     {
         var record = await _tokenRepository.GetByUserIdAndTokenAsync(user.Id, token);
         if (record is { })

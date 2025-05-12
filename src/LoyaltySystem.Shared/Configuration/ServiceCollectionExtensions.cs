@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Services.TokenServices;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Repositories;
@@ -76,7 +77,9 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
-            .AddScoped<ITokenService, TokenService>()
+            .AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>()
+            .AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>()
+            .AddScoped<IPasswordResetTokenService, PasswordResetTokenService>()
             .AddScoped<IPasswordHasher<User>, PasswordHasher<User>>()
             .AddScoped<IAuthService, AuthService>();
 

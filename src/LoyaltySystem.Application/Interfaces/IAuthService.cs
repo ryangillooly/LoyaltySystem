@@ -25,6 +25,8 @@ public interface IAuthService
     Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request);
     Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request);
     
+    // Email Validation
+    Task<OperationResult> VerifyEmailAsync(string token);
     
     // Existing profile and user management methods
     Task<OperationResult<UserDto>> UpdateProfileAsync(string userId, UpdateProfileDto updateDto);

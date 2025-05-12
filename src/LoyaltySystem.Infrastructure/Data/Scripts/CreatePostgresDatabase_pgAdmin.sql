@@ -389,6 +389,7 @@ CREATE TABLE IF NOT EXISTS users
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
+    email_confirmed BOOLEAN NOT NULL DEFAULT FALSE;
     password_hash VARCHAR(255) NOT NULL,
     status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -555,7 +556,7 @@ BEGIN
     INSERT INTO users
     (
         id, prefixed_id, first_name, last_name, username, email, 
-        password_hash, status, created_at, updated_at
+        password_hash, status, created_at, updated_at, email_confirmed
     )
     VALUES
     (
@@ -568,7 +569,8 @@ BEGIN
         'AQAAAAIAAYagAAAAEMhipWjYGgWGXfBRQ3CIOi7X5sU2iAKpcZZi4rCmvnLtgzMTrHWvwuAe7LTdNCUqnA==',
         1, -- Active status
         CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
+        CURRENT_TIMESTAMP,
+        true
     );
 
     -- Add SuperAdmin role to the admin user using the generated UUID
@@ -817,3 +819,17 @@ CREATE INDEX idx_passwordresettokens_userid ON password_reset_tokens(user_id);
 CREATE INDEX idx_passwordresettokens_token ON password_reset_tokens(token);
 
 COMMIT; 
+
+-- Create Email Confirmation Tokens Table
+
+CREATE TABLE email_confirmation_tokens 
+(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    token VARCHAR(128) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_email_confirmation_tokens_user_id ON email_confirmation_tokens(user_id);
+CREATE INDEX idx_email_confirmation_tokens_token ON email_confirmation_tokens(token);

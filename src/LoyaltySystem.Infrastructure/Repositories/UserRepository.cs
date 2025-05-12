@@ -1,86 +1,75 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Dapper;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Data;
-using LoyaltySystem.Infrastructure.Data.Extensions;
 using LoyaltySystem.Infrastructure.Data.TypeHandlers;
 
 namespace LoyaltySystem.Infrastructure.Repositories
 {
-    /// <summary>
-    /// Repository implementation for User entities using Dapper.
-    /// </summary>
     public class UserRepository : IUserRepository
     {
         private readonly IDatabaseConnection _dbConnection;
         
         static UserRepository()
         {
-            // Initialize type handlers from centralized configuration
             TypeHandlerConfig.Initialize();
         }
 
-        public UserRepository(IDatabaseConnection dbConnection)
-        {
+        public UserRepository(IDatabaseConnection dbConnection) =>
             _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
-        }
 
-        /// <summary>
-        /// Gets a user by ID.
-        /// </summary>
+        private const string Users = "users";
+        private const string UserRoles = "user_roles";
+        private const string Customers = "customers";
+        private const string EmailConfirmationTokens = "email_confirmation_tokens";
+        private const string UserSelectFields = """
+            u.id AS Id, 
+            u.prefixed_id AS PrefixedId,
+            u.first_name AS FirstName,
+            u.last_name AS LastName,
+            u.username AS Username, 
+            u.email AS Email, 
+            u.email_confirmed AS IsEmailConfirmed,
+            u.password_hash AS PasswordHash, 
+            COALESCE(CAST(u.status AS INT), 1) AS Status, 
+            u.created_at AS CreatedAt, 
+            u.updated_at AS UpdatedAt, 
+            u.last_login_at AS LastLoginAt
+        """;
+        
         public async Task<User?> GetByIdAsync(UserId id)
         {
-            const string sql = @"
+            const string sql = $"""
                 SELECT 
-                    u.id AS ""Id"", 
-                    u.username AS ""Username"", 
-                    u.email AS ""Email"", 
-                    u.password_hash AS ""PasswordHash"", 
-                    COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
-                    u.created_at AS ""CreatedAt"", 
-                    u.updated_at AS ""UpdatedAt"", 
-                    u.last_login_at AS ""LastLoginAt""
-                FROM users u
-                WHERE u.id = @Id::uuid";
+                    {UserSelectFields}
+                FROM 
+                    {Users} u
+                WHERE 
+                    u.id = @Id::uuid
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Id = id.Value });
             
-            if (user != null)
-            {
+            if (user is { })
                 await LoadRolesAsync(user);
-            }
             
             return user;
         }
-
-        /// <summary>
-        /// Gets a user by username.
-        /// </summary>
+        
         public async Task<User?> GetByUsernameAsync(string username)
         {
-            const string sql = @"
+            const string sql = $"""
                 SELECT 
-                    u.id AS ""Id"", 
-					u.first_name AS ""FirstName"",
-					u.last_name AS ""LastName"",
-                    u.username AS ""Username"", 
-                    u.email AS ""Email"", 
-                    u.password_hash AS ""PasswordHash"", 
-                    COALESCE(CAST(u.status AS INT), 1) AS ""Status"", 
-                    u.created_at AS ""CreatedAt"", 
-                    u.updated_at AS ""UpdatedAt"", 
-                    u.last_login_at AS ""LastLoginAt""
-                FROM users u
-                WHERE u.username = @Username";
+                    {UserSelectFields}
+                FROM 
+                    {Users} u
+                WHERE 
+                    u.username = @Username
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -107,59 +96,33 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw;
             }
         }
-
-        /// <summary>
-        /// Gets a user by email.
-        /// </summary>
         public async Task<User?> GetByEmailAsync(string email)
         {
-            const string sql = @"
+            const string sql = $"""
                 SELECT 
-                    u.id AS Id, 
-                    u.prefixed_id as PrefixedId,
-                    u.first_name AS FirstName,
-                    u.last_name AS LastName,
-                    u.username AS Username, 
-                    u.email AS Email, 
-                    u.password_hash AS PasswordHash, 
-                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
-                    u.created_at AS CreatedAt, 
-                    u.updated_at AS UpdatedAt, 
-                    u.last_login_at AS LastLoginAt
+                    {UserSelectFields}
                 FROM 
-                    users u
+                    {Users} u
                 WHERE 
-                    u.email = @Email";
+                    u.email = @Email
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Email = email });
             
-            if (user != null)
-            {
+            if (user is { })
                 await LoadRolesAsync(user);
-            }
             
             return user;
         }
-
-        /// <summary>
-        /// Gets users by role.
-        /// </summary>
         public async Task<IEnumerable<User>> GetByRoleAsync(RoleType role, int skip, int take)
         {
-            const string sql = @"
+            const string sql = $"""
                 SELECT 
-                    u.id AS Id, 
-                    u.username AS Username, 
-                    u.email AS Email, 
-                    u.password_hash AS PasswordHash, 
-                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
-                    u.created_at AS CreatedAt, 
-                    u.updated_at AS UpdatedAt, 
-                    u.last_login_at AS LastLoginAt
+                    {UserSelectFields}
                 FROM 
-                    users       u INNER JOIN
-                    user_roles ur ON u.id = ur.user_id
+                    {Users} u INNER JOIN
+                    {UserRoles} ur ON u.id = ur.user_id
                 WHERE 
                     ur.role = @Role
                 ORDER BY 
@@ -167,7 +130,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 LIMIT 
                     @Take 
                 OFFSET 
-                    @Skip";
+                    @Skip
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             var users = await connection.QueryAsync<User>(sql, new 
@@ -186,59 +150,98 @@ namespace LoyaltySystem.Infrastructure.Repositories
             return usersList;
         }
 
-        /// <summary>
-        /// Gets a user by customer ID.
-        /// </summary>
+        public async Task<User?> GetByEmailConfirmationTokenAsync(string token)
+        {
+            const string sql = $"""
+                SELECT 
+                    {UserSelectFields}
+                FROM 
+                    {EmailConfirmationTokens} ect INNER JOIN 
+                    {Users} u ON ect.user_id = u.id
+                WHERE 
+                    ect.token = @Token
+            """;
+
+            var connection = await _dbConnection.GetConnectionAsync();
+            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { token });
+            
+            if (user is { })
+                await LoadRolesAsync(user);
+            
+            return user;
+        }
+        
         public async Task<User?> GetByCustomerIdAsync(CustomerId customerId)
         {
-            const string sql = @"
+            const string sql = $"""
                 SELECT 
-                    u.id AS Id, 
-                    u.username AS Username, 
-                    u.email AS Email, 
-                    u.password_hash AS PasswordHash, 
-                    COALESCE(CAST(u.status AS INT), 1) AS Status, 
-                    u.created_at AS CreatedAt, 
-                    u.updated_at AS UpdatedAt, 
-                    u.last_login_at AS LastLoginAt,
+                    {UserSelectFields},
                     c.id AS CustomerId
                 FROM 
-                    users u INNER JOIN
-                    customers c ON u.id = c.user_id
+                    {Users} u INNER JOIN
+                    {Customers} c ON u.id = c.user_id
                 WHERE 
-                    c.customer_id = @CustomerId::uuid";
+                    c.customer_id = @CustomerId::uuid
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { CustomerId = customerId.Value });
             
-            if (user != null)
-            {
+            if (user is { })
                 await LoadRolesAsync(user);
-            }
             
             return user;
         }
+        public async Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId)
+        {
+            try
+            {
+                const string sql = $"""
+                    SELECT role
+                    FROM {UserRoles}
+                    WHERE user_id = @UserId::uuid
+                """;
 
-        /// <summary>
-        /// Adds a new user, potentially within a transaction.
-        /// </summary>
+                var connection = await _dbConnection.GetConnectionAsync();
+                var roleStrings = await connection.QueryAsync<string>(sql, new { UserId = userId.Value });
+                
+                var roles = new List<RoleType>();
+                foreach (var roleString in roleStrings)
+                {
+                    if (Enum.TryParse<RoleType>(roleString, out var roleType))
+                    {
+                        roles.Add(roleType);
+                    }
+                }
+                
+                return roles;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetRolesAsync for UserId {userId}: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
+        
         public async Task AddAsync(User user, IDbTransaction? transaction = null)
         {
             // Generate and assign the PrefixedId before inserting
             var userIdObj = new UserId(user.Id.Value); // Assuming base Entity<T> has Value property
             user.PrefixedId = userIdObj.ToString();
 
-            const string sql = @"
-                INSERT INTO users 
+            const string sql = $"""
+                INSERT INTO {Users} 
                 (
                     id, prefixed_id, first_name, last_name, username, email, password_hash, 
-                    status, created_at, updated_at, last_login_at
+                    email_confirmed, status, created_at, updated_at, last_login_at
                 ) 
                 VALUES 
                 (
                     @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @PasswordHash, 
-                    @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
-                )";
+                    @IsEmailConfirmed, @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
+                )
+            """;
 
             var connection = await _dbConnection.GetConnectionAsync();
             
@@ -252,6 +255,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.UserName,
                 user.Email,
                 user.PasswordHash,
+                user.IsEmailConfirmed,
                 Status = (short)user.Status, // Cast enum to short
                 user.CreatedAt,
                 user.UpdatedAt,
@@ -276,15 +280,32 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw; // Re-throw
             }
         }
+        public async Task AddRoleAsync(UserId userId, RoleType role)
+        {
+            var connection = await _dbConnection.GetConnectionAsync();
+            await AddRoleInternalAsync(userId, role, null);
+        }
+        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction? transaction = null)
+        {
+            const string sql = $@"
+                INSERT INTO {UserRoles} (user_id, role, created_at)
+                VALUES (@UserId::uuid, @Role, @CreatedAt)
+                ON CONFLICT (user_id, role) DO NOTHING";
 
-        /// <summary>
-        /// Updates an existing user.
-        /// </summary>
+            var connection = await _dbConnection.GetConnectionAsync();
+            await connection.ExecuteAsync(sql, new
+            {
+                UserId = userId.Value,
+                Role = role.ToString(),
+                CreatedAt = DateTime.UtcNow
+            }, transaction);
+        }
+        
         public async Task UpdateAsync(User user, IDbTransaction? transaction = null)
         {
-            const string sql = @"
+            const string sql = $@"
                 UPDATE 
-                    users
+                    {Users}
                 SET 
                     first_name = @FirstName,
                     last_name = @LastName,
@@ -293,7 +314,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     password_hash = @PasswordHash,
                     status = @Status,
                     updated_at = @UpdatedAt,
-                    last_login_at = @LastLoginAt
+                    last_login_at = @LastLoginAt,
+                    email_confirmed = @IsEmailConfirmed
                 WHERE 
                     id = @Id::uuid";
             
@@ -308,17 +330,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.PasswordHash,
                 Status = (int)user.Status,
                 user.UpdatedAt,
-                user.LastLoginAt
+                user.LastLoginAt,
+                user.IsEmailConfirmed
             }, transaction);
         }
-
-        /// <summary>
-        /// Updates the last login timestamp for a user.
-        /// </summary>
         public async Task UpdateLastLoginAsync(UserId userId)
         {
-            const string sql = @"
-                UPDATE users
+            const string sql = $@"
+                UPDATE {Users}
                 SET last_login_at = @LastLoginAt,
                     updated_at = @UpdatedAt
                 WHERE id = @Id";
@@ -331,39 +350,12 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 UpdatedAt = DateTime.UtcNow
             });
         }
+        
 
-        /// <summary>
-        /// Adds a role to a user.
-        /// </summary>
-        public async Task AddRoleAsync(UserId userId, RoleType role)
-        {
-            var connection = await _dbConnection.GetConnectionAsync();
-            await AddRoleInternalAsync(userId, role, null);
-        }
-
-        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction? transaction = null)
-        {
-            const string sql = @"
-                INSERT INTO user_roles (user_id, role, created_at)
-                VALUES (@UserId::uuid, @Role, @CreatedAt)
-                ON CONFLICT (user_id, role) DO NOTHING";
-
-            var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(sql, new
-            {
-                UserId = userId.Value,
-                Role = role.ToString(),
-                CreatedAt = DateTime.UtcNow
-            }, transaction);
-        }
-
-        /// <summary>
-        /// Removes a role from a user.
-        /// </summary>
         public async Task RemoveRoleAsync(UserId userId, RoleType role)
         {
-            const string sql = @"
-                DELETE FROM user_roles
+            const string sql = $@"
+                DELETE FROM {UserRoles}
                 WHERE user_id = @UserId::uuid AND role = @Role";
 
             var connection = await _dbConnection.GetConnectionAsync();
@@ -372,40 +364,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 UserId = userId.Value,
                 Role = role.ToString()
             });
-        }
-
-        /// <summary>
-        /// Gets all roles for a user.
-        /// </summary>
-        public async Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId)
-        {
-            try
-            {
-                const string sql = @"
-                    SELECT role
-                    FROM user_roles
-                    WHERE user_id = @UserId::uuid";
-
-                var connection = await _dbConnection.GetConnectionAsync();
-                var roleStrings = await connection.QueryAsync<string>(sql, new { UserId = userId.Value });
-                
-                var roles = new List<RoleType>();
-                foreach (var roleString in roleStrings)
-                {
-                    if (Enum.TryParse<RoleType>(roleString, out var roleType))
-                    {
-                        roles.Add(roleType);
-                    }
-                }
-                
-                return roles;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GetRolesAsync for UserId {userId}: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
-            }
         }
 
         private async Task LoadRolesAsync(User user)

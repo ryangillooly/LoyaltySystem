@@ -2,9 +2,9 @@ using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Domain.Entities;
 
-public class PasswordResetToken
+public class EmailConfirmationToken
 {
-    public PasswordResetToken(
+    public EmailConfirmationToken(
         Guid userId,
         string token,
         DateTime expiresAt,

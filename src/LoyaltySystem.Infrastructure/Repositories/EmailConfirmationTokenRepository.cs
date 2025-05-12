@@ -8,18 +8,19 @@ using LoyaltySystem.Infrastructure.Data;
 
 namespace LoyaltySystem.Infrastructure.Repositories;
 
-public class PasswordResetTokenRepository : IPasswordResetTokenRepository
+public class EmailConfirmationTokenRepository : IEmailConfirmationTokenRepository 
 {
+
     private readonly IDatabaseConnection _dbConnection;
 
-    public PasswordResetTokenRepository(IDatabaseConnection connection) =>
+    public EmailConfirmationTokenRepository(IDatabaseConnection connection) =>
         _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
     
-    public async Task SaveAsync(PasswordResetToken token)
+    public async Task SaveAsync(EmailConfirmationToken token)
     {
         const string sql = @"
             INSERT INTO 
-                password_reset_tokens 
+                email_confirmation_tokens 
                 (id, user_id, token, expires_at, is_used, created_at)
             VALUES 
                 (@id, @user_id, @token, @expires_at, @is_used, @created_at)
@@ -39,30 +40,7 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
         await dbConnection.ExecuteAsync(sql, parameters);
     }
 
-    public async Task<PasswordResetToken?> GetByUserIdAndTokenAsync(UserId userId, string token)
-    {
-        const string sql = @"
-            SELECT 
-                id as Id, 
-                user_id as UserId, 
-                token as Token, 
-                expires_at as ExpiresAt, 
-                is_used as IsUsed, 
-                created_at as CreatedAt
-            FROM 
-                password_reset_tokens 
-            WHERE 
-                user_id = @userId AND
-                token = @token
-        ";
-        
-        var dbConnection = await _dbConnection.GetConnectionAsync();
-        var dto = await dbConnection.QuerySingleOrDefaultAsync<PasswordResetTokenDto>(sql, new { userId, token });
-
-        return dto?.ToDomainModel();
-    }
-    
-    public async Task<EmailConfirmationToken?> GetByUserIdAndEmailTokenAsync(UserId userId, string token)
+    public async Task<EmailConfirmationToken?> GetByTokenAsync(string token)
     {
         const string sql = @"
             SELECT 
@@ -75,21 +53,20 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
             FROM 
                 email_confirmation_tokens 
             WHERE 
-                user_id = @userId AND
                 token = @token
         ";
         
         var dbConnection = await _dbConnection.GetConnectionAsync();
-        var dto = await dbConnection.QuerySingleOrDefaultAsync<EmailConfirmationTokenDto>(sql, new { userId, token });
+        var dto = await dbConnection.QuerySingleOrDefaultAsync<EmailConfirmationTokenDto>(sql, new { token });
 
         return dto?.ToDomainModel();
     }
 
-    public async Task UpdateAsync(PasswordResetToken token)
+    public async Task UpdateAsync(EmailConfirmationToken token)
     {
         const string sql = @"
             UPDATE 
-                password_reset_tokens
+                email_confirmation_tokens
             SET
                 expires_at = @expires_at,
                 is_used = @is_used,
@@ -116,7 +93,7 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
     {
         const string sql = @"
             UPDATE 
-                password_reset_tokens
+                email_confirmation_tokens
             SET 
                 is_used = TRUE
             WHERE 

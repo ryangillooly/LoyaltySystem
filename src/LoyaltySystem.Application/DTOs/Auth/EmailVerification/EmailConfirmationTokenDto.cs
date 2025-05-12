@@ -1,8 +1,8 @@
 using LoyaltySystem.Domain.Entities;
 
-namespace LoyaltySystem.Application.DTOs.Auth.PasswordReset;
+namespace LoyaltySystem.Application.DTOs.Auth.EmailVerification;
 
-public class PasswordResetTokenDto 
+public class EmailConfirmationTokenDto 
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
@@ -10,7 +10,7 @@ public class PasswordResetTokenDto
     public DateTime ExpiresAt { get; set; }
     public bool IsUsed { get; set; }
     public DateTime CreatedAt { get; set; }
-
-    public PasswordResetToken ToDomainModel() =>
+    
+    public EmailConfirmationToken ToDomainModel() =>
         new (UserId, Token, ExpiresAt, IsUsed, Id);
 }

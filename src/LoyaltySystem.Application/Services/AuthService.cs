@@ -1,10 +1,12 @@
 using FluentValidation;
+using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
 using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Services.TokenServices;
 using LoyaltySystem.Application.Validation;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
@@ -23,8 +25,10 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly IEmailConfirmationTokenRepository _emailConfirmationTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ITokenService _tokenService;
+    private readonly IPasswordResetTokenService _passwordResetTokenService;
+    private readonly IEmailConfirmationTokenService _emailConfirmationTokenService;
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IEmailService _emailService;
@@ -36,7 +40,9 @@ public class AuthService : IAuthService
         IUnitOfWork unitOfWork,
         IJwtService jwtService,
         ICustomerRepository customerRepository,
-        ITokenService tokenService,
+        IEmailConfirmationTokenRepository emailTokenRepository,
+        IEmailConfirmationTokenService emailTokenService,
+        IPasswordResetTokenService passwordTokenService,
         IEmailService emailService,
         IPasswordHasher<User> passwordHasher,
         ILogger logger
@@ -45,11 +51,13 @@ public class AuthService : IAuthService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
-        _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
+        _passwordResetTokenService = passwordTokenService ?? throw new ArgumentNullException(nameof(passwordTokenService));
+        _emailConfirmationTokenService = emailTokenService ?? throw new ArgumentNullException(nameof(emailTokenService));
+        _emailConfirmationTokenRepository = emailTokenRepository ?? throw new ArgumentNullException(nameof(emailTokenRepository));
     }
 
     public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto dto)
@@ -62,6 +70,9 @@ public class AuthService : IAuthService
         if (user.Status != UserStatus.Active)
             return OperationResult<AuthResponseDto>.FailureResult("User account is not active");
 
+        if (!user.IsEmailConfirmed)
+            return OperationResult<AuthResponseDto>.FailureResult("Email has not been confirmed");
+        
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
         if (result == PasswordVerificationResult.Failed)
             return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
@@ -83,8 +94,6 @@ public class AuthService : IAuthService
         
         return OperationResult<AuthResponseDto>.SuccessResult(response);
     }
-    
-    
     public async Task<OperationResult<UserDto>> RegisterUserAsync(RegisterUserDto registerDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
     {
         var validator = new RegisterUserDtoValidator();
@@ -137,7 +146,10 @@ public class AuthService : IAuthService
                     registerDto.Email,
                     string.Empty,
                     customerId
-                );
+                )
+                {
+                    IsEmailConfirmed = false
+                };
                 
                 newUser.PasswordHash = _passwordHasher.HashPassword(newUser, registerDto.Password);
 
@@ -146,6 +158,18 @@ public class AuthService : IAuthService
 
                 newUser.PrefixedId = newUser.Id.ToString();
                 await _userRepository.AddAsync(newUser, _unitOfWork.CurrentTransaction);
+
+                var token = SecurityUtils.GenerateSecureToken();
+                var confirmationToken = new EmailConfirmationToken
+                (
+                    newUser.Id,
+                    token,
+                    DateTime.UtcNow.AddDays(1),
+                    false,
+                    null
+                );
+                await _emailConfirmationTokenRepository.SaveAsync(confirmationToken);
+                await _emailService.SendEmailConfirmationEmailAsync(newUser.Email, token);
             });
 
             if (newUser is null)
@@ -162,7 +186,6 @@ public class AuthService : IAuthService
             return OperationResult<UserDto>.FailureResult($"Registration failed: {ex.Message}");
         }
     }
-    
     public async Task<OperationResult<UserDto>> AddCustomerRoleToUserAsync(string userId)
     {
         UserId userIdObj;
@@ -372,7 +395,8 @@ public class AuthService : IAuthService
             CustomerId = u.CustomerId?.ToString(), // Already handles null
             CreatedAt = u.CreatedAt,
             LastLoginAt = u.LastLoginAt,
-            Roles = u.Roles.Select(r => r.Role.ToString()).ToList() // Role should not be null
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList(), // Role should not be null
+            IsEmailConfirmed = u.IsEmailConfirmed
         };
 
         return user is null
@@ -412,7 +436,8 @@ public class AuthService : IAuthService
             CustomerId = u.CustomerId?.ToString(), // Already handles null
             CreatedAt = u.CreatedAt, 
             LastLoginAt = u.LastLoginAt, 
-            Roles = u.Roles.Select(r => r.Role.ToString()).ToList() // Role should not be null
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList(),
+            IsEmailConfirmed = u.IsEmailConfirmed
         };
         
         return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
@@ -450,7 +475,8 @@ public class AuthService : IAuthService
             CustomerId = u.CustomerId?.ToString(),
             CreatedAt = u.CreatedAt, 
             LastLoginAt = u.LastLoginAt, 
-            Roles = u.Roles.Select(r => r.Role.ToString()).ToList()
+            Roles = u.Roles.Select(r => r.Role.ToString()).ToList(),
+            IsEmailConfirmed = u.IsEmailConfirmed
         };
 
         return OperationResult<UserDto>.SuccessResult(tempMapper(updatedUser!)); 
@@ -488,14 +514,55 @@ public class AuthService : IAuthService
         // Temporarily mapping to UserDto
         Func<User, UserDto> tempMapper = u => new UserDto 
         {
-            Id = u.Id.Value, PrefixedId = u.PrefixedId, FirstName = u.FirstName, LastName = u.LastName,
-            UserName = u.UserName, Email = u.Email, Status = u.Status.ToString(), CustomerId = u.CustomerId?.ToString(),
-            CreatedAt = u.CreatedAt, LastLoginAt = u.LastLoginAt, Roles = u.Roles.Select(r => r.ToString()).ToList()
+            Id = u.Id.Value, 
+            PrefixedId = u.PrefixedId, 
+            FirstName = u.FirstName, 
+            LastName = u.LastName,
+            UserName = u.UserName, 
+            Email = u.Email, 
+            Status = u.Status.ToString(), 
+            CustomerId = u.CustomerId?.ToString(),
+            CreatedAt = u.CreatedAt, 
+            LastLoginAt = u.LastLoginAt, 
+            Roles = u.Roles.Select(r => r.ToString()).ToList(),
+            IsEmailConfirmed = u.IsEmailConfirmed
         };
 
         return OperationResult<UserDto>.SuccessResult(tempMapper(user));
     }
 
+    public async Task<OperationResult> VerifyEmailAsync(string token)
+    {
+        ArgumentNullException.ThrowIfNull(nameof(token));
+
+        var user = await _userRepository.GetByEmailConfirmationTokenAsync(token);
+        if (user == null)
+            return OperationResult.FailureResult("Invalid or expired token.");
+        
+        if (user.IsEmailConfirmed)
+        {
+            _logger.Information("User {UserId} email already verified", user.Id);
+            return OperationResult.SuccessResult();
+        }
+        
+        var emailToken = await _emailConfirmationTokenRepository.GetByTokenAsync(token);
+        if (emailToken is null)
+            return OperationResult.FailureResult("Email confirmation token could not be found");
+        
+        var validation = _emailConfirmationTokenService.ValidateTokenAsync(user, token);
+        if (!validation.Result)
+            return OperationResult.FailureResult("Invalid or expired token.");
+
+        user.IsEmailConfirmed = true;
+        await _userRepository.UpdateAsync(user);
+        
+        emailToken.IsUsed = true;
+        await _emailConfirmationTokenRepository.UpdateAsync(emailToken);
+
+        _logger.Information("User {UserId} verified their email.", user.Id);
+
+        return OperationResult.SuccessResult();
+    }
     
     public async Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request)
     {
@@ -504,12 +571,11 @@ public class AuthService : IAuthService
         if (user is null)
             return OperationResult.FailureResult($"User not found with {request.IdentifierType} == {request.Identifier}");
         
-        var token = await _tokenService.GeneratePasswordResetTokenAsync(user);
+        var token = await _passwordResetTokenService.GenerateTokenAsync(user);
         await _emailService.SendPasswordResetEmailAsync(user.Email, token);
 
         return OperationResult.SuccessResult();
     }
-
     public async Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request)
     {
         User? user = await _userRepository.GetByEmailAsync(request.Email);
@@ -517,14 +583,14 @@ public class AuthService : IAuthService
         if (user is null)
             return OperationResult.FailureResult($"User not found with the Email == {request.Email}");
 
-        var isValid = await _tokenService.ValidatePasswordResetTokenAsync(user, request.Token);
+        var isValid = await _passwordResetTokenService.ValidateTokenAsync(user, request.Token);
         if (!isValid)
             return OperationResult.FailureResult("Invalid or expired reset token.");
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
         await _userRepository.UpdateAsync(user);
 
-        await _tokenService.InvalidatePasswordResetTokenAsync(user, request.Token);
+        await _passwordResetTokenService.InvalidateTokenAsync(user, request.Token);
         
         return OperationResult.SuccessResult();
     }
