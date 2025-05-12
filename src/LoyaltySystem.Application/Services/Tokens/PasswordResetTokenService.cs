@@ -1,5 +1,6 @@
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 

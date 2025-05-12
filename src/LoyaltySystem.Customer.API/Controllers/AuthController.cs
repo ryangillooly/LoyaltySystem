@@ -4,6 +4,9 @@ using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Customers;
+using LoyaltySystem.Application.Interfaces.Profile;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
@@ -19,21 +22,34 @@ public class AuthController : BaseAuthController
 {
     private readonly ISocialAuthService _socialAuthService;
     private readonly ICustomerService _customerService;
+    private readonly IRegistrationService _registrationService;
     
     public AuthController(
-        IAuthService authService, 
-        ICustomerService customerService, 
+        IAuthenticationService authService, 
+        ICustomerService customerService,
+        IProfileService profileService,
+        IPasswordResetService passwordResetService,
+        IEmailVerificationService emailVerificationService,
         ISocialAuthService socialAuthService,
-        ILogger logger)
-        : base(authService, logger)
+        IRegistrationService registrationService,
+        ILogger logger
+    )
+    : base(
+        authService, 
+        profileService,
+        passwordResetService,
+        emailVerificationService,
+        logger
+    )
     {
-        _customerService = customerService;
-        _socialAuthService = socialAuthService;
+        _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
+        _socialAuthService = socialAuthService ?? throw new ArgumentNullException(nameof(socialAuthService));
+        _registrationService = registrationService ?? throw new ArgumentNullException(nameof(registrationService));
     }
 
     protected override string UserType => "Customer";
     protected override async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto request) => 
-        await _authService.RegisterUserAsync
+        await _registrationService.RegisterUserAsync
         (
             request, 
             roles: new [] { RoleType.Customer },
@@ -45,7 +61,7 @@ public class AuthController : BaseAuthController
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Customer },
-            dto => _authService.RegisterUserAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
+            dto => _registrationService.RegisterUserAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
         );
 
     protected override async Task<OperationResult<ProfileDto>> GetProfileInternalAsync()

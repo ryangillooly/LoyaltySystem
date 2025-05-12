@@ -2,6 +2,10 @@ using System.Security.Claims;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Customers;
+using LoyaltySystem.Application.Interfaces.Profile;
+using LoyaltySystem.Application.Interfaces.Roles;
 using LoyaltySystem.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,16 +18,16 @@ namespace LoyaltySystem.Customer.API.Controllers;
 public class CustomerController : ControllerBase
 {
     private readonly ICustomerService _customerService;
-    private readonly IAuthService _authService;
+    private readonly IProfileService _profileService;
     private readonly ILogger<CustomerController> _logger;
 
     public CustomerController(
         ICustomerService customerService,
-        IAuthService authService,
+        IProfileService profileService,
         ILogger<CustomerController> logger)
     {
         _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
-        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+        _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -88,7 +92,7 @@ public class CustomerController : ControllerBase
             return Unauthorized(new { message = "User not authenticated" });
             
         // Check if user already has a customer ID
-        var userResult = await _authService.GetUserByIdAsync(userId);
+        var userResult = await _profileService.GetUserByIdAsync(userId);
         if (!userResult.Success)
             return BadRequest(new { message = userResult.Errors });
             
@@ -101,7 +105,7 @@ public class CustomerController : ControllerBase
             return BadRequest(new { message = "Customer not found" });
             
         // Link user to customer
-        var linkResult = await _authService.LinkCustomerAsync(userId, customerId);
+        var linkResult = await _customerService.LinkCustomerAsync(userId, customerId);
         if (!linkResult.Success)
             return BadRequest(new { message = linkResult.Errors });
             

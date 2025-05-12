@@ -1,12 +1,13 @@
-namespace LoyaltySystem.Domain.Enums
+using System.Text.Json.Serialization;
+
+namespace LoyaltySystem.Domain.Enums;
+
+public enum RoleType
 {
-    public enum RoleType
-    {
-        SuperAdmin,
-        Admin,
-        Staff,
-        Manager,
-        Customer,
-        User
-    }
-} 
+    SuperAdmin,
+    Admin,
+    Staff,
+    Manager,
+    Customer,
+    User
+}

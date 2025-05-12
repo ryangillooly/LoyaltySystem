@@ -264,13 +264,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             try
             {
+                var userRoles = user.Roles.Select(r => r.Role).ToList();
                 await connection.ExecuteAsync(sql, parameters, transaction: transaction);
-
-                // Add roles if any are defined on the user object (within the same transaction)
-                foreach (var userRole in user.Roles)
-                {
-                    await AddRoleInternalAsync(user.Id, userRole.Role, transaction);
-                }
+                await AddRoleInternalAsync(user.Id, userRoles, transaction);
             }
             catch (Exception ex)
             {
@@ -280,25 +276,47 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw; // Re-throw
             }
         }
-        public async Task AddRoleAsync(UserId userId, RoleType role)
+        public async Task AddRoleAsync(UserId userId, List<RoleType> roles)
         {
-            var connection = await _dbConnection.GetConnectionAsync();
-            await AddRoleInternalAsync(userId, role, null);
+            await _dbConnection.GetConnectionAsync();
+            await AddRoleInternalAsync(userId, roles, null);
         }
-        private async Task AddRoleInternalAsync(UserId userId, RoleType role, IDbTransaction? transaction = null)
+        private async Task AddRoleInternalAsync(UserId userId, List<RoleType> roles, IDbTransaction? transaction = null)
         {
-            const string sql = $@"
-                INSERT INTO {UserRoles} (user_id, role, created_at)
-                VALUES (@UserId::uuid, @Role, @CreatedAt)
-                ON CONFLICT (user_id, role) DO NOTHING";
+            string sql = $"""
+              INSERT INTO {UserRoles} (user_id, role, created_at)
+              VALUES {0}
+              ON CONFLICT (user_id, role) DO NOTHING
+            """;
+
+            var now = DateTime.UtcNow;
+            var parameters = roles
+                .Select((role, _) => new
+                {
+                    UserId = userId.Value,
+                    Role = role.ToString(),
+                    CreatedAt = now
+                })
+                .ToList();
+
+            // Build the VALUES part dynamically
+            var valuesClause = string.Join(", ", parameters.Select((p, i) =>
+                $"(@UserId{i}, @Role{i}, @CreatedAt{i})"));
+
+            // Build the final SQL
+            var finalSql = string.Format(sql, valuesClause);
+
+            // Build the parameter object
+            var dynamicParams = new DynamicParameters();
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                dynamicParams.Add($"UserId{i}", parameters[i].UserId);
+                dynamicParams.Add($"Role{i}", parameters[i].Role);
+                dynamicParams.Add($"CreatedAt{i}", parameters[i].CreatedAt);
+            }
 
             var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(sql, new
-            {
-                UserId = userId.Value,
-                Role = role.ToString(),
-                CreatedAt = DateTime.UtcNow
-            }, transaction);
+            await connection.ExecuteAsync(finalSql, dynamicParams);
         }
         
         public async Task UpdateAsync(User user, IDbTransaction? transaction = null)
@@ -352,17 +370,18 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
         
 
-        public async Task RemoveRoleAsync(UserId userId, RoleType role)
+        public async Task RemoveRoleAsync(UserId userId, List<RoleType> roles)
         {
             const string sql = $@"
                 DELETE FROM {UserRoles}
-                WHERE user_id = @UserId::uuid AND role = @Role";
+                WHERE user_id = @UserId::uuid AND role = ANY(@Roles)";
 
             var connection = await _dbConnection.GetConnectionAsync();
+            
             await connection.ExecuteAsync(sql, new
             {
                 UserId = userId.Value,
-                Role = role.ToString()
+                Roles = roles.Select(r => r.ToString()).ToArray(),
             });
         }
 

@@ -5,6 +5,8 @@ using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Profile;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -18,15 +20,24 @@ namespace LoyaltySystem.Shared.API.Controllers;
 [Route("api/[controller]")]
 public abstract class BaseAuthController : ControllerBase 
 {
-    protected readonly IAuthService _authService;
+    protected readonly IAuthenticationService _authService;
+    protected readonly IPasswordResetService _passwordResetService;
+    protected readonly IProfileService _profileService;
+    protected readonly IEmailVerificationService _emailVerificationService;
     protected readonly ILogger _logger;
     
     protected BaseAuthController(
-        IAuthService authService,  
+        IAuthenticationService authService,  
+        IProfileService profileService,
+        IPasswordResetService passwordResetService,
+        IEmailVerificationService emailVerificationService,
         ILogger logger)
     {
-        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+        _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
+        _passwordResetService = passwordResetService ?? throw new ArgumentNullException(nameof(passwordResetService));
+        _emailVerificationService = emailVerificationService ?? throw new ArgumentNullException(nameof(emailVerificationService));
     }
 
     protected abstract string UserType { get; }
@@ -94,7 +105,7 @@ public abstract class BaseAuthController : ControllerBase
     [HttpGet("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string token)
     {
-        var user = await _authService.VerifyEmailAsync(token);
+        var user = await _emailVerificationService.VerifyEmailAsync(token);
         if (!user.Success)
             return BadRequest(user.Errors);
         
@@ -132,7 +143,7 @@ public abstract class BaseAuthController : ControllerBase
             
         _logger.Information("Profile update request for user ID: {UserId}", userId);
             
-        var result = await _authService.UpdateProfileAsync(userId.ToString(), updateRequest);
+        var result = await _profileService.UpdateProfileAsync(userId.ToString(), updateRequest);
             
         if (!result.Success)
         {
@@ -161,7 +172,7 @@ public abstract class BaseAuthController : ControllerBase
     [HttpPost("forgot-password")]
     public virtual async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
     {
-        var result = await _authService.ForgotPasswordAsync(request);
+        var result = await _passwordResetService.ForgotPasswordAsync(request);
         
         if (!result.Success)
             return BadRequest(new { message = result.Errors });
@@ -173,7 +184,7 @@ public abstract class BaseAuthController : ControllerBase
     [HttpPost("reset-password")]
     public virtual async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
     {
-        var result = await _authService.ResetPasswordAsync(request);
+        var result = await _passwordResetService.ResetPasswordAsync(request);
         
         if (!result.Success)
             return BadRequest(new { message = result.Errors });

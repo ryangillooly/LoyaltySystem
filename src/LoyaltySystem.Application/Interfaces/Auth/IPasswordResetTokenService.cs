@@ -1,6 +1,6 @@
 using LoyaltySystem.Domain.Entities;
 
-namespace LoyaltySystem.Application.Interfaces;
+namespace LoyaltySystem.Application.Interfaces.Auth;
 
 public interface IPasswordResetTokenService
 {

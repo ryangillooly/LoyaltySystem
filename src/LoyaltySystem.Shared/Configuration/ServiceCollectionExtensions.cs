@@ -1,5 +1,13 @@
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Customers;
+using LoyaltySystem.Application.Interfaces.Profile;
+using LoyaltySystem.Application.Interfaces.Roles;
 using LoyaltySystem.Application.Services;
+using LoyaltySystem.Application.Services.Auth;
+using LoyaltySystem.Application.Services.Customers;
+using LoyaltySystem.Application.Services.Profiles;
+using LoyaltySystem.Application.Services.Roles;
 using LoyaltySystem.Application.Services.TokenServices;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
@@ -77,11 +85,13 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
-            .AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>()
-            .AddScoped<IEmailConfirmationTokenService, EmailConfirmationTokenService>()
+            .AddScoped<IEmailVerificationRepository, EmailVerificationRepository>()
+            .AddScoped<IEmailVerificationService, EmailVerificationService>()
             .AddScoped<IPasswordResetTokenService, PasswordResetTokenService>()
+            .AddScoped<IPasswordResetService, PasswordResetService>()
+            .AddScoped<IRegistrationService, RegistrationService>()
             .AddScoped<IPasswordHasher<User>, PasswordHasher<User>>()
-            .AddScoped<IAuthService, AuthService>();
+            .AddScoped<IAuthenticationService, AuthenticationService>();
 
         return services;
     }
@@ -106,6 +116,8 @@ public static class ServiceCollectionExtensions
             .AddScoped<IBrandService, BrandService>()
             .AddScoped<IStoreService, StoreService>()
             .AddScoped<ICustomerService, CustomerService>()
+            .AddScoped<IProfileService, ProfileService>()
+            .AddScoped<IRolesService, RolesService>()
             .AddEmailService(configuration);
 
         return services;

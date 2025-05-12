@@ -8,12 +8,12 @@ using LoyaltySystem.Infrastructure.Data;
 
 namespace LoyaltySystem.Infrastructure.Repositories;
 
-public class EmailConfirmationTokenRepository : IEmailConfirmationTokenRepository 
+public class EmailVerificationRepository : IEmailVerificationRepository 
 {
 
     private readonly IDatabaseConnection _dbConnection;
 
-    public EmailConfirmationTokenRepository(IDatabaseConnection connection) =>
+    public EmailVerificationRepository(IDatabaseConnection connection) =>
         _dbConnection = connection ?? throw new ArgumentNullException(nameof(connection));
     
     public async Task SaveAsync(EmailConfirmationToken token)

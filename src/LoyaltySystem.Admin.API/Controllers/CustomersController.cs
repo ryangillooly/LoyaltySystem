@@ -1,6 +1,7 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Customer;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Customers;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;

@@ -4,6 +4,8 @@ using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
 using LoyaltySystem.Application.DTOs.AuthDtos;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Profile;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
@@ -18,8 +20,20 @@ namespace LoyaltySystem.Staff.API.Controllers;
 [Route("api/auth")]
 public class AuthController : BaseAuthController
 {
-    public AuthController(IAuthService authService, ILogger logger) 
-        : base(authService, logger) { }
+    public AuthController(
+        IAuthenticationService authService,
+        IProfileService profileService,
+        IPasswordResetService passwordResetService,
+        IEmailVerificationService emailVerificationService,
+        ILogger logger
+    ) 
+    : base(
+        authService, 
+        profileService, 
+        passwordResetService, 
+        emailVerificationService, 
+        logger
+    ) { }
 
     protected override string UserType => "Staff";
     
@@ -41,7 +55,7 @@ public class AuthController : BaseAuthController
             return OperationResult<ProfileDto>.FailureResult("Invalid customer identification");
         }
 
-        var result = await _authService.GetUserByIdAsync(userIdString);
+        var result = await _profileService.GetUserByIdAsync(userIdString);
         return result.Success
             ? OperationResult<ProfileDto>.SuccessResult(result.Data!)
             : OperationResult<ProfileDto>.FailureResult(result.Errors!);

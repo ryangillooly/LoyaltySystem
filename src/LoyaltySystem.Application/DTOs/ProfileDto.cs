@@ -11,4 +11,5 @@ public class ProfileDto
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsEmailConfirmed { get; set; }
 }

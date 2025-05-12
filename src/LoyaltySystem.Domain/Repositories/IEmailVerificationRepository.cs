@@ -3,7 +3,7 @@ using LoyaltySystem.Domain.Entities;
 
 namespace LoyaltySystem.Domain.Repositories;
 
-public interface IEmailConfirmationTokenRepository
+public interface IEmailVerificationRepository
 {
     Task SaveAsync(EmailConfirmationToken token);
     Task<EmailConfirmationToken?> GetByTokenAsync(string token);
