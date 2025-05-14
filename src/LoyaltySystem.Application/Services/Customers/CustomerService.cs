@@ -1,7 +1,7 @@
 
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.DTOs.Customer;
+using LoyaltySystem.Application.DTOs.Customers;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Interfaces.Customers;
 using LoyaltySystem.Domain.Entities;
@@ -9,6 +9,7 @@ using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.ValueObjects;
+using System.Data;
 
 namespace LoyaltySystem.Application.Services.Customers;
 
@@ -18,8 +19,6 @@ public class CustomerService : ICustomerService
     private readonly IUserRepository _userRepository;
     private readonly IStoreRepository _storeRepository;
     private readonly IUnitOfWork _unitOfWork;
-
-    public CustomerService() { }
 
     public CustomerService(
         ICustomerRepository customerRepository,
@@ -33,7 +32,7 @@ public class CustomerService : ICustomerService
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
-    public async Task<OperationResult<PagedResult<CustomerProfileDto>>> GetAllAsync(int skip, int limit)
+    public async Task<OperationResult<PagedResult<CustomerDto>>> GetAllAsync(int skip, int limit)
     {
         try
         {
@@ -42,16 +41,16 @@ public class CustomerService : ICustomerService
 
             var CustomerProfileDtos = customers.Select(MapToDto).ToList();
 
-            var result = new PagedResult<CustomerProfileDto>(CustomerProfileDtos, totalCount, skip, limit);
+            var result = new PagedResult<CustomerDto>(CustomerProfileDtos, totalCount, skip, limit);
 
-            return OperationResult<PagedResult<CustomerProfileDto>>.SuccessResult(result);
+            return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);
         }
         catch (Exception ex)
         {
-            return OperationResult<PagedResult<CustomerProfileDto>>.FailureResult($"Failed to get customers: {ex.Message}");
+            return OperationResult<PagedResult<CustomerDto>>.FailureResult($"Failed to get customers: {ex.Message}");
         }
     }
-    public async Task<OperationResult<CustomerProfileDto>> GetCustomerByIdAsync(string id)
+    public async Task<OperationResult<CustomerDto>> GetCustomerByIdAsync(string id)
     {
         try
         {
@@ -59,59 +58,60 @@ public class CustomerService : ICustomerService
             var customer = await _customerRepository.GetByIdAsync(customerId);
 
             return customer == null
-                ? OperationResult<CustomerProfileDto>.FailureResult($"Customer with ID {id} not found")
-                : OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(customer));
+                ? OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found")
+                : OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
 
         }
         catch (Exception ex)
         {
-            return OperationResult<CustomerProfileDto>.FailureResult($"Failed to get customer: {ex.Message}");
+            return OperationResult<CustomerDto>.FailureResult($"Failed to get customer: {ex.Message}");
         }
     }
-    public async Task<OperationResult<PagedResult<CustomerProfileDto>>> SearchCustomersAsync(string query, int page, int pageSize)
+    public async Task<OperationResult<PagedResult<CustomerDto>>> SearchCustomersAsync(string query, int page, int pageSize)
     {
         try
         {
             var customers = await _customerRepository.SearchAsync(query, page, pageSize);
             var totalCount = await _customerRepository.GetTotalCountAsync();
 
-            var CustomerProfileDtos = new List<CustomerProfileDto>();
+            var CustomerProfileDtos = new List<CustomerDto>();
             foreach (var customer in customers)
             {
                 CustomerProfileDtos.Add(MapToDto(customer));
             }
 
-            var result = new PagedResult<CustomerProfileDto>(CustomerProfileDtos, totalCount, page, pageSize);
+            var result = new PagedResult<CustomerDto>(CustomerProfileDtos, totalCount, page, pageSize);
 
-            return OperationResult<PagedResult<CustomerProfileDto>>.SuccessResult(result);
+            return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);
         }
         catch (Exception ex)
         {
-            return OperationResult<PagedResult<CustomerProfileDto>>.FailureResult($"Failed to search customers: {ex.Message}");
+            return OperationResult<PagedResult<CustomerDto>>.FailureResult($"Failed to search customers: {ex.Message}");
         }
     }
-    public async Task<OperationResult<CustomerProfileDto>> CreateCustomerAsync(CreateCustomerDto dto)
+    
+    public async Task<OperationResult<CustomerDto>> AddCustomerAsync(CreateCustomerDto dto, IDbTransaction? transaction = null)
     {
         try
         {
             if (!IsValidEmail(dto.Email))
-                return OperationResult<CustomerProfileDto>.FailureResult("Invalid email format");
+                return OperationResult<CustomerDto>.FailureResult("Invalid email format");
 
             var customer = MapToCustomer(dto);
 
             return await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 var newCustomer = await _customerRepository.AddAsync(customer, _unitOfWork.CurrentTransaction);
-                return OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(newCustomer));
+                return OperationResult<CustomerDto>.SuccessResult(MapToDto(newCustomer));
             });
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            return OperationResult<CustomerProfileDto>.FailureResult($"Failed to create customer: {ex.Message}");
+            return OperationResult<CustomerDto>.FailureResult($"Failed to create customer: {ex.Message}");
         }
     }
-    public async Task<OperationResult<CustomerProfileDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto)
+    public async Task<OperationResult<CustomerDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto)
     {
         try
         {
@@ -119,33 +119,28 @@ public class CustomerService : ICustomerService
             var customer = await _customerRepository.GetByIdAsync(customerId);
 
             if (customer == null)
-                return OperationResult<CustomerProfileDto>.FailureResult($"Customer with ID {id} not found");
+                return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
 
             customer.Update(dto.FirstName, dto.LastName, dto.UserName, dto.Email, dto.Phone, dto.Address, false);
             return await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _customerRepository.UpdateAsync(customer);
-                return OperationResult<CustomerProfileDto>.SuccessResult(MapToDto(customer));
+                return OperationResult<CustomerDto>.SuccessResult(MapToDto(customer));
             });
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackTransactionAsync();
-            return OperationResult<CustomerProfileDto>.FailureResult($"Failed to update customer: {ex.Message}");
+            return OperationResult<CustomerDto>.FailureResult($"Failed to update customer: {ex.Message}");
         }
     }
-    public async Task<OperationResult<IEnumerable<Customer>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end)
+    public async Task<OperationResult<IEnumerable<CustomerDto>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end)
     {
-        try
-        {
-            var customers = await _customerRepository.GetBySignupDateRangeAsync(start, end);
-            return OperationResult<IEnumerable<Customer>>.SuccessResult(customers);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<IEnumerable<Customer>>.FailureResult($"Failed to get customer signups: {ex.Message}");
-        }
+        var customers = await _customerRepository.GetBySignupDateRangeAsync(start, end);
+        var customerDtos = customers.Select(CustomerDto.From).ToList();
+        return OperationResult<IEnumerable<CustomerDto>>.SuccessResult(customerDtos);
     }
+    
     public async Task<Dictionary<string, int>> GetCustomerAgeGroupsAsync()
     {
         try
@@ -258,10 +253,10 @@ public class CustomerService : ICustomerService
             dto.MarketingConsent,
             null
         );
-    private static CustomerProfileDto MapToDto(Customer customer) =>
+    private static CustomerDto MapToDto(Customer customer) =>
         new()
         {
-            Id = customer.Id.ToString(),
+            Id = customer.Id,
             FirstName = customer.FirstName,
             LastName = customer.LastName,
             Email = customer.Email,
@@ -283,21 +278,10 @@ public class CustomerService : ICustomerService
         }
     }
     
-    public async Task<OperationResult<UserDto>> LinkCustomerAsync(string userId, string customerId)
+    public async Task<OperationResult<UserDto>> LinkCustomerAsync(UserId userId, string customerId)
     {
-        UserId userIdObj;
-        CustomerId customerIdObj;
-        try
-        {
-            userIdObj = UserId.FromString(userId);
-            customerIdObj = CustomerId.FromString(customerId);
-        }
-        catch (FormatException ex)
-        {
-            return OperationResult<UserDto>.FailureResult($"Invalid ID format: {ex.Message}");
-        }
-
-        var user = await _userRepository.GetByIdAsync(userIdObj);
+        var customerIdObj = CustomerId.FromString(customerId);
+        var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
             return OperationResult<UserDto>.FailureResult("User not found.");
 
@@ -307,30 +291,11 @@ public class CustomerService : ICustomerService
 
         if (user.CustomerId != null)
             return OperationResult<UserDto>.FailureResult("User is already linked to a customer.");
-
-        // Directly set the CustomerId property
+        
         user.CustomerId = customerIdObj;
-        user.AddRole(RoleType.Customer); // Also ensure the Customer role is added
+        user.AddRole(RoleType.Customer);
         await _userRepository.UpdateAsync(user);
 
-        return OperationResult<UserDto>.SuccessResult(TempMapper(user));
-
-        // Temporarily mapping to UserDto
-        UserDto TempMapper(User u) =>
-            new()
-            {
-                Id = u.Id.Value,
-                PrefixedId = u.PrefixedId,
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                UserName = u.UserName,
-                Email = u.Email,
-                Status = u.Status.ToString(),
-                CustomerId = u.CustomerId?.ToString(),
-                CreatedAt = u.CreatedAt,
-                LastLoginAt = u.LastLoginAt,
-                Roles = u.Roles.Select(r => r.ToString()).ToList(),
-                IsEmailConfirmed = u.IsEmailConfirmed
-            };
+        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
     }
 }

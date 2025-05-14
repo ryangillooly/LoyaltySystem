@@ -1,5 +1,5 @@
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.DTOs.Customer;
+using LoyaltySystem.Application.DTOs.Customers;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Interfaces.Customers;
 using LoyaltySystem.Domain.Common;
@@ -96,7 +96,7 @@ public class CustomersController : ControllerBase
     {
         _logger.LogInformation("Admin creating customer with email: {Email}", request.Email);
             
-        var result = await _customerService.CreateCustomerAsync(request);
+        var result = await _customerService.AddCustomerAsync(request);
         if (!result.Success)
         {
             _logger.LogWarning("Admin create customer failed - {Error}", result.Errors);

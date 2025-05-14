@@ -806,30 +806,17 @@ END;
 $$;
 
 -- Create Password Reset Table
-CREATE TABLE password_reset_tokens
+CREATE TABLE verification_tokens
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES Users(id),
     token VARCHAR(256) NOT NULL,
+    token_type VARCHAR(50) NOT NULL,
+    is_valid BOOLEAN NOT NULL DEFAULT TRUE,
     expires_at TIMESTAMP NOT NULL,
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_passwordresettokens_userid ON password_reset_tokens(user_id);
-CREATE INDEX idx_passwordresettokens_token ON password_reset_tokens(token);
+CREATE INDEX idx_verification_tokens_userid ON verification_tokens(user_id);
+CREATE INDEX idx_verification_tokens_token ON verification_tokens(token);
 
 COMMIT; 
-
--- Create Email Confirmation Tokens Table
-
-CREATE TABLE email_confirmation_tokens 
-(
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    token VARCHAR(128) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-CREATE INDEX idx_email_confirmation_tokens_user_id ON email_confirmation_tokens(user_id);
-CREATE INDEX idx_email_confirmation_tokens_token ON email_confirmation_tokens(token);

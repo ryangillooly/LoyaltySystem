@@ -42,6 +42,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         
         public async Task<User?> GetByIdAsync(UserId id)
         {
+            ArgumentNullException.ThrowIfNull(id);
+            
             const string sql = $"""
                 SELECT 
                     {UserSelectFields}
@@ -62,6 +64,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         
         public async Task<User?> GetByUsernameAsync(string username)
         {
+            ArgumentNullException.ThrowIfNull(username);
+            
             const string sql = $"""
                 SELECT 
                     {UserSelectFields}
@@ -98,6 +102,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
         public async Task<User?> GetByEmailAsync(string email)
         {
+            ArgumentNullException.ThrowIfNull(email);
             const string sql = $"""
                 SELECT 
                     {UserSelectFields}
@@ -117,6 +122,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
         public async Task<IEnumerable<User>> GetByRoleAsync(RoleType role, int skip, int take)
         {
+            ArgumentNullException.ThrowIfNull(role);
+            ArgumentNullException.ThrowIfNull(skip);
+            ArgumentNullException.ThrowIfNull(take);
+            
             const string sql = $"""
                 SELECT 
                     {UserSelectFields}
@@ -152,6 +161,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task<User?> GetByEmailConfirmationTokenAsync(string token)
         {
+            ArgumentNullException.ThrowIfNull(token);
+            
             const string sql = $"""
                 SELECT 
                     {UserSelectFields}
@@ -173,6 +184,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         
         public async Task<User?> GetByCustomerIdAsync(CustomerId customerId)
         {
+            ArgumentNullException.ThrowIfNull(customerId);
+            
             const string sql = $"""
                 SELECT 
                     {UserSelectFields},
@@ -194,6 +207,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
         public async Task<IEnumerable<RoleType>> GetRolesAsync(UserId userId)
         {
+            ArgumentNullException.ThrowIfNull(userId);
+            
             try
             {
                 const string sql = $"""
@@ -226,9 +241,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
         
         public async Task AddAsync(User user, IDbTransaction? transaction = null)
         {
-            // Generate and assign the PrefixedId before inserting
-            var userIdObj = new UserId(user.Id.Value); // Assuming base Entity<T> has Value property
-            user.PrefixedId = userIdObj.ToString();
+            ArgumentNullException.ThrowIfNull(user);
 
             const string sql = $"""
                 INSERT INTO {Users} 
@@ -244,11 +257,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
             """;
 
             var connection = await _dbConnection.GetConnectionAsync();
-            
-            // Prepare parameters, including the new PrefixedId
             var parameters = new 
             {
-                Id = user.Id.Value, // Explicitly name the parameter 'Id'
+                Id = user.Id.Value, 
                 user.PrefixedId,
                 user.FirstName,
                 user.LastName,
@@ -256,7 +267,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.Email,
                 user.PasswordHash,
                 user.IsEmailConfirmed,
-                Status = (short)user.Status, // Cast enum to short
+                Status = (short)user.Status, 
                 user.CreatedAt,
                 user.UpdatedAt,
                 user.LastLoginAt
@@ -270,57 +281,50 @@ namespace LoyaltySystem.Infrastructure.Repositories
             }
             catch (Exception ex)
             {
-                // Log the exception
                 Console.WriteLine($"Error adding user or roles: {ex.Message}");
                 Console.WriteLine($"User data: {System.Text.Json.JsonSerializer.Serialize(parameters)}");
-                throw; // Re-throw
+                throw; 
             }
         }
         public async Task AddRoleAsync(UserId userId, List<RoleType> roles)
         {
+            ArgumentNullException.ThrowIfNull(userId);
+            ArgumentNullException.ThrowIfNull(roles);
+            
             await _dbConnection.GetConnectionAsync();
             await AddRoleInternalAsync(userId, roles, null);
         }
         private async Task AddRoleInternalAsync(UserId userId, List<RoleType> roles, IDbTransaction? transaction = null)
         {
+            ArgumentNullException.ThrowIfNull(userId);
+            ArgumentNullException.ThrowIfNull(roles);
+            
             string sql = $"""
               INSERT INTO {UserRoles} (user_id, role, created_at)
-              VALUES {0}
+              VALUES (@UserId, @Role, @CreatedAt)
               ON CONFLICT (user_id, role) DO NOTHING
             """;
 
             var now = DateTime.UtcNow;
             var parameters = roles
-                .Select((role, _) => new
-                {
-                    UserId = userId.Value,
-                    Role = role.ToString(),
-                    CreatedAt = now
-                })
+                .Select((role, _) => 
+                    new
+                    {
+                        UserId = userId.Value,
+                        Role = role.ToString(),
+                        CreatedAt = now
+                    }
+                )
                 .ToList();
-
-            // Build the VALUES part dynamically
-            var valuesClause = string.Join(", ", parameters.Select((p, i) =>
-                $"(@UserId{i}, @Role{i}, @CreatedAt{i})"));
-
-            // Build the final SQL
-            var finalSql = string.Format(sql, valuesClause);
-
-            // Build the parameter object
-            var dynamicParams = new DynamicParameters();
-            for (int i = 0; i < parameters.Count; i++)
-            {
-                dynamicParams.Add($"UserId{i}", parameters[i].UserId);
-                dynamicParams.Add($"Role{i}", parameters[i].Role);
-                dynamicParams.Add($"CreatedAt{i}", parameters[i].CreatedAt);
-            }
-
+            
             var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(finalSql, dynamicParams);
+            await connection.ExecuteAsync(sql, parameters, transaction);
         }
         
         public async Task UpdateAsync(User user, IDbTransaction? transaction = null)
         {
+            ArgumentNullException.ThrowIfNull(user);
+            
             const string sql = $@"
                 UPDATE 
                     {Users}
@@ -354,6 +358,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
         }
         public async Task UpdateLastLoginAsync(UserId userId)
         {
+            ArgumentNullException.ThrowIfNull(userId);
+            
             const string sql = $@"
                 UPDATE {Users}
                 SET last_login_at = @LastLoginAt,
@@ -372,6 +378,9 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         public async Task RemoveRoleAsync(UserId userId, List<RoleType> roles)
         {
+            ArgumentNullException.ThrowIfNull(userId);
+            ArgumentNullException.ThrowIfNull(roles);
+            
             const string sql = $@"
                 DELETE FROM {UserRoles}
                 WHERE user_id = @UserId::uuid AND role = ANY(@Roles)";
@@ -387,6 +396,8 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
         private async Task LoadRolesAsync(User user)
         {
+            ArgumentNullException.ThrowIfNull(user);
+            
             var roles = await GetRolesAsync(user.Id);
             foreach (var role in roles)
             {

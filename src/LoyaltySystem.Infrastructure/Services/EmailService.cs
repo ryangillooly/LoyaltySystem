@@ -30,7 +30,7 @@ public class EmailService : IEmailService
             $"To reset your password, use this token: {resetToken}"
         );
     
-    public async Task SendEmailConfirmationEmailAsync(string toEmail, string confirmationToken) =>
+    public async Task SendConfirmationEmailAsync(string toEmail, string confirmationToken) =>
         await SendEmailAsync(
             toEmail, 
             "Email Verification", 

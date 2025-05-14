@@ -1,14 +1,14 @@
+using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Interfaces.Auth;
 using LoyaltySystem.Application.Interfaces.Customers;
-using LoyaltySystem.Application.Interfaces.Profile;
 using LoyaltySystem.Application.Interfaces.Roles;
+using LoyaltySystem.Application.Interfaces.Users;
 using LoyaltySystem.Application.Services;
 using LoyaltySystem.Application.Services.Auth;
 using LoyaltySystem.Application.Services.Customers;
-using LoyaltySystem.Application.Services.Profiles;
 using LoyaltySystem.Application.Services.Roles;
-using LoyaltySystem.Application.Services.TokenServices;
+using LoyaltySystem.Application.Services.Users;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
 using LoyaltySystem.Infrastructure.Repositories;
@@ -84,14 +84,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAuthServices(this IServiceCollection services)
     {
         services
-            .AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>()
-            .AddScoped<IEmailVerificationRepository, EmailVerificationRepository>()
-            .AddScoped<IEmailVerificationService, EmailVerificationService>()
-            .AddScoped<IPasswordResetTokenService, PasswordResetTokenService>()
-            .AddScoped<IPasswordResetService, PasswordResetService>()
-            .AddScoped<IRegistrationService, RegistrationService>()
             .AddScoped<IPasswordHasher<User>, PasswordHasher<User>>()
-            .AddScoped<IAuthenticationService, AuthenticationService>();
+            .AddScoped<IPasswordHasher<UserDto>, PasswordHasher<UserDto>>()
+            .AddScoped<IAuthenticationService, AuthenticationService>()
+            .AddScoped<ITokenRepository, TokenRepository>()
+            .AddScoped<ITokenService, TokenService>()
+            .AddScoped<IAuthenticationService, AuthenticationService>()
+            .AddScoped<IAccountService, AccountService>();
 
         return services;
     }
@@ -116,8 +115,8 @@ public static class ServiceCollectionExtensions
             .AddScoped<IBrandService, BrandService>()
             .AddScoped<IStoreService, StoreService>()
             .AddScoped<ICustomerService, CustomerService>()
-            .AddScoped<IProfileService, ProfileService>()
             .AddScoped<IRolesService, RolesService>()
+            .AddScoped<IUserService, UserService>()
             .AddEmailService(configuration);
 
         return services;
@@ -126,13 +125,13 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddScoped<IUserRepository, UserRepository>()
+            .AddScoped<ICustomerRepository, CustomerRepository>()
             .AddScoped<ILoyaltyCardRepository, LoyaltyCardRepository>()
             .AddScoped<ILoyaltyRewardsRepository, LoyaltyRewardsRepository>()
             .AddScoped<ILoyaltyProgramRepository, LoyaltyProgramRepository>()
             .AddScoped<IBusinessRepository, BusinessRepository>()
             .AddScoped<IBrandRepository, BrandRepository>()
-            .AddScoped<IStoreRepository, StoreRepository>()
-            .AddScoped<ICustomerRepository, CustomerRepository>();
+            .AddScoped<IStoreRepository, StoreRepository>();
 
         return services;
     }

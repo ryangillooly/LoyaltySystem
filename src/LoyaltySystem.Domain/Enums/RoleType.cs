@@ -4,10 +4,10 @@ namespace LoyaltySystem.Domain.Enums;
 
 public enum RoleType
 {
-    SuperAdmin,
-    Admin,
-    Staff,
-    Manager,
-    Customer,
-    User
+    User = 1,
+    Customer = 2,
+    Staff = 3,
+    Manager = 4,
+    Admin = 5,
+    SuperAdmin = 6,
 }

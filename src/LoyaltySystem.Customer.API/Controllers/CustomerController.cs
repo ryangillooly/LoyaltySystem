@@ -1,12 +1,8 @@
 using System.Security.Claims;
-using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.DTOs.Customer;
-using LoyaltySystem.Application.Interfaces;
-using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.DTOs.Customers;
 using LoyaltySystem.Application.Interfaces.Customers;
-using LoyaltySystem.Application.Interfaces.Profile;
-using LoyaltySystem.Application.Interfaces.Roles;
-using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Application.Interfaces.Users;
+using LoyaltySystem.Shared.API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,16 +14,16 @@ namespace LoyaltySystem.Customer.API.Controllers;
 public class CustomerController : ControllerBase
 {
     private readonly ICustomerService _customerService;
-    private readonly IProfileService _profileService;
+    private readonly IUserService _userService;
     private readonly ILogger<CustomerController> _logger;
 
     public CustomerController(
         ICustomerService customerService,
-        IProfileService profileService,
+        IUserService userService,
         ILogger<CustomerController> logger)
     {
         _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
-        _profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -68,11 +64,11 @@ public class CustomerController : ControllerBase
         
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
-    public async Task<IActionResult> UpdateCustomer([FromRoute] CustomerId id, [FromBody] UpdateCustomerDto updateDto)
+    public async Task<IActionResult> UpdateCustomer([FromRoute] string id, [FromBody] UpdateCustomerDto updateDto)
     {
         _logger.LogInformation("Admin updating customer ID: {CustomerId}", id);
             
-        var result = await _customerService.UpdateCustomerAsync(id.ToString(), updateDto);
+        var result = await _customerService.UpdateCustomerAsync(id, updateDto);
             
         if (!result.Success)
         {
@@ -86,13 +82,12 @@ public class CustomerController : ControllerBase
     [HttpPost("link/{customerId}")]
     public async Task<IActionResult> LinkCustomerToUser(string customerId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
-        if (string.IsNullOrEmpty(userId))
+        var success = User.TryGetUserId(out var userId);
+        if (!success)
             return Unauthorized(new { message = "User not authenticated" });
             
         // Check if user already has a customer ID
-        var userResult = await _profileService.GetUserByIdAsync(userId);
+        var userResult = await _userService.GetByIdAsync(userId);
         if (!userResult.Success)
             return BadRequest(new { message = userResult.Errors });
             

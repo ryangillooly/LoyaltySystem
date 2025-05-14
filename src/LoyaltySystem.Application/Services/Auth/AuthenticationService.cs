@@ -45,6 +45,7 @@ public class AuthenticationService : IAuthenticationService
         if (!user.IsEmailConfirmed)
             return OperationResult<AuthResponseDto>.FailureResult("Email has not been confirmed");
         
+        // TODO: Fix this. Password isn't being changed
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
         if (result == PasswordVerificationResult.Failed)
             return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");

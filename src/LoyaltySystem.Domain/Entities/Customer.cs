@@ -48,13 +48,17 @@ namespace LoyaltySystem.Domain.Entities
         }
 
         public string PrefixedId { get; set; } = string.Empty;
+        public UserId UserId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         public bool MarketingConsent { get; set; }
+        public DateTime? LastLoginAt { get; private set; }
         public Address? Address { get; set; }
+        public List<string> Roles { get; set; } = new();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         

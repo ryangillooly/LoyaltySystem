@@ -37,21 +37,26 @@ namespace LoyaltySystem.Domain.Entities
         }
         
         public string PrefixedId { get; set; } = string.Empty;
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
-        public string UserName { get; private set; }
-        public string Email { get; private set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string UserName { get; set; }
+        public string Email { get; set; }
         public string PasswordHash { get; set; }
-        public UserStatus Status { get; private set; }
-        public DateTime CreatedAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
-        public DateTime? LastLoginAt { get; private set; }
+        public UserStatus Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime? LastLoginAt { get; set; }
         public CustomerId? CustomerId { get; set; }
         public bool IsEmailConfirmed { get; set; }
         public DateTime? EmailConfirmationTokenExpiresAt { get; set; } = null;
         public string? EmailConfirmationToken { get; set; } = null;
-        public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
-        
+        public IReadOnlyCollection<UserRole> Roles
+        {
+            get => _roles.AsReadOnly();
+            set => throw new NotImplementedException();
+        }
+
+
         public void UpdateEmail(string email)
         {
             ArgumentNullException.ThrowIfNull(email, nameof(email));

@@ -1,34 +1,28 @@
+using LoyaltySystem.Domain.Enums;
 using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Common
 {
     public class OperationResult<T>
     {
-        private OperationResult(bool success, T? data, IEnumerable<string>? errors)
+        private OperationResult(bool success, T? data, IEnumerable<string>? errors, OperationErrorType? errorType)
         {
             Success = success;
             Data = data;
             Errors = errors;
+            ErrorType = errorType;
         }
         
         public bool Success { get; }
         public T? Data { get; }
         public IEnumerable<string>? Errors { get; }
+        public OperationErrorType? ErrorType { get; set; } = OperationErrorType.None;
         
-        public static OperationResult<T> SuccessResult(T data)
-        {
-            return new OperationResult<T>(true, data, null);
-        }
-        
-        public static OperationResult<T> FailureResult(string error)
-        {
-            return new OperationResult<T>(false, default, new[] { error });
-        }
-        
-        public static OperationResult<T> FailureResult(IEnumerable<string> errors)
-        {
-            return new OperationResult<T>(false, default, errors);
-        }
+        public static OperationResult<T> SuccessResult(T data) => new (success:true, data, errors:null, errorType:null);
+        public static OperationResult<T> FailureResult(string error, OperationErrorType errorType = OperationErrorType.Validation) => 
+            new (success:false, data:default, new[] { error }, errorType);
+        public static OperationResult<T> FailureResult(IEnumerable<string> errors, OperationErrorType errorType = OperationErrorType.Validation) => 
+            new (success:false, data:default, errors, errorType);
     }
     
     public class OperationResult

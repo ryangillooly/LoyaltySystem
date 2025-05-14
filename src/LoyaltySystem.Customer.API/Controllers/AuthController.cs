@@ -1,12 +1,10 @@
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Auth;
-using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.Auth.Social;
-using LoyaltySystem.Application.DTOs.Customer;
+using LoyaltySystem.Application.DTOs.Customers;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Interfaces.Auth;
 using LoyaltySystem.Application.Interfaces.Customers;
-using LoyaltySystem.Application.Interfaces.Profile;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Shared.API.Controllers;
@@ -22,34 +20,28 @@ public class AuthController : BaseAuthController
 {
     private readonly ISocialAuthService _socialAuthService;
     private readonly ICustomerService _customerService;
-    private readonly IRegistrationService _registrationService;
+    private readonly IAccountService _accountService;
     
     public AuthController(
         IAuthenticationService authService, 
         ICustomerService customerService,
-        IProfileService profileService,
-        IPasswordResetService passwordResetService,
-        IEmailVerificationService emailVerificationService,
         ISocialAuthService socialAuthService,
-        IRegistrationService registrationService,
+        IAccountService accountService,
         ILogger logger
     )
     : base(
         authService, 
-        profileService,
-        passwordResetService,
-        emailVerificationService,
         logger
     )
     {
+        _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
         _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
         _socialAuthService = socialAuthService ?? throw new ArgumentNullException(nameof(socialAuthService));
-        _registrationService = registrationService ?? throw new ArgumentNullException(nameof(registrationService));
     }
 
     protected override string UserType => "Customer";
     protected override async Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto request) => 
-        await _registrationService.RegisterUserAsync
+        await _accountService.RegisterAsync
         (
             request, 
             roles: new [] { RoleType.Customer },
@@ -61,21 +53,6 @@ public class AuthController : BaseAuthController
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Customer },
-            dto => _registrationService.RegisterUserAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
+            dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
         );
-
-    protected override async Task<OperationResult<ProfileDto>> GetProfileInternalAsync()
-    {
-        var customerIdString = User.FindFirstValue("CustomerId");
-        if (string.IsNullOrEmpty(customerIdString) || !EntityId.TryParse<CustomerId>(customerIdString, out var customerId))
-        {
-            _logger.Warning("Invalid customer ID in token: {CustomerId}", customerIdString);
-            return OperationResult<ProfileDto>.FailureResult("Invalid customer identification");
-        }
-
-        var result = await _customerService.GetCustomerByIdAsync(customerIdString);
-        return result.Success
-            ? OperationResult<ProfileDto>.SuccessResult(result.Data!)
-            : OperationResult<ProfileDto>.FailureResult(result.Errors!);
-    }
 }
