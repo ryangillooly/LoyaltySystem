@@ -22,5 +22,5 @@ public interface ICustomerService
     Task<int> GetTotalCustomerCountAsync();
     Task<int> GetCustomersWithCardsCountAsync();
     Task<OperationResult<List<StoreDto>>> FindNearbyStoresAsync(double latitude, double longitude, double radiusKm);
-    Task<OperationResult<UserDto>> LinkCustomerAsync(UserId userId, string customerId);
+    Task<OperationResult<InternalUserDto>> LinkCustomerAsync(UserId userId, string customerId);
 }

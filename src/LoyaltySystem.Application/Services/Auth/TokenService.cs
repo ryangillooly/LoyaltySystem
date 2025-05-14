@@ -38,7 +38,7 @@ public class TokenService : ITokenService
     public async Task<OperationResult> IsTokenValidAsync(VerificationTokenType type, string token)
     {
         var record = await _repository.GetValidTokenAsync(type, token);
-        if (record is not { IsValid: true } || record.ExpiresAt < DateTime.UtcNow)
+        if (record is not { IsValid: true } || DateTime.UtcNow >= record.ExpiresAt)
             return OperationResult.FailureResult("Invalid or expired verification token.");
         
         return OperationResult.SuccessResult();

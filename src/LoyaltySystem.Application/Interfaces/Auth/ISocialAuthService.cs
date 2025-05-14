@@ -11,5 +11,5 @@ public interface ISocialAuthService
     Task<OperationResult<SocialAuthResponseDto>> AuthenticateAsync(
         SocialAuthRequestDto request,
         IEnumerable<RoleType> allowedRoles,
-        Func<RegisterUserDto, Task<OperationResult<UserDto>>> registerUserAsync);
+        Func<RegisterUserDto, Task<OperationResult<InternalUserDto>>> registerUserAsync);
 }

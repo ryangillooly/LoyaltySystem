@@ -32,7 +32,7 @@ public class SocialAuthService : ISocialAuthService
        public async Task<OperationResult<SocialAuthResponseDto>> AuthenticateAsync(
            SocialAuthRequestDto request,
            IEnumerable<RoleType> allowedRoles,
-           Func<RegisterUserDto, Task<OperationResult<UserDto>>> registerUserAsync)
+           Func<RegisterUserDto, Task<OperationResult<InternalUserDto>>> registerUserAsync)
        {
            // 1. Validate the social token with the provider
            SocialUserInfo? socialUser = null;
@@ -94,7 +94,7 @@ public class SocialAuthService : ISocialAuthService
            return OperationResult<SocialAuthResponseDto>.SuccessResult(new SocialAuthResponseDto
            {
                Token = tokenResult.AccessToken,
-               User = new UserDto
+               InternalUser = new InternalUserDto
                {
                    Id = user.Id,
                    Email = user.Email,

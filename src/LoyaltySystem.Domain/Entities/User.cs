@@ -16,24 +16,20 @@ namespace LoyaltySystem.Domain.Entities
             string userName,
             string email,
             string passwordHash,
+            string phone,
             CustomerId? customerId) : base(new UserId())
         {
-            ArgumentNullException.ThrowIfNull(firstName);
-            ArgumentNullException.ThrowIfNull(lastName);
-            ArgumentNullException.ThrowIfNull(userName);
-            ArgumentNullException.ThrowIfNull(email);
-            ArgumentNullException.ThrowIfNull(passwordHash);
-            
-            FirstName = firstName;
-            LastName = lastName;
-            Email = email;
-            UserName = userName;
-            PasswordHash = passwordHash;
-            Status = UserStatus.Active;
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
-            LastLoginAt = null;
-            CustomerId = customerId ?? new CustomerId();
+            FirstName    = firstName    ?? throw new ArgumentNullException(nameof(firstName));
+            LastName     = lastName     ?? throw new ArgumentNullException(nameof(lastName));
+            Email        = email        ?? throw new ArgumentNullException(nameof(email));
+            UserName     = userName     ?? throw new ArgumentNullException(nameof(userName));
+            PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
+            Phone        = phone        ?? throw new ArgumentNullException(nameof(phone));
+            CustomerId   = customerId   ?? new CustomerId();
+            Status       = UserStatus.Active;
+            CreatedAt    = DateTime.UtcNow;
+            UpdatedAt    = DateTime.UtcNow;
+            LastLoginAt  = null;
         }
         
         public string PrefixedId { get; set; } = string.Empty;
@@ -41,6 +37,7 @@ namespace LoyaltySystem.Domain.Entities
         public string LastName { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
+        public string Phone { get; set; }
         public string PasswordHash { get; set; }
         public UserStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }

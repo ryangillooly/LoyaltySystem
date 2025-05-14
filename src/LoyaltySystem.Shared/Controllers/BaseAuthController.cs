@@ -93,7 +93,7 @@ public abstract class BaseAuthController : ControllerBase
             value: result.Data
         );
     }
-    protected abstract Task<OperationResult<UserDto>> RegisterAsync(RegisterUserDto registerRequest);
+    protected abstract Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto registerRequest);
     
     
     [AllowAnonymous]

@@ -18,6 +18,8 @@ namespace LoyaltySystem.Domain.Repositories
         Task AddAsync(User user, IDbTransaction? transaction = null);
         
         Task UpdateAsync(User user, IDbTransaction? transaction = null);
+        Task UpdatePasswordAsync(UserId userId, string newPasswordHash);
+        
         Task UpdateLastLoginAsync(UserId userId);
         Task AddRoleAsync(UserId userId, List<RoleType> roles);
         

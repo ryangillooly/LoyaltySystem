@@ -278,24 +278,24 @@ public class CustomerService : ICustomerService
         }
     }
     
-    public async Task<OperationResult<UserDto>> LinkCustomerAsync(UserId userId, string customerId)
+    public async Task<OperationResult<InternalUserDto>> LinkCustomerAsync(UserId userId, string customerId)
     {
         var customerIdObj = CustomerId.FromString(customerId);
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
-            return OperationResult<UserDto>.FailureResult("User not found.");
+            return OperationResult<InternalUserDto>.FailureResult("User not found.");
 
         var customer = await _customerRepository.GetByIdAsync(customerIdObj);
         if (customer == null)
-            return OperationResult<UserDto>.FailureResult("Customer not found.");
+            return OperationResult<InternalUserDto>.FailureResult("Customer not found.");
 
         if (user.CustomerId != null)
-            return OperationResult<UserDto>.FailureResult("User is already linked to a customer.");
+            return OperationResult<InternalUserDto>.FailureResult("User is already linked to a customer.");
         
         user.CustomerId = customerIdObj;
         user.AddRole(RoleType.Customer);
         await _userRepository.UpdateAsync(user);
 
-        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 }

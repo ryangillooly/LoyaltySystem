@@ -1,9 +1,12 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Auth.PasswordReset;
 using LoyaltySystem.Application.DTOs.AuthDtos;
+using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Application.Interfaces.Users;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 using System.Data;
 
@@ -13,25 +16,28 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly IPasswordHasher<InternalUserDto> _passwordHasher;
     private readonly ILogger _logger;
 
     public UserService(
         IUserRepository userRepository, 
         ICustomerRepository customerRepository,
+        IPasswordHasher<InternalUserDto> passwordHasher,
         ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
     }
     
-    public async Task<OperationResult<UserDto>> GetByIdAsync(UserId userId)
+    public async Task<OperationResult<InternalUserDto>> GetByIdAsync(UserId userId)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user is null)
         {
             _logger.Warning("User not found for UserId: {UserId}", userId);
-            return OperationResult<UserDto>.FailureResult("User not found.");
+            return OperationResult<InternalUserDto>.FailureResult("User not found.");
         }
 
         if (user.CustomerId is { })
@@ -41,15 +47,15 @@ public class UserService : IUserService
                 _logger.Warning("User {UserId} has CustomerId {CustomerId}, but the customer record was not found.", user.PrefixedId, user.CustomerId.ToString());
         }
         
-        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
-    public async Task<OperationResult<UserDto>> GetByEmailAsync(string userEmail)
+    public async Task<OperationResult<InternalUserDto>> GetByEmailAsync(string userEmail)
     {
         var user = await _userRepository.GetByEmailAsync(userEmail);
         if (user is null)
         {
             _logger.Warning("User not found for Email: {Email}", userEmail);
-            return OperationResult<UserDto>.FailureResult($"User not found with email {userEmail}");
+            return OperationResult<InternalUserDto>.FailureResult($"User not found with email {userEmail}");
         }
 
         if (user.CustomerId is { })
@@ -59,43 +65,40 @@ public class UserService : IUserService
                 _logger.Warning("User {UserId} has CustomerId {CustomerId}, but the customer record was not found.", user.PrefixedId, user.CustomerId.ToString());
         }
                     
-        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
-    public async Task<OperationResult<UserDto>> GetByUsernameAsync(string username)
+    public async Task<OperationResult<InternalUserDto>> GetByUsernameAsync(string username)
     {
         var user = await _userRepository.GetByUsernameAsync(username);
         
         return user is null
-            ? OperationResult<UserDto>.FailureResult("User not found for the given Customer ID.")
-            : OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+            ? OperationResult<InternalUserDto>.FailureResult("User not found for the given Customer ID.")
+            : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
-    public async Task<OperationResult<UserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
+    public async Task<OperationResult<InternalUserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
     {
         var user = await _userRepository.GetByCustomerIdAsync(customerId);
         
         return user is null
-            ? OperationResult<UserDto>.FailureResult("User not found for the given Customer ID.")
-            : OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+            ? OperationResult<InternalUserDto>.FailureResult("User not found for the given Customer ID.")
+            : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
-    public async Task<OperationResult<UserDto>> AddAsync(User user, IDbTransaction? transaction = null)
+    public async Task<OperationResult<InternalUserDto>> AddAsync(User user, IDbTransaction? transaction = null)
     {
         ArgumentNullException.ThrowIfNull(user);
         await _userRepository.AddAsync(user);
         
         _logger.Information("User {UserId} added", user.Id);
-        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
-    public async Task<OperationResult<UserDto>> UpdateAsync(UserId userId, UpdateUserDto updateDto)
+    public async Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserDto updateDto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user is null)
-            return OperationResult<UserDto>.FailureResult("User not found.");
-        
-        if (string.IsNullOrEmpty(updateDto.UserName) && string.IsNullOrEmpty(updateDto.Email))
-            return OperationResult<UserDto>.FailureResult("No profile information provided for update.");
+            return OperationResult<InternalUserDto>.FailureResult("User not found.");
         
         if (!string.IsNullOrEmpty(updateDto.UserName))
             user.UpdateUserName(updateDto.UserName);
@@ -108,11 +111,19 @@ public class UserService : IUserService
         
         await _userRepository.UpdateAsync(user); 
 
-        return OperationResult<UserDto>.SuccessResult(UserDto.From(user));
+        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
-    public async Task<OperationResult<UserDto>> DeleteAsync(UserId userId, UpdateUserDto updateDto) =>
+    public async Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserDto updateDto) =>
         throw new NotImplementedException();
+
+    public async Task<OperationResult<InternalUserDto>> UpdatePasswordAsync(InternalUserDto internalUserDto, ResetPasswordRequestDto resetDto)
+    {
+        internalUserDto.PasswordHash = _passwordHasher.HashPassword(internalUserDto, resetDto.NewPassword);
+        await _userRepository.UpdatePasswordAsync(internalUserDto.Id, internalUserDto.PasswordHash);
+
+        return OperationResult<InternalUserDto>.SuccessResult(internalUserDto);
+    }
     
     public async Task<OperationResult> ConfirmEmailAndUpdateAsync(UserId userId)
     {

@@ -85,7 +85,7 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddScoped<IPasswordHasher<User>, PasswordHasher<User>>()
-            .AddScoped<IPasswordHasher<UserDto>, PasswordHasher<UserDto>>()
+            .AddScoped<IPasswordHasher<InternalUserDto>, PasswordHasher<InternalUserDto>>()
             .AddScoped<IAuthenticationService, AuthenticationService>()
             .AddScoped<ITokenRepository, TokenRepository>()
             .AddScoped<ITokenService, TokenService>()

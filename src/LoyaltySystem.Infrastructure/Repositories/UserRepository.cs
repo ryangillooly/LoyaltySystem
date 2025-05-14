@@ -286,6 +286,30 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw; 
             }
         }
+
+        public async Task UpdatePasswordAsync(UserId userId, string newPasswordHash)
+        {
+            ArgumentNullException.ThrowIfNull(userId);
+            ArgumentNullException.ThrowIfNull(newPasswordHash);
+            
+            const string sql = @"
+                UPDATE 
+                    users
+                SET 
+                    password_hash = @PasswordHash,
+                    updated_at = @UpdatedAt
+                WHERE 
+                    id = @Id::uuid";
+
+            var connection = await _dbConnection.GetConnectionAsync();
+            await connection.ExecuteAsync(sql, new
+            {
+                Id = userId.Value,
+                PasswordHash = newPasswordHash,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        
         public async Task AddRoleAsync(UserId userId, List<RoleType> roles)
         {
             ArgumentNullException.ThrowIfNull(userId);
