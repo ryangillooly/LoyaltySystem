@@ -9,33 +9,52 @@ This document visualizes the data flow and mapping for all authentication-relate
 **Endpoint:** `POST /api/auth/login`
 
 **DTO/Model Shapes:**
-- **LoginRequestDto**
-  ```ts
+- **LoginRequestDto** (inherits from AuthDto)
+  ```
   {
-    identifier: string, // email or username
+    email: string,
+    userName: string,
+    identifier: string, // computed: email or userName
+    identifierType: "Email" | "Username", // computed
     password: string
   }
   ```
 - **AuthResponseDto**
-  ```ts
+  ```
   {
     accessToken: string,
-    tokenType: string,
+    tokenType: string, // e.g. "Bearer"
     expiresIn: number,
-    refreshToken?: string
+    refreshToken: string | null
   }
   ```
 - **User (domain)**
-  ```ts
+  ```
   {
-    id: UserId,
-    email: string,
+    id: string, // UserId
+    prefixedId: string,
+    firstName: string,
+    lastName: string,
     userName: string,
+    email: string,
+    phone: string,
     passwordHash: string,
-    roles: string[],
-    status: string,
+    status: "Active" | "Inactive" | "Locked",
+    createdAt: string, // ISO date
+    updatedAt: string, // ISO date
+    lastLoginAt: string | null,
+    customerId: string | null, // CustomerId
     isEmailConfirmed: boolean,
-    ...
+    emailConfirmationTokenExpiresAt: string | null,
+    emailConfirmationToken: string | null,
+    roles: [
+      {
+        userId: string, // UserId
+        role: "User" | "Customer" | "Staff" | "Manager" | "Admin" | "SuperAdmin",
+        createdAt: string, // ISO date
+        user: null // (circular, not included)
+      }
+    ]
   }
   ```
 
@@ -63,30 +82,36 @@ flowchart LR
 
 **DTO/Model Shapes:**
 - **RegisterUserDto**
-  ```ts
+  ```
   {
     firstName: string,
     lastName: string,
     userName: string,
     email: string,
-    phone?: string,
+    phone: string,
     password: string,
     confirmPassword: string,
-    roles: string[],
-    isEmailConfirmed?: boolean
+    roles: ["User" | "Customer" | "Staff" | "Manager" | "Admin" | "SuperAdmin"],
+    isEmailConfirmed: boolean
   }
   ```
 - **InternalUserDto**
-  ```ts
+  ```
   {
-    id: UserId,
+    id: string, // UserId
     firstName: string,
     lastName: string,
     userName: string,
     email: string,
-    roles: string[],
-    isEmailConfirmed: boolean,
-    ...
+    status: string,
+    customerId: string,
+    passwordHash: string,
+    phone: string,
+    createdAt: string, // ISO date
+    updatedAt: string | null,
+    lastLoginAt: string | null,
+    roles: [string],
+    isEmailConfirmed: boolean
   }
   ```
 - **User (domain)**
@@ -117,18 +142,20 @@ flowchart LR
 **Endpoint:** `POST /api/auth/forgot-password`
 
 **DTO/Model Shapes:**
-- **ForgotPasswordRequestDto**
-  ```ts
+- **ForgotPasswordRequestDto** (inherits from AuthDto)
+  ```
   {
-    email?: string,
-    userName?: string
+    email: string,
+    userName: string,
+    identifier: string, // computed
+    identifierType: "Email" | "Username" // computed
   }
   ```
 - **OperationResult**
-  ```ts
+  ```
   {
     success: boolean,
-    errors?: string[]
+    errors: [string] | null
   }
   ```
 - **User (domain)**
@@ -159,11 +186,13 @@ flowchart LR
 **Endpoint:** `POST /api/auth/reset-password`
 
 **DTO/Model Shapes:**
-- **ResetPasswordRequestDto**
-  ```ts
+- **ResetPasswordRequestDto** (inherits from AuthDto)
+  ```
   {
-    email?: string,
-    userName?: string,
+    email: string,
+    userName: string,
+    identifier: string, // computed
+    identifierType: "Email" | "Username", // computed
     token: string,
     newPassword: string,
     confirmPassword: string
@@ -200,7 +229,7 @@ flowchart LR
 
 **DTO/Model Shapes:**
 - **ResendEmailVerificationRequestDto**
-  ```ts
+  ```
   {
     email: string
   }
@@ -236,26 +265,41 @@ flowchart LR
 
 **DTO/Model Shapes:**
 - **SocialAuthRequestDto**
-  ```ts
+  ```
   {
     authCode: string,
-    state?: string,
-    nonce?: string,
-    provider: 'Google' | 'Apple' | string
+    state: string,
+    nonce: string,
+    provider: "Google" | "Apple" | string
   }
   ```
 - **SocialAuthResponseDto**
-  ```ts
+  ```
   {
     token: string,
-    internalUser: InternalUserDto,
+    internalUser: {
+      id: string,
+      firstName: string,
+      lastName: string,
+      userName: string,
+      email: string,
+      status: string,
+      customerId: string,
+      passwordHash: string,
+      phone: string,
+      createdAt: string,
+      updatedAt: string | null,
+      lastLoginAt: string | null,
+      roles: [string],
+      isEmailConfirmed: boolean
+    },
     isNewUser: boolean,
-    socialId?: string,
-    socialEmail?: string
+    socialId: string,
+    socialEmail: string
   }
   ```
 - **InternalUserDto**
-  (see Register)
+  (see above)
 - **User (domain)**
   (see Login)
 
