@@ -2,21 +2,22 @@ using System;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 
-namespace LoyaltySystem.Domain.Entities
+namespace LoyaltySystem.Domain.Entities;
+
+public class UserRole : Entity<UserRoleId>
 {
-    public class UserRole : Entity<UserRoleId>
+    public UserRole
+    (
+        UserId userId, 
+        RoleType role
+    ) 
+    : base(new UserRoleId())
     {
-        public UserRole(UserId userId, RoleType role) : base(new UserRoleId(Guid.NewGuid()))
-        {
-            UserId = userId ?? throw new ArgumentNullException(nameof(userId));
-            Role = role;
-            CreatedAt = DateTime.UtcNow;
-        }
-        
-        public UserId UserId { get; private set; }
-        public RoleType Role { get; private set; }
-        public DateTime CreatedAt { get; private set; }
-        
-        public User? User { get; private set; }
+        Role = role;
+        CreatedAt = DateTime.UtcNow;
+        UserId = userId ?? throw new ArgumentNullException(nameof(userId));
     }
-} 
+        
+    public UserId UserId { get; set; }
+    public RoleType Role { get; set; }
+}

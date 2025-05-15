@@ -1,4 +1,5 @@
 using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
+using LoyaltySystem.Application.DTOs.Rewards;
 using LoyaltySystem.Domain.Common;
 
 namespace LoyaltySystem.Application.Interfaces;

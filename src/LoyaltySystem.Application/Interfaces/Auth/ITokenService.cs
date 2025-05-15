@@ -6,7 +6,7 @@ namespace LoyaltySystem.Application.Interfaces.Auth;
 
 public interface ITokenService
 {
-    Task<string> GenerateAndStoreTokenAsync(UserId userId, VerificationTokenType type, TimeSpan expiry);
+    Task<string> GenerateAndStoreTokenAsync(UserId userId, VerificationTokenType type);
     Task<OperationResult> IsTokenValidAsync(VerificationTokenType type, string token);
     Task InvalidateAllTokensAsync(UserId userId, VerificationTokenType type);
     Task InvalidateTokenAsync(VerificationTokenType type, string token);

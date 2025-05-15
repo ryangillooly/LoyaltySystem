@@ -79,10 +79,6 @@ namespace LoyaltySystem.Infrastructure.Repositories
 
             try
             {
-                // Generate and assign the PrefixedId before inserting
-                var customerId = new CustomerId(customer.Id.Value); // Assuming base Entity<T> has Value property
-                customer.PrefixedId = customerId.ToString();
-
                 await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         customers 
@@ -169,25 +165,22 @@ namespace LoyaltySystem.Infrastructure.Repositories
             // Map DTOs to domain entities
             return dtos.Select(CreateCustomerFromDto).ToList();
         }
-
         
-        // Private helper method to create a Customer entity from a DTO
         private static Customer CreateCustomerFromDto(CustomerDbObjectDto dbObjectDto) =>
-            // Use the constructor that requires names
-            new Customer(
-                dbObjectDto.FirstName ?? string.Empty, // Handle potential DB nulls
-                dbObjectDto.LastName ?? string.Empty,  // Handle potential DB nulls
-                dbObjectDto.UserName ?? string.Empty, // Username might be null from DB if SELECT *
-                dbObjectDto.Email ?? string.Empty,    // Handle potential DB nulls
-                dbObjectDto.Phone ?? string.Empty,    // Handle potential DB nulls
-                null, // Address not selected/mapped here
-                dbObjectDto.MarketingConsent,
-                new CustomerId(dbObjectDto.Id) // Pass the ID
+            new 
+            (
+                dbObjectDto.FirstName ?? string.Empty, 
+                dbObjectDto.LastName ?? string.Empty,  
+                dbObjectDto.UserName ?? string.Empty, 
+                dbObjectDto.Email ?? string.Empty,    
+                dbObjectDto.Phone ?? string.Empty,    
+                null, 
+                dbObjectDto.MarketingConsent
             )
             {
-                // Set properties not handled by this constructor (if any)
+                Id = new CustomerId(dbObjectDto.Id),
                 CreatedAt = dbObjectDto.CreatedAt,
-                UpdatedAt = dbObjectDto.UpdatedAt
+                UpdatedAt = dbObjectDto.UpdatedAt.Value
             };
 
         public async Task UpdateAsync(Customer customer)

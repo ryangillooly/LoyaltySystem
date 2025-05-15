@@ -15,8 +15,8 @@ public interface IUserService
     Task<OperationResult<InternalUserDto>> GetUserByCustomerIdAsync(CustomerId customerId);
     
     Task<OperationResult<InternalUserDto>> AddAsync(User user, IDbTransaction? transaction = null);
-    Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserDto updateDto);
-    Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserDto updateDto);
+    Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserRequestDto updateRequestDto);
+    Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserRequestDto updateRequestDto);
     Task<OperationResult<InternalUserDto>> UpdatePasswordAsync(InternalUserDto internalUserDto, ResetPasswordRequestDto resetDto);
     
     Task<OperationResult> ConfirmEmailAndUpdateAsync(UserId userId);

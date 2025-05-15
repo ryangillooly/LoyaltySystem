@@ -2,7 +2,7 @@ using LoyaltySystem.Domain.Enums;
 
 namespace LoyaltySystem.Application.DTOs.Auth;
 
-public class RegisterUserDto
+public class RegisterUserRequestDto
 {
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;

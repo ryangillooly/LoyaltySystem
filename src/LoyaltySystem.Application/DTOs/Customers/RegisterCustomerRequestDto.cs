@@ -3,7 +3,7 @@ using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.DTOs.Customers;
 
-public class RegisterCustomerDto : RegisterUserDto
+public class RegisterCustomerRequestDto : RegisterUserRequestDto
 {
     public bool MarketingConsent { get; set; } = false;
     public DateTime? DateOfBirth { get; set; } = null;

@@ -177,11 +177,6 @@ public class TransactionRepository : ITransactionRepository
 
     public async Task AddAsync(Transaction transaction)
     {
-        // Temporarily create a TransactionId to generate the string
-        // Consider creating a proper TransactionId : EntityId<TransactionId> if needed elsewhere
-        var txIdObj = new TransactionId(transaction.Id); 
-        transaction.PrefixedId = txIdObj.ToString();
-
         const string sql = @"
                 INSERT INTO transactions (
                     id, prefixed_id, card_id, type, reward_id, quantity,

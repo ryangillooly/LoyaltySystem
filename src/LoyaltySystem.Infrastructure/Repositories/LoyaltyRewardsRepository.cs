@@ -321,18 +321,14 @@ public class LoyaltyRewardsRepository : ILoyaltyRewardsRepository
             
             // Create a new reward with the returned ID
             var newReward = new Reward
-            {
-                Id = new RewardId(Guid.Parse(id)),
-                ProgramId = reward.ProgramId,
-                Title = reward.Title,
-                Description = reward.Description,
-                RequiredValue = reward.RequiredValue,
-                ValidFrom = reward.ValidFrom,
-                ValidTo = reward.ValidTo,
-                IsActive = true,
-                CreatedAt = dto.CreatedAt,
-                UpdatedAt = dto.UpdatedAt
-            };
+            (
+                reward.ProgramId,
+                reward.Title,
+                reward.Description,
+                reward.RequiredValue,
+                reward.ValidFrom,
+                reward.ValidTo
+            );
             
             return newReward;
         }
@@ -914,18 +910,14 @@ public class LoyaltyRewardsRepository : ILoyaltyRewardsRepository
         public Reward ToDomain()
         {
             return new Reward
-            {
-                Id = new RewardId(Id),
-                ProgramId = new LoyaltyProgramId(ProgramId),
-                Title = Title,
-                Description = Description,
-                RequiredValue = RequiredValue,
-                ValidFrom = ValidFrom,
-                ValidTo = ValidTo,
-                IsActive = IsActive,
-                CreatedAt = CreatedAt,
-                UpdatedAt = UpdatedAt
-            };
+            (
+                new LoyaltyProgramId(ProgramId),
+                Title,
+                Description,
+                RequiredValue,
+                ValidFrom,
+                ValidTo
+            );
         }
     }
 }

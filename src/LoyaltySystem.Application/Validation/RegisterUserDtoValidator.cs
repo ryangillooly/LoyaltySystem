@@ -5,7 +5,7 @@ using LoyaltySystem.Application.DTOs.AuthDtos;
 
 namespace LoyaltySystem.Application.Validation;
 
-public class RegisterUserDtoValidator : AbstractValidator<RegisterUserDto>
+public class RegisterUserDtoValidator : AbstractValidator<RegisterUserRequestDto>
 {
     private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
    

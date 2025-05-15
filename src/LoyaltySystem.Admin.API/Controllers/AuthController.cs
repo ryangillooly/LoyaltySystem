@@ -48,8 +48,8 @@ public class AuthController : BaseAuthController
     
     [HttpPost("register")]
     [Authorize(Roles = "SuperAdmin,Admin")]
-    public override async Task<IActionResult> Register(RegisterUserDto request) => await base.Register(request);
-    protected override async Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto request)
+    public override async Task<IActionResult> Register(RegisterUserRequestDto request) => await base.Register(request);
+    protected override async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
         
@@ -61,20 +61,20 @@ public class AuthController : BaseAuthController
         
         if (!userIsSuperAdmin && adminRolesRequested)
             return await Task.FromResult(
-                OperationResult<InternalUserDto>.FailureResult(new[] { "SuperAdmin role required to assign admin roles" }, OperationErrorType.Forbidden));
+                OperationResult<RegisterUserResponseDto>.FailureResult(new[] { "SuperAdmin role required to assign admin roles" }, OperationErrorType.Forbidden));
         
         // Admins or SuperAdmins can create Managers
         if (!userIsAnAdmin && managerRoleRequested)
             return await Task.FromResult(
-                OperationResult<InternalUserDto>.FailureResult(new[] { "Admin role required to assign manager roles" }, OperationErrorType.Forbidden));
+                OperationResult<RegisterUserResponseDto>.FailureResult(new[] { "Admin role required to assign manager roles" }, OperationErrorType.Forbidden));
 
         // Register the user (using admin registration logic for both roles)
         var result = await _accountService.RegisterAsync(request, request.Roles);
         
         if (!result.Success || result.Data is null)
-            return await Task.FromResult(OperationResult<InternalUserDto>.FailureResult(result.Errors!));
+            return await Task.FromResult(OperationResult<RegisterUserResponseDto>.FailureResult(result.Errors!));
 
-        return await Task.FromResult(OperationResult<InternalUserDto>.SuccessResult(result.Data));
+        return await Task.FromResult(OperationResult<RegisterUserResponseDto>.SuccessResult(result.Data));
     }
 
     protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>

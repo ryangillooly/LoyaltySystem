@@ -9,8 +9,6 @@ namespace LoyaltySystem.Domain.Entities;
 /// </summary>
 public class Brand : Entity<BrandId>
 {
-    public Brand() : base(new BrandId()) { }
-
     public Brand
     (
         string name,
@@ -19,17 +17,17 @@ public class Brand : Entity<BrandId>
         string description,
         ContactInfo contact,
         Address address,
-        BusinessId businessId) : base(new BrandId())
+        BusinessId businessId
+    ) 
+    : base(new BrandId())
     {
-        Name = name;
-        Category = category;
-        Logo = logo;
-        Description = description;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Logo = logo ?? throw new ArgumentNullException(nameof(logo));
         Contact = contact ?? throw new ArgumentNullException(nameof(contact));
-        Address = address;
-        BusinessId = businessId;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
+        Address = address ?? throw new ArgumentNullException(nameof(address));
+        Category = category ?? throw new ArgumentNullException(nameof(category));
+        BusinessId = businessId ?? throw new ArgumentNullException(nameof(businessId));
+        Description = description ?? throw new ArgumentNullException(nameof(description));
     }
     
     public string Name { get; private set; }
@@ -39,38 +37,23 @@ public class Brand : Entity<BrandId>
     public BusinessId BusinessId { get; private set; }
     public ContactInfo Contact { get; private set; }
     public Address Address { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime UpdatedAt { get; private set; }
 
-
-    public void Update(
+    public void Update
+    (
         string name,
         string category,
         string logo,
         string description,
         ContactInfo contact,
-        Address address)
+        Address address
+    )
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Brand name cannot be empty", nameof(name));
-
-        Name = name;
-        Category = category;
-        Logo = logo;
-        Description = description;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Logo = logo ?? throw new ArgumentNullException(nameof(logo));
         Contact = contact ?? throw new ArgumentNullException(nameof(contact));
-        Address = address;
+        Address = address ?? throw new ArgumentNullException(nameof(address));
+        Category = category ?? throw new ArgumentNullException(nameof(category));
+        Description = description ?? throw new ArgumentNullException(nameof(description));
         UpdatedAt = DateTime.UtcNow;
-    }
-        
-    // Internal methods for Dapper to use when materializing objects
-    public void SetContactInfo(ContactInfo contact)
-    {
-        Contact = contact;
-    }
-        
-    public void SetAddress(Address address)
-    {
-        Address = address;
     }
 }

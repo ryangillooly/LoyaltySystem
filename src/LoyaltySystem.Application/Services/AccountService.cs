@@ -69,7 +69,7 @@ public class AccountService : IAccountService
         
         await _tokenService.InvalidateAllTokensAsync(user.Data.Id, VerificationTokenType.EmailVerification);
         
-        var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.EmailVerification, TimeSpan.FromDays(1));
+        var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.EmailVerification);
         await _emailService.SendConfirmationEmailAsync(email, token);
 
         return OperationResult.SuccessResult();
@@ -94,7 +94,7 @@ public class AccountService : IAccountService
             return OperationResult.FailureResult($"User not found with {request.IdentifierType} == {request.Identifier}");
         }
 
-        var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.PasswordReset, TimeSpan.FromMinutes(30));
+        var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.PasswordReset);
         await _emailService.SendPasswordResetEmailAsync(user.Data.Email, token);
 
         _logger.Information("Password successfully reset for {Type} == {Identifier}", request.IdentifierType, request.Identifier);
@@ -103,6 +103,8 @@ public class AccountService : IAccountService
     
     public async Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        
         var validator = new ResetPasswordRequestDtoValidator();
         var result = await validator.ValidateAsync(request);
         if (!result.IsValid)
@@ -137,26 +139,26 @@ public class AccountService : IAccountService
         return OperationResult.SuccessResult();
     }
     
-    public async Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto registerDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
+    public async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
     {
         var validator = new RegisterUserDtoValidator();
-        var validationResult = await validator.ValidateAsync(registerDto);
+        var validationResult = await validator.ValidateAsync(registerRequestDto);
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return OperationResult<InternalUserDto>.FailureResult(errors);
+            return OperationResult<RegisterUserResponseDto>.FailureResult(errors);
         }
         
-        var getByEmailResult = await _userService.GetByEmailAsync(registerDto.Email);
+        var getByEmailResult = await _userService.GetByEmailAsync(registerRequestDto.Email);
         if (getByEmailResult.Success)
-            return OperationResult<InternalUserDto>.FailureResult($"Email '{registerDto.Email}' already exists.");
+            return OperationResult<RegisterUserResponseDto>.FailureResult($"Email '{registerRequestDto.Email}' already exists.");
 
-        var getByUsernameResult = await _userService.GetByUsernameAsync(registerDto.UserName);
+        var getByUsernameResult = await _userService.GetByUsernameAsync(registerRequestDto.UserName);
         if (getByUsernameResult.Success)
-            return OperationResult<InternalUserDto>.FailureResult($"Username '{registerDto.UserName}' already exists.");
+            return OperationResult<RegisterUserResponseDto>.FailureResult($"Username '{registerRequestDto.UserName}' already exists.");
 
-        var user = BuildUserObject(registerDto, roles);
-        var customer = BuildCreateCustomerDto(registerDto, createCustomer, customerData);
+        var user = BuildUserObject(registerRequestDto, roles);
+        var customer = BuildCreateCustomerDto(registerRequestDto, createCustomer, customerData);
 
         try
         {
@@ -167,63 +169,62 @@ public class AccountService : IAccountService
                     await _customerService.AddCustomerAsync(customer, _unitOfWork.CurrentTransaction); 
 
                 await _userService.AddAsync(user, _unitOfWork.CurrentTransaction);
-                var token = await _tokenService.GenerateAndStoreTokenAsync(user.Id, VerificationTokenType.EmailVerification, TimeSpan.FromDays(1));
+                var token = await _tokenService.GenerateAndStoreTokenAsync(user.Id, VerificationTokenType.EmailVerification);
                 await _emailService.SendConfirmationEmailAsync(user.Email, token);
             });
 
             if (user is null)
             {
-                _logger.Error("User object was null after registration transaction for email {Email}", registerDto.Email);
-                return OperationResult<InternalUserDto>.FailureResult("Registration completed but failed to retrieve user details.");
+                _logger.Error("User object was null after registration transaction for email {Email}", registerRequestDto.Email);
+                return OperationResult<RegisterUserResponseDto>.FailureResult("Registration completed but failed to retrieve user details.");
             }
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Error during registration for email {Email}: {ErrorMessage}", registerDto.Email, ex.Message);
-            return OperationResult<InternalUserDto>.FailureResult($"Registration failed: {ex.Message}");
+            _logger.Error(ex, "Error during registration for email {Email}: {ErrorMessage}", registerRequestDto.Email, ex.Message);
+            return OperationResult<RegisterUserResponseDto>.FailureResult($"Registration failed: {ex.Message}");
         }
         
-        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
+        return OperationResult<RegisterUserResponseDto>.SuccessResult(RegisterUserResponseDto.From(user));
     }
     
     
     # region Helpers
-    private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserDto dto, bool createCustomer, CustomerExtraData? customerData) =>
+    private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserRequestDto requestDto, bool createCustomer, CustomerExtraData? customerData) =>
         createCustomer
             ? new CreateCustomerDto
               {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                UserName = dto.UserName,
-                Email = dto.Email,
-                Phone = dto.Phone,
+                FirstName = requestDto.FirstName,
+                LastName = requestDto.LastName,
+                UserName = requestDto.UserName,
+                Email = requestDto.Email,
+                Phone = requestDto.Phone,
                 Address = customerData?.Address,
                 MarketingConsent = customerData?.MarketingConsent ?? false
               }
             : null;
     
-    private User BuildUserObject(RegisterUserDto registerDto, IEnumerable<RoleType> roles)
+    private User BuildUserObject(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles)
     {
         User user =  new User 
         (
-            registerDto.FirstName,
-            registerDto.LastName,
-            registerDto.UserName,
-            registerDto.Email,
+            registerRequestDto.FirstName,
+            registerRequestDto.LastName,
+            registerRequestDto.UserName,
+            registerRequestDto.Email,
             string.Empty,
-            registerDto.Phone,
+            registerRequestDto.Phone,
             null
         )
         {
             IsEmailConfirmed = false
         };
                 
-        user.PasswordHash = _passwordHasher.HashPassword(InternalUserDto.From(user), registerDto.Password);
+        user.PasswordHash = _passwordHasher.HashPassword(InternalUserDto.From(user), registerRequestDto.Password);
 
         foreach (var role in roles) 
             user.AddRole(role);
 
-        user.PrefixedId = user.Id.ToString();
         return user;
     }
     private async Task<OperationResult<InternalUserDto>> GetUserByEmailOrUsernameAsync(AuthDto request)

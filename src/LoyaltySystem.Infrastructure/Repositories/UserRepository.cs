@@ -79,17 +79,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
             
             try
             {
-                // Query for the user with our custom mappers
-                var user = await connection.QuerySingleOrDefaultAsync<User>(
-                    sql,
-                    new { Username = username },
-                    commandType: CommandType.Text);
+                var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { Username = username });
                 
-                if (user != null)
-                {
-                    // Load roles after fetching user
+                if (user is { })
                     await LoadRolesAsync(user);
-                }
                 
                 return user;
             }
@@ -293,13 +286,10 @@ namespace LoyaltySystem.Infrastructure.Repositories
             ArgumentNullException.ThrowIfNull(newPasswordHash);
             
             const string sql = @"
-                UPDATE 
-                    users
-                SET 
-                    password_hash = @PasswordHash,
+                UPDATE users
+                SET password_hash = @PasswordHash,
                     updated_at = @UpdatedAt
-                WHERE 
-                    id = @Id::uuid";
+                WHERE id = @Id::uuid";
 
             var connection = await _dbConnection.GetConnectionAsync();
             await connection.ExecuteAsync(sql, new
@@ -418,14 +408,14 @@ namespace LoyaltySystem.Infrastructure.Repositories
             });
         }
 
-        private async Task LoadRolesAsync(User user)
+        private async Task LoadRolesAsync(User userData)
         {
-            ArgumentNullException.ThrowIfNull(user);
+            ArgumentNullException.ThrowIfNull(userData);
             
-            var roles = await GetRolesAsync(user.Id);
+            var roles = await GetRolesAsync(userData.Id);
             foreach (var role in roles)
             {
-                user.AddRole(role);
+                userData.AddRole(role);
             }
         }
     }

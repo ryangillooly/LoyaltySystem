@@ -3,10 +3,22 @@ using LoyaltySystem.Domain.Enums;
 
 namespace LoyaltySystem.Domain.Entities
 {
-    public class User : Entity<UserId>
+    public class User : Entity<UserId> 
     {
         private readonly List<UserRole> _roles = new();
         
+        public CustomerId? CustomerId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
+        public UserStatus Status { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
+        public bool IsEmailConfirmed { get; set; }
+
         public User() : base(new UserId()) { }
         
         public User
@@ -17,43 +29,23 @@ namespace LoyaltySystem.Domain.Entities
             string email,
             string passwordHash,
             string phone,
-            CustomerId? customerId) : base(new UserId())
+            CustomerId? customerId = null,
+            UserId? id = null
+        ) 
+        : base(id ?? new UserId())
         {
+            CustomerId   = customerId;
             FirstName    = firstName    ?? throw new ArgumentNullException(nameof(firstName));
             LastName     = lastName     ?? throw new ArgumentNullException(nameof(lastName));
-            Email        = email        ?? throw new ArgumentNullException(nameof(email));
             UserName     = userName     ?? throw new ArgumentNullException(nameof(userName));
-            PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
+            Email        = email        ?? throw new ArgumentNullException(nameof(email));
             Phone        = phone        ?? throw new ArgumentNullException(nameof(phone));
-            CustomerId   = customerId   ?? new CustomerId();
+            PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
             Status       = UserStatus.Active;
-            CreatedAt    = DateTime.UtcNow;
-            UpdatedAt    = DateTime.UtcNow;
-            LastLoginAt  = null;
+            
+            _roles = new List<UserRole> { new (Id, RoleType.User) };
         }
         
-        public string PrefixedId { get; set; } = string.Empty;
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string UserName { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string PasswordHash { get; set; }
-        public UserStatus Status { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-        public CustomerId? CustomerId { get; set; }
-        public bool IsEmailConfirmed { get; set; }
-        public DateTime? EmailConfirmationTokenExpiresAt { get; set; } = null;
-        public string? EmailConfirmationToken { get; set; } = null;
-        public IReadOnlyCollection<UserRole> Roles
-        {
-            get => _roles.AsReadOnly();
-            set => throw new NotImplementedException();
-        }
-
-
         public void UpdateEmail(string email)
         {
             ArgumentNullException.ThrowIfNull(email, nameof(email));
@@ -114,24 +106,6 @@ namespace LoyaltySystem.Domain.Entities
         {
             ArgumentNullException.ThrowIfNull(role, nameof(role));
             return _roles.Exists(r => r.Role == role);
-        }
-
-        public void Activate()
-        {
-            Status = UserStatus.Active;
-            UpdatedAt = DateTime.UtcNow;
-        }
-        
-        public void Deactivate()
-        {
-            Status = UserStatus.Inactive;
-            UpdatedAt = DateTime.UtcNow;
-        }
-        
-        public void Lock()
-        {
-            Status = UserStatus.Locked;
-            UpdatedAt = DateTime.UtcNow;
         }
     }
 } 

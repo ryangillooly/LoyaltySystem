@@ -14,23 +14,15 @@ public class TokenService : ITokenService
     public TokenService(ITokenRepository repository) =>
         _repository = repository;
 
-    public async Task<string> GenerateAndStoreTokenAsync(UserId userId, VerificationTokenType type, TimeSpan expiry)
+    public async Task<string> GenerateAndStoreTokenAsync(UserId userId, VerificationTokenType type)
     {
         ArgumentNullException.ThrowIfNull(userId);
         ArgumentNullException.ThrowIfNull(type);
-        ArgumentNullException.ThrowIfNull(expiry);
         
         await _repository.InvalidateAllTokensAsync(userId, type);
         var token = SecurityUtils.GenerateSecureToken();
         
-        await _repository.StoreTokenAsync(new VerificationToken
-        {
-            UserId = userId,
-            Token = token,
-            Type = type,
-            ExpiresAt = DateTime.UtcNow.Add(expiry),
-            IsValid = true
-        });
+        await _repository.StoreTokenAsync(new VerificationToken(userId, token, isValid: true, type));
 
         return token;
     }

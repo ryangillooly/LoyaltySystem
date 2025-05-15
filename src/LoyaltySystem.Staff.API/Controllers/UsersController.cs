@@ -33,9 +33,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{userId}/profile")]
-    public async Task<IActionResult> UpdateUserProfile(string userId, [FromBody] UpdateUserDto updateDto)
+    public async Task<IActionResult> UpdateUserProfile(string userId, [FromBody] UpdateUserRequestDto updateRequestDto)
     {
-        var result = await _usersService.UpdateAsync(UserId.FromString(userId), updateDto);
+        var result = await _usersService.UpdateAsync(UserId.FromString(userId), updateRequestDto);
         if (!result.Success)
         {
             _logger.LogWarning("Staff failed to update user profile for {UserId}: {Error}", userId, result.Errors);

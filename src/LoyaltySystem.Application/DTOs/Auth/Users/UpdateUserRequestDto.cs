@@ -3,7 +3,7 @@ using LoyaltySystem.Domain.Entities;
 
 namespace LoyaltySystem.Application.DTOs.AuthDtos;
 
-public class UpdateUserDto 
+public class UpdateUserRequestDto 
 {
     public string Email { get; set; } = string.Empty;
     public string UserName { get; set; } = string.Empty;
@@ -13,7 +13,7 @@ public class UpdateUserDto
     public string ConfirmNewPassword { get; set; } = string.Empty;
     public bool? IsEmailConfirmed { get; set; } = null;
 
-    public static UpdateUserDto FromUserDto(InternalUserDto internalUserDto) =>
+    public static UpdateUserRequestDto FromUserDto(InternalUserDto internalUserDto) =>
         new()
         {
             Email = internalUserDto.Email,

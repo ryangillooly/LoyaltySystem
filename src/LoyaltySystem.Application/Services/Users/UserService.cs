@@ -94,27 +94,27 @@ public class UserService : IUserService
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
-    public async Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserDto updateDto)
+    public async Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserRequestDto updateRequestDto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
         if (user is null)
             return OperationResult<InternalUserDto>.FailureResult("User not found.");
         
-        if (!string.IsNullOrEmpty(updateDto.UserName))
-            user.UpdateUserName(updateDto.UserName);
+        if (!string.IsNullOrEmpty(updateRequestDto.UserName))
+            user.UpdateUserName(updateRequestDto.UserName);
             
-        if (!string.IsNullOrEmpty(updateDto.Email))
-            user.UpdateEmail(updateDto.Email);
+        if (!string.IsNullOrEmpty(updateRequestDto.Email))
+            user.UpdateEmail(updateRequestDto.Email);
         
-        if (updateDto.IsEmailConfirmed.HasValue)
-            user.IsEmailConfirmed = updateDto.IsEmailConfirmed.Value;
+        if (updateRequestDto.IsEmailConfirmed.HasValue)
+            user.IsEmailConfirmed = updateRequestDto.IsEmailConfirmed.Value;
         
         await _userRepository.UpdateAsync(user); 
 
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
-    public async Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserDto updateDto) =>
+    public async Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserRequestDto updateRequestDto) =>
         throw new NotImplementedException();
 
     public async Task<OperationResult<InternalUserDto>> UpdatePasswordAsync(InternalUserDto internalUserDto, ResetPasswordRequestDto resetDto)

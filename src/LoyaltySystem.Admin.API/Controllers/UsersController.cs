@@ -38,9 +38,9 @@ public class UsersController : ControllerBase
 
     [Authorize(Roles = "SuperAdmin, Admin")]
     [HttpPut("{userId}/profile")]
-    public async Task<IActionResult> UpdateUserProfile([FromRoute] string userId, [FromBody] UpdateUserDto updateDto)
+    public async Task<IActionResult> UpdateUserProfile([FromRoute] string userId, [FromBody] UpdateUserRequestDto updateRequestDto)
     {
-        var result = await _userService.UpdateAsync(UserId.FromString(userId), updateDto);
+        var result = await _userService.UpdateAsync(UserId.FromString(userId), updateRequestDto);
         if (!result.Success)
         {
             _logger.Warning("Admin failed to update user profile for {UserId}: {Error}", userId, result.Errors);
@@ -70,7 +70,7 @@ public class UsersController : ControllerBase
 
     [Authorize]
     [HttpPut("profile")]
-    public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UpdateUserDto updateDto)
+    public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UpdateUserRequestDto updateRequestDto)
     {
         if (!User.TryGetUserId(out var userId))
         {
@@ -78,7 +78,7 @@ public class UsersController : ControllerBase
             return BadRequest("Invalid customer ID in token");
         }
         
-        var result = await _userService.UpdateAsync(userId, updateDto);
+        var result = await _userService.UpdateAsync(userId, updateRequestDto);
         if (!result.Success)
         {
             _logger.Warning("Admin failed to update user profile for {UserId}: {Error}", userId, result.Errors);

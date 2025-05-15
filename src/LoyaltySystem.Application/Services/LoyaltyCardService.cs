@@ -211,13 +211,15 @@ public class LoyaltyCardService : ILoyaltyCardService
             await _unitOfWork.BeginTransactionAsync();
                 
             // Create transaction
-            var transaction = new Transaction(
-                cardId.Value,
+            var transaction = new Transaction
+            (
+                new LoyaltyCardId(cardId.Value),
                 TransactionType.StampIssuance,
                 quantity: stampCount,
                 transactionAmount: purchaseAmount,
-                storeId: storeId.Value,
-                posTransactionId: transactionReference);
+                storeId: new StoreId(storeId.Value),
+                posTransactionId: transactionReference
+            );
                 
             // Update card
             card.StampsCollected += stampCount;
@@ -239,7 +241,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
-    public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal purchaseAmount, StoreId storeId, Guid? staffId, string posTransactionId)
+    public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal purchaseAmount, StoreId storeId, StaffId? staffId, string posTransactionId)
     {
         try
         {
@@ -259,13 +261,15 @@ public class LoyaltyCardService : ILoyaltyCardService
             _logger.LogInformation($"Adding {points} points to card {cardId}");
 
             // Create transaction
-            var transaction = new Transaction(
-                cardId.Value,
+            var transaction = new Transaction
+            (
+                cardId,
                 TransactionType.PointsIssuance,
                 pointsAmount: points,
                 transactionAmount: purchaseAmount,
-                storeId: storeId.Value,
-                posTransactionId: posTransactionId);
+                storeId: storeId,
+                posTransactionId: posTransactionId
+            );
 
             // Update card with points
             card.PointsBalance += points;
@@ -286,7 +290,7 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
-    public async Task<OperationResult<TransactionDto>> RedeemRewardAsync(LoyaltyCardId cardId, RewardId rewardId, StoreId storeId, Guid? staffId, RedeemRequestData redemptionData)
+    public async Task<OperationResult<TransactionDto>> RedeemRewardAsync(LoyaltyCardId cardId, RewardId rewardId, StoreId storeId, StaffId? staffId, RedeemRequestData redemptionData)
     {
         try
         {
@@ -324,14 +328,16 @@ public class LoyaltyCardService : ILoyaltyCardService
                 return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredValue}, Available: {card.StampsCollected}");
 
             // Create transaction with the appropriate deduction values based on card type
-            var transaction = new Transaction(
-                cardId.Value,
+            var transaction = new Transaction
+            (
+                new LoyaltyCardId(cardId.Value),
                 TransactionType.RewardRedemption,
-                rewardId: rewardId.Value,
+                rewardId: new RewardId(rewardId.Value),
                 quantity: card.Type == LoyaltyProgramType.Stamp ? -reward.RequiredValue : null,
                 pointsAmount: card.Type == LoyaltyProgramType.Points ? -reward.RequiredValue : null,
-                storeId: storeId.Value,
-                staffId: staffId);
+                storeId: new StoreId(storeId.Value),
+                staffId: new StaffId(staffId.Value)
+            );
 
             switch (card.Type)
             {
@@ -592,14 +598,14 @@ public class LoyaltyCardService : ILoyaltyCardService
             Id = transaction.Id.ToString(),
             CardId = transaction.CardId.ToString(),
             StoreId = transaction.StoreId.ToString(),
-            StoreName = transaction.Store?.Name ?? string.Empty,
+            //StoreName = transaction.Store?.Name ?? string.Empty,
             TransactionDate = transaction.Timestamp,
             TransactionType = transaction.Type.ToString(),
             Amount = transaction.TransactionAmount ?? 0,
             PointsEarned = transaction.PointsAmount ?? 0,
             StampsEarned = transaction.Quantity ?? 0,
             RewardId = transaction.RewardId?.ToString(),
-            RewardTitle = transaction.Reward?.Title ?? string.Empty,
+            //RewardTitle = transaction.Reward?.Title ?? string.Empty,
             PosTransactionId = transaction.PosTransactionId ?? string.Empty
         };
 }

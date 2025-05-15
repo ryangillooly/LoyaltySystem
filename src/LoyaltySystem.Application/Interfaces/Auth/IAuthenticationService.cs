@@ -6,5 +6,5 @@ namespace LoyaltySystem.Application.Interfaces.Auth;
 
 public interface IAuthenticationService 
 {
-    Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto dto);
+    Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto dto);
 }

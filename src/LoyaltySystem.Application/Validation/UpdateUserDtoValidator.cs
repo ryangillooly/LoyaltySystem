@@ -5,7 +5,7 @@ using LoyaltySystem.Application.DTOs.AuthDtos;
 
 namespace LoyaltySystem.Application.Validation;
 
-public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
+public class UpdateUserDtoValidator : AbstractValidator<UpdateUserRequestDto>
 {
     public UpdateUserDtoValidator()
     {

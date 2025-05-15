@@ -88,13 +88,15 @@ namespace LoyaltySystem.Staff.API.Controllers
                 return Forbid();
             }
             
-            var result = await _loyaltyCardService.AddPointsAsync(
+            var result = await _loyaltyCardService.AddPointsAsync
+            (
                 request.CardId,
                 request.Points,
                 request.TransactionAmount,
                 storeId,
-                request.StaffId,
-                request.PosTransactionId);
+                new StaffId(request.StaffId.Value),
+                request.PosTransactionId
+            );
                 
             if (!result.Success)
             {
@@ -118,12 +120,14 @@ namespace LoyaltySystem.Staff.API.Controllers
                 return Forbid();
             }
             
-            var result = await _loyaltyCardService.RedeemRewardAsync(
+            var result = await _loyaltyCardService.RedeemRewardAsync
+            (
                 request.CardId,
                 request.RewardId,
                 storeId,
-                request.StaffId,
-                request.RedemptionData);
+                new StaffId(request.StaffId.Value),
+                request.RedemptionData
+            );
                 
             if (!result.Success)
             {

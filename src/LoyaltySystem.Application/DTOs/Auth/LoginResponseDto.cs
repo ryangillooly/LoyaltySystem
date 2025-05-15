@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace LoyaltySystem.Application.DTOs.AuthDtos;
 
-public class AuthResponseDto 
+public class LoginResponseDto 
 {
     [JsonPropertyName("access_token")]
     public string AccessToken { get; set; } = string.Empty;

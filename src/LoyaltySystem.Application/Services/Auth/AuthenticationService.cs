@@ -32,39 +32,36 @@ public class AuthenticationService : IAuthenticationService
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
     
-    public async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto dto)
+    public async Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto dto)
     {
         User? user = await GetUserByEmailOrUsernameAsync(dto);
             
         if (user is null)
-            return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
+            return OperationResult<LoginResponseDto>.FailureResult("Invalid username/email or password");
                 
         if (user.Status != UserStatus.Active)
-            return OperationResult<AuthResponseDto>.FailureResult("User account is not active");
+            return OperationResult<LoginResponseDto>.FailureResult("User account is not active");
 
         if (!user.IsEmailConfirmed)
-            return OperationResult<AuthResponseDto>.FailureResult("Email has not been confirmed");
+            return OperationResult<LoginResponseDto>.FailureResult("Email has not been confirmed");
         
-        // TODO: Fix this. Password isn't being changed
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-        if (result == PasswordVerificationResult.Failed)
-            return OperationResult<AuthResponseDto>.FailureResult("Invalid username/email or password");
+        if (result is PasswordVerificationResult.Failed)
+            return OperationResult<LoginResponseDto>.FailureResult("Invalid username/email or password");
             
         user.RecordLogin();
-        _logger.Information("User successfully authenticated: {Type} == {Identifier}", dto.IdentifierType, dto.Identifier);
         await _userRepository.UpdateAsync(user);
-        
         var tokenResult = _jwtService.GenerateTokenResult(user);
         
-        var response = new AuthResponseDto
+        var response = new LoginResponseDto
         {
             AccessToken = tokenResult.AccessToken,
             TokenType = tokenResult.TokenType, 
-            ExpiresIn = tokenResult.ExpiresIn,
-            // RefreshToken = tokenResult.RefreshToken // Assign if/when implemented
+            ExpiresIn = tokenResult.ExpiresIn
         };
         
-        return OperationResult<AuthResponseDto>.SuccessResult(response);
+        _logger.Information("User successfully authenticated: {Type} == {Id}", dto.IdentifierType, dto.Identifier);
+        return OperationResult<LoginResponseDto>.SuccessResult(response);
     }
     
     private async Task<User?> GetUserByEmailOrUsernameAsync(AuthDto request) =>

@@ -26,12 +26,12 @@ public class AuthController : BaseAuthController {
 
     protected override string UserType => "Staff";
     
-    protected override Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto registerRequest)
+    protected override Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequest)
     {
         // Staff API should not allow user registration
         _logger.Warning("Attempt to register through Staff API blocked: {Email}", registerRequest.Email);
         return Task.FromResult(
-            OperationResult<InternalUserDto>.FailureResult(
+            OperationResult<RegisterUserResponseDto>.FailureResult(
                 new [] { "Registration not allowed through Staff API" }));
     }
     

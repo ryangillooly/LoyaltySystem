@@ -20,8 +20,8 @@ namespace LoyaltySystem.Application.Interfaces
         Task<OperationResult<LoyaltyCardDto>> CreateCardAsync(CreateLoyaltyCardDto dto);
         Task<OperationResult<LoyaltyCardDto>> UpdateCardStatusAsync(LoyaltyCardId id, CardStatus status);
         Task<OperationResult<TransactionDto>> IssueStampsAsync(LoyaltyCardId cardId, int stampCount, StoreId storeId, decimal purchaseAmount, string transactionReference);
-        Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal transactionAmount, StoreId storeId, Guid? staffId, string posTransactionId);
-        Task<OperationResult<TransactionDto>> RedeemRewardAsync(LoyaltyCardId cardId, RewardId rewardId, StoreId storeId, Guid? staffId, RedeemRequestData redemptionData);
+        Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal transactionAmount, StoreId storeId, StaffId? staffId, string posTransactionId);
+        Task<OperationResult<TransactionDto>> RedeemRewardAsync(LoyaltyCardId cardId, RewardId rewardId, StoreId storeId, StaffId? staffId, RedeemRequestData redemptionData);
         Task<OperationResult<string>> GenerateQrCodeAsync(LoyaltyCardId cardId);
         Task<OperationResult<string>> GetOrGenerateQrCodeAsync(LoyaltyCardId cardId);
         Task<OperationResult<IEnumerable<TransactionDto>>> GetCardTransactionsAsync(LoyaltyCardId cardId);

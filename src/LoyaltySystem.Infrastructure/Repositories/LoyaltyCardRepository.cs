@@ -13,29 +13,29 @@ using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
 using LoyaltySystem.Infrastructure.Data.TypeHandlers;
 
-namespace LoyaltySystem.Infrastructure.Repositories
+namespace LoyaltySystem.Infrastructure.Repositories;
+
+/// <summary>
+/// Repository implementation for LoyaltyCard entities using Dapper.
+/// </summary>
+public class LoyaltyCardRepository : ILoyaltyCardRepository
 {
-    /// <summary>
-    /// Repository implementation for LoyaltyCard entities using Dapper.
-    /// </summary>
-    public class LoyaltyCardRepository : ILoyaltyCardRepository
+    private readonly IDatabaseConnection _dbConnection;
+
+    static LoyaltyCardRepository()
     {
-        private readonly IDatabaseConnection _dbConnection;
+        // Initialize type handlers from centralized configuration
+        TypeHandlerConfig.Initialize();
+    }
 
-        static LoyaltyCardRepository()
-        {
-            // Initialize type handlers from centralized configuration
-            TypeHandlerConfig.Initialize();
-        }
-
-        public LoyaltyCardRepository(IDatabaseConnection dbConnection)
-        {
-            _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
-        }
+    public LoyaltyCardRepository(IDatabaseConnection dbConnection)
+    {
+        _dbConnection = dbConnection ?? throw new ArgumentNullException(nameof(dbConnection));
+    }
         
-        public async Task<IEnumerable<LoyaltyCard>> GetAllAsync(int skip = 0, int limit = 50)
-        {
-            const string sql = @"
+    public async Task<IEnumerable<LoyaltyCard>> GetAllAsync(int skip = 0, int limit = 50)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
@@ -47,30 +47,30 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 LIMIT @Limit 
                 OFFSET @Skip";
             
-            var parameters = new { Skip = skip, Limit = limit };
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            var cards = await dbConnection.QueryAsync<LoyaltyCard>(sql, parameters);
+        var parameters = new { Skip = skip, Limit = limit };
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        var cards = await dbConnection.QueryAsync<LoyaltyCard>(sql, parameters);
             
-            // Load transactions for each card
-            var cardsList = cards.ToList();
-            foreach (var card in cardsList)
-            {
-                await LoadTransactionsAsync(card);
-            }
+        // Load transactions for each card
+        var cardsList = cards.ToList();
+        foreach (var card in cardsList)
+        {
+            await LoadTransactionsAsync(card);
+        }
             
-            return cardsList;
-        }
+        return cardsList;
+    }
         
-        public async Task<int> GetTotalCountAsync()
-        {
-            const string sql = "SELECT COUNT(*) FROM loyalty_cards";
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-            return await dbConnection.ExecuteScalarAsync<int>(sql);
-        }
+    public async Task<int> GetTotalCountAsync()
+    {
+        const string sql = "SELECT COUNT(*) FROM loyalty_cards";
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        return await dbConnection.ExecuteScalarAsync<int>(sql);
+    }
         
-        public async Task<LoyaltyCard?> GetByIdAsync(LoyaltyCardId id)
-        {
-            const string sql = @"
+    public async Task<LoyaltyCard?> GetByIdAsync(LoyaltyCardId id)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
@@ -80,21 +80,21 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 FROM loyalty_cards c
                 WHERE c.id = @Id";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { Id = id });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { Id = id });
             
-            if (card != null)
-            {
-                // Load transactions separately
-                await LoadTransactionsAsync(card);
-            }
-            
-            return card;
-        }
-        
-        public async Task<IEnumerable<LoyaltyCard>> GetByCustomerIdAsync(CustomerId customerId)
+        if (card != null)
         {
-            const string sql = @"
+            // Load transactions separately
+            await LoadTransactionsAsync(card);
+        }
+            
+        return card;
+    }
+        
+    public async Task<IEnumerable<LoyaltyCard>> GetByCustomerIdAsync(CustomerId customerId)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
@@ -105,21 +105,21 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 WHERE c.customer_id = @CustomerId
                 ORDER BY c.created_at DESC";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { CustomerId = customerId.Value });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { CustomerId = customerId.Value });
             
-            var cardsList = cards.ToList();
-            foreach (var card in cardsList)
-            {
-                await LoadTransactionsAsync(card);
-            }
-            
-            return cardsList;
-        }
-        
-        public async Task<IEnumerable<LoyaltyCard>> GetByProgramIdAsync(LoyaltyProgramId programId)
+        var cardsList = cards.ToList();
+        foreach (var card in cardsList)
         {
-            const string sql = @"
+            await LoadTransactionsAsync(card);
+        }
+            
+        return cardsList;
+    }
+        
+    public async Task<IEnumerable<LoyaltyCard>> GetByProgramIdAsync(LoyaltyProgramId programId)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::loyalty_program_type AS Type, c.stamps_collected AS StampsCollected, 
@@ -131,21 +131,21 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 ORDER BY c.created_at DESC
                 LIMIT 100";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { ProgramId = programId.Value });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { ProgramId = programId.Value });
             
-            var cardsList = cards.ToList();
-            foreach (var card in cardsList)
-            {
-                await LoadTransactionsAsync(card);
-            }
-            
-            return cardsList;
-        }
-        
-        public async Task<LoyaltyCard?> GetByQrCodeAsync(string qrCode)
+        var cardsList = cards.ToList();
+        foreach (var card in cardsList)
         {
-            const string sql = @"
+            await LoadTransactionsAsync(card);
+        }
+            
+        return cardsList;
+    }
+        
+    public async Task<LoyaltyCard?> GetByQrCodeAsync(string qrCode)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::int AS Type, c.stamps_collected AS StampsCollected, 
@@ -155,34 +155,26 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 FROM loyalty_cards c
                 WHERE c.qr_code = @QrCode";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { QrCode = qrCode });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var card = await connection.QueryFirstOrDefaultAsync<LoyaltyCard>(sql, new { QrCode = qrCode });
             
-            if (card != null)
-            {
-                await LoadTransactionsAsync(card);
-            }
-            
-            return card;
-        }
-        
-        public async Task AddAsync(LoyaltyCard card, IDbTransaction transaction = null)
+        if (card != null)
         {
-            var dbConnection = await _dbConnection.GetConnectionAsync();
-        
-            // Track whether we created the transaction or are using an existing one
-            bool ownsTransaction = transaction == null;
-        
-            // If no transaction was provided, create one
-            transaction ??= dbConnection.BeginTransaction();
+            await LoadTransactionsAsync(card);
+        }
             
-            try
-            {
-                // Generate and assign the PrefixedId before inserting
-                var cardIdObj = new LoyaltyCardId(card.Id.Value); // Assuming base Entity<T> has Value property
-                card.PrefixedId = cardIdObj.ToString();
-
-                await dbConnection.ExecuteAsync(@"
+        return card;
+    }
+        
+    public async Task AddAsync(LoyaltyCard card, IDbTransaction transaction = null)
+    {
+        var dbConnection = await _dbConnection.GetConnectionAsync();
+        bool ownsTransaction = transaction == null;
+        transaction ??= dbConnection.BeginTransaction();
+            
+        try
+        {
+            await dbConnection.ExecuteAsync(@"
                     INSERT INTO 
                         loyalty_cards 
                             (id, prefixed_id, program_id, customer_id, type, stamps_collected, 
@@ -191,59 +183,53 @@ namespace LoyaltySystem.Infrastructure.Repositories
                             (@Id, @PrefixedId, @ProgramId, @CustomerId, @Type::loyalty_program_type, @StampsCollected, 
                             @PointsBalance, @Status::card_status, @QrCode, @CreatedAt, @ExpiresAt, @UpdatedAt)
                     ", 
-                    new
-                    {
-                        card.Id, // Use raw Guid
-                        card.PrefixedId,
-                        card.ProgramId, // Use raw Guid
-                        card.CustomerId, // Use raw Guid
-                        Type = card.Type.ToString(),
-                        card.StampsCollected,
-                        card.PointsBalance,
-                        Status = card.Status.ToString(),
-                        card.QrCode,
-                        card.CreatedAt,
-                        card.ExpiresAt,
-                        card.UpdatedAt
-                    }, 
-                    transaction
-                );
+                new
+                {
+                    card.Id, 
+                    card.PrefixedId,
+                    card.ProgramId,
+                    card.CustomerId,
+                    Type = card.Type.ToString(),
+                    card.StampsCollected,
+                    card.PointsBalance,
+                    Status = card.Status.ToString(),
+                    card.QrCode,
+                    card.CreatedAt,
+                    card.ExpiresAt,
+                    card.UpdatedAt
+                }, 
+                transaction
+            );
                 
-                // Add any initial transactions
-                foreach (var tx in card.Transactions)
-                {
-                    // Assuming AddTransactionAsync handles its own PrefixedId generation if needed
-                    await AddTransactionAsync(tx, transaction);
-                }
+            foreach (var tx in card.Transactions)
+                await AddTransactionAsync(tx, transaction);
                 
-                // Only commit if this method created the transaction
-                if (ownsTransaction)
-                {
-                    transaction.Commit();
-                }
-            }
-            catch
+            // Only commit if this method created the transaction
+            if (ownsTransaction)
+                transaction.Commit();
+        }
+        catch
+        {
+            // Only rollback if this method created the transaction
+            if (ownsTransaction && transaction != null)
             {
-                // Only rollback if this method created the transaction
-                if (ownsTransaction && transaction != null)
-                {
-                    try { transaction.Rollback(); } catch { /* Ignore rollback exceptions */ }
-                }
-                throw;
+                try { transaction.Rollback(); } catch { /* Ignore rollback exceptions */ }
             }
-            finally
+            throw;
+        }
+        finally
+        {
+            // Only dispose if this method created the transaction
+            if (ownsTransaction && transaction != null)
             {
-                 // Only dispose if this method created the transaction
-                if (ownsTransaction && transaction != null)
-                {
-                    transaction.Dispose();
-                }
+                transaction.Dispose();
             }
         }
+    }
         
-        public async Task UpdateAsync(LoyaltyCard card)
-        {
-            const string sql = @"
+    public async Task UpdateAsync(LoyaltyCard card)
+    {
+        const string sql = @"
                 UPDATE loyalty_cards
                 SET stamps_collected = @StampsCollected,
                     points_balance = @PointsBalance,
@@ -252,21 +238,21 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     updated_at = @UpdatedAt
                 WHERE id = @Id";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            await connection.ExecuteAsync(sql, new
-            {
-                card.Id,
-                card.StampsCollected,
-                card.PointsBalance,
-                Status = card.Status.ToString(),
-                card.ExpiresAt,
-                card.UpdatedAt
-            });
-        }
-        
-        public async Task<IEnumerable<LoyaltyCard>> FindCardsNearExpirationAsync(int daysUntilExpiration)
+        var connection = await _dbConnection.GetConnectionAsync();
+        await connection.ExecuteAsync(sql, new
         {
-            const string sql = @"
+            card.Id,
+            card.StampsCollected,
+            card.PointsBalance,
+            Status = card.Status.ToString(),
+            card.ExpiresAt,
+            card.UpdatedAt
+        });
+    }
+        
+    public async Task<IEnumerable<LoyaltyCard>> FindCardsNearExpirationAsync(int daysUntilExpiration)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::int AS Type, c.stamps_collected AS StampsCollected, 
@@ -279,38 +265,38 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 AND c.expires_at BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '@DaysUntilExpiration days')
                 ORDER BY c.expires_at ASC";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { DaysUntilExpiration = daysUntilExpiration });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var cards = await connection.QueryAsync<LoyaltyCard>(sql, new { DaysUntilExpiration = daysUntilExpiration });
             
-            return cards;
-        }
+        return cards;
+    }
         
-        public async Task<int> GetActiveCardCountForProgramAsync(LoyaltyProgramId programId)
-        {
-            const string sql = @"
+    public async Task<int> GetActiveCardCountForProgramAsync(LoyaltyProgramId programId)
+    {
+        const string sql = @"
                 SELECT COUNT(*)
                 FROM loyalty_cards
                 WHERE program_id = @ProgramId
                 AND status = 'Active'::card_status";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.ExecuteScalarAsync<int>(sql, new { ProgramId = programId.Value });
-        }
+        var connection = await _dbConnection.GetConnectionAsync();
+        return await connection.ExecuteScalarAsync<int>(sql, new { ProgramId = programId.Value });
+    }
         
-        public async Task<int> GetCardCountByStatusAsync(CardStatus status)
-        {
-            const string sql = @"
+    public async Task<int> GetCardCountByStatusAsync(CardStatus status)
+    {
+        const string sql = @"
                 SELECT COUNT(*)
                 FROM loyalty_cards
                 WHERE status = @Status::card_status";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.ExecuteScalarAsync<int>(sql, new { Status = status.ToString() });
-        }
+        var connection = await _dbConnection.GetConnectionAsync();
+        return await connection.ExecuteScalarAsync<int>(sql, new { Status = status.ToString() });
+    }
         
-        public async Task<IEnumerable<LoyaltyCard>> FindByStatusAsync(CardStatus status, int skip, int take)
-        {
-            const string sql = @"
+    public async Task<IEnumerable<LoyaltyCard>> FindByStatusAsync(CardStatus status, int skip, int take)
+    {
+        const string sql = @"
                 SELECT 
                     c.id AS Id, c.program_id AS ProgramId, c.customer_id AS CustomerId, 
                     c.type::int AS Type, c.stamps_collected AS StampsCollected, 
@@ -322,19 +308,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 ORDER BY c.created_at DESC
                 LIMIT @Take OFFSET @Skip";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            return await connection.QueryAsync<LoyaltyCard>(sql, new { Status = status.ToString(), Skip = skip, Take = take });
-        }
+        var connection = await _dbConnection.GetConnectionAsync();
+        return await connection.QueryAsync<LoyaltyCard>(sql, new { Status = status.ToString(), Skip = skip, Take = take });
+    }
         
-        public async Task<LoyaltyCard?> GetByIdWithTransactionsAsync(LoyaltyCardId id)
-        {
-            var card = await GetByIdAsync(id);
-            return card;
-        }
+    public async Task<LoyaltyCard?> GetByIdWithTransactionsAsync(LoyaltyCardId id)
+    {
+        var card = await GetByIdAsync(id);
+        return card;
+    }
         
-        private async Task LoadTransactionsAsync(LoyaltyCard card)
-        {
-            const string sql = @"
+    private async Task LoadTransactionsAsync(LoyaltyCard card)
+    {
+        const string sql = @"
                 SELECT 
                     t.id AS Id, 
                     t.card_id AS CardId, 
@@ -353,19 +339,19 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 WHERE t.card_id = @CardId
                 ORDER BY t.timestamp DESC";
 
-            var connection = await _dbConnection.GetConnectionAsync();
-            var transactions = await connection.QueryAsync<Transaction>(sql, new { CardId = card.Id });
+        var connection = await _dbConnection.GetConnectionAsync();
+        var transactions = await connection.QueryAsync<Transaction>(sql, new { CardId = card.Id });
             
-            // Add each transaction to the card using the AddTransaction method
-            foreach (var transaction in transactions)
-            {
-                card.AddTransaction(transaction);
-            }
-        }
-        
-        private async Task AddTransactionAsync(Transaction transaction, IDbTransaction? dbTransaction = null)
+        // Add each transaction to the card using the AddTransaction method
+        foreach (var transaction in transactions)
         {
-            const string sql = @"
+            card.AddTransaction(transaction);
+        }
+    }
+        
+    private async Task AddTransactionAsync(Transaction transaction, IDbTransaction? dbTransaction = null)
+    {
+        const string sql = @"
                 INSERT INTO transactions (
                     id, card_id, type, reward_id, quantity,
                     points_amount, transaction_amount, store_id, staff_id,
@@ -376,60 +362,50 @@ namespace LoyaltySystem.Infrastructure.Repositories
                     @PosTransactionId, @Timestamp, @CreatedAt, @Metadata
                 )";
 
-            var connection = await _dbConnection.GetConnectionAsync();
+        var connection = await _dbConnection.GetConnectionAsync();
             
-            await connection.ExecuteAsync(sql, new
-            {
-                transaction.Id,
-                transaction.CardId,
-                Type = transaction.Type.ToString(),
-                transaction.RewardId,
-                transaction.Quantity,
-                transaction.PointsAmount,
-                transaction.TransactionAmount,
-                transaction.StoreId,
-                transaction.StaffId,
-                transaction.PosTransactionId,
-                transaction.Timestamp,
-                transaction.CreatedAt,
-                Metadata = transaction.Metadata
-            }, dbTransaction);
-        }
-
-        private static LoyaltyCard CreateCardFromDto(LoyaltyCardDto dto) =>
-            new()
-            {
-                Id = dto.Id,
-                CustomerId = dto.CustomerId,
-                ProgramId = dto.ProgramId,
-                Type = dto.Type,
-                Status = dto.Status,
-                QrCode = dto.QrCode,
-                CreatedAt = dto.CreatedAt,
-                ExpiresAt = dto.ExpiresAt,
-                UpdatedAt = dto.UpdatedAt,
-                StampsCollected = dto.StampCount,
-                PointsBalance = dto.PointsBalance,
-                Transactions = dto.Transactions?.Select(t => 
-                    new Transaction
-                    {
-                        Id = new TransactionId(t.Id),
-                        CardId = new LoyaltyCardId(t.CardId),
-                        Type = t.Type,
-                        RewardId = t.RewardId != null ? new RewardId(t.RewardId.Value) : null,
-                        Quantity = t.Quantity,
-                        PointsAmount = t.PointsAmount,
-                        TransactionAmount = t.TransactionAmount,
-                        StoreId = t.StoreId != null ? new StoreId(t.StoreId) : null,
-                        StaffId = t.StaffId != null ? new StaffId(t.StaffId.Value) : null,
-                        PosTransactionId = t.PosTransactionId,
-                        Timestamp = t.Timestamp,
-                        CreatedAt = t.CreatedAt,
-                        Metadata = t.Metadata
-                    }
-                ).ToList() 
-                ?? new List<Transaction>()
-            };
+        await connection.ExecuteAsync(sql, new
+        {
+            transaction.Id,
+            transaction.CardId,
+            Type = transaction.Type.ToString(),
+            transaction.RewardId,
+            transaction.Quantity,
+            transaction.PointsAmount,
+            transaction.TransactionAmount,
+            transaction.StoreId,
+            transaction.StaffId,
+            transaction.PosTransactionId,
+            transaction.Timestamp,
+            transaction.CreatedAt,
+            Metadata = transaction.Metadata
+        }, dbTransaction);
     }
-} 
 
+    private static LoyaltyCard CreateCardFromDto(LoyaltyCardDto dto) =>
+        new(dto.ProgramId, dto.CustomerId, dto.Type, dto.ExpiresAt)
+        {
+            Status          = dto.Status,
+            QrCode          = dto.QrCode,
+            CreatedAt       = dto.CreatedAt,
+            ExpiresAt       = dto.ExpiresAt,
+            UpdatedAt       = dto.UpdatedAt,
+            StampsCollected = dto.StampCount,
+            PointsBalance   = dto.PointsBalance,
+            Transactions    = dto.Transactions?.Select(t => 
+               new Transaction
+               (
+                   new LoyaltyCardId(t.CardId),
+                   t.Type,
+                   t.RewardId is { } ? new RewardId(t.RewardId.Value) : null,
+                   t.Quantity,
+                   t.PointsAmount,
+                   t.TransactionAmount,
+                   t.StoreId is { } ? new StoreId(t.StoreId.Value) : null,
+                   t.StaffId is { } ? new StaffId(t.StaffId.Value) : null,
+                   t.PosTransactionId,
+                   t.Metadata as Dictionary<string, string>)
+           ).ToList() 
+           ?? new List<Transaction>()
+        };
+}

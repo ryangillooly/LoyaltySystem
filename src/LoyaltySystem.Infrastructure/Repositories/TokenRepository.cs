@@ -27,10 +27,10 @@ public class TokenRepository : ITokenRepository
         var dbConnection = await _dbConnection.GetConnectionAsync();
         await dbConnection.ExecuteAsync(sql, new
         {
-            token.Id,
+            Id = token.Id.Value,
             UserId = token.UserId.Value,
-            token.Token,
             TokenType = token.Type.ToString(),
+            token.Token,
             token.IsValid,
             token.ExpiresAt,
             token.CreatedAt

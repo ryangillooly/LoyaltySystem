@@ -1,18 +1,11 @@
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Entities
 {
     public class Customer : Entity<CustomerId>
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
-
-        public Customer() : base(new CustomerId())
-        {
-            _loyaltyCards = new List<LoyaltyCard>();
-        }
 
         public Customer
         (
@@ -22,32 +15,25 @@ namespace LoyaltySystem.Domain.Entities
             string email,
             string phone,
             Address? address,
-            bool marketingConsent = false,
-            CustomerId? customerId = null) : base(customerId ?? new CustomerId())
+            bool marketingConsent = false
+        ) 
+            : base(new CustomerId())
         {
-            ArgumentNullException.ThrowIfNull(firstName);
-            ArgumentNullException.ThrowIfNull(lastName);
-            ArgumentNullException.ThrowIfNull(username);
-            ArgumentNullException.ThrowIfNull(email);
-            ArgumentNullException.ThrowIfNull(phone);
-            
             const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
             if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
                 throw new ArgumentException("Invalid email format", nameof(email));
             
-            FirstName = firstName;
-            LastName = lastName;
-            UserName = username;
-            Email = email;
-            Phone = phone;
+            Phone = phone ?? throw new ArgumentNullException(nameof(phone));
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+            LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
+            UserName = username ?? throw new ArgumentNullException(nameof(username));
+            FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
             MarketingConsent = marketingConsent;
             Address = address;
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
+            
             _loyaltyCards = new List<LoyaltyCard>();
         }
-
-        public string PrefixedId { get; set; } = string.Empty;
+        
         public UserId UserId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
@@ -59,36 +45,30 @@ namespace LoyaltySystem.Domain.Entities
         public DateTime? LastLoginAt { get; private set; }
         public Address? Address { get; set; }
         public List<string> Roles { get; set; } = new();
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
         
         public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
         
-        public void Update(
+        public void Update
+        (
             string firstName,
             string lastName,
             string username,
             string email,
             string phone,
             Address? address,
-            bool marketingConsent)
+            bool marketingConsent
+        )
         {
-            ArgumentNullException.ThrowIfNull(firstName);
-            ArgumentNullException.ThrowIfNull(lastName);
-            ArgumentNullException.ThrowIfNull(username);
-            ArgumentNullException.ThrowIfNull(email);
-            ArgumentNullException.ThrowIfNull(phone);
-            
             const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
             if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
                 throw new ArgumentException("Invalid email format", nameof(email));
 
-            FirstName = firstName;
-            LastName = lastName;
-            UserName = username;
-            Email = email;
+            FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
+            LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
+            UserName = username ?? throw new ArgumentNullException(nameof(username));
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+            Phone = phone ?? throw new ArgumentNullException(nameof(phone));
             Address = address;
-            Phone = phone;
             MarketingConsent = marketingConsent;
             UpdatedAt = DateTime.UtcNow;
         }

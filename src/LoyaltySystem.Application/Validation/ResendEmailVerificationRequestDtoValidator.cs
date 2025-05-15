@@ -3,7 +3,7 @@ using LoyaltySystem.Application.DTOs.Auth;
 
 namespace LoyaltySystem.Application.Validation;
 
-public class ResendEmailVerificationRequestDtoValidator : AbstractValidator<RegisterUserDto>
+public class ResendEmailVerificationRequestDtoValidator : AbstractValidator<RegisterUserRequestDto>
 {
     public ResendEmailVerificationRequestDtoValidator()
     {

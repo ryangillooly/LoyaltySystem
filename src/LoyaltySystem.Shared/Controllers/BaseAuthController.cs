@@ -33,7 +33,9 @@ public abstract class BaseAuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
-        var result = await AuthenticateAsync(request);
+        _logger.Information("{UserType} login attempt using {Type}: {Id}", UserType, request.IdentifierType, request.Identifier);        
+        
+        var result = await _authService.AuthenticateAsync(request);
         if (!result.Success)
         {
             _logger
@@ -43,11 +45,11 @@ public abstract class BaseAuthController : ControllerBase
             return Unauthorized(new { message = result.Errors });
         }
                 
-        _logger.Information("Successful {UserType} login for {Type} {Id}", UserType, request.IdentifierType.ToString(), request.Identifier);
+        _logger.Information("Successful {UserType} login for {Type} {Id}", UserType, request.IdentifierType, request.Identifier);
         return Ok(result.Data);
     }
     
-    protected virtual async Task<OperationResult<AuthResponseDto>> AuthenticateAsync(LoginRequestDto request)
+    protected virtual async Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto request)
     {
         switch (request.IdentifierType)
         {
@@ -58,7 +60,7 @@ public abstract class BaseAuthController : ControllerBase
 
             default:
                 _logger.Warning("{UserType} login attempt with no identifier provided", UserType);
-                return OperationResult<AuthResponseDto>.FailureResult(new [] { "Email or username must be provided" });
+                return OperationResult<LoginResponseDto>.FailureResult(new [] { "Email or username must be provided" });
         }
         
         return await _authService.AuthenticateAsync(request);
@@ -66,7 +68,7 @@ public abstract class BaseAuthController : ControllerBase
     
     
     [HttpPost("register")]
-    public virtual async Task<IActionResult> Register(RegisterUserDto request)
+    public virtual async Task<IActionResult> Register(RegisterUserRequestDto request)
     {
         _logger.Information("{UserType} registration attempt for email: {Email}", UserType, request.Email);
             
@@ -93,7 +95,7 @@ public abstract class BaseAuthController : ControllerBase
             value: result.Data
         );
     }
-    protected abstract Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto registerRequest);
+    protected abstract Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequest);
     
     
     [AllowAnonymous]

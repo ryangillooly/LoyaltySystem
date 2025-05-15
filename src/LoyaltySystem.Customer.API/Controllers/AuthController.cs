@@ -40,7 +40,7 @@ public class AuthController : BaseAuthController
     }
 
     protected override string UserType => "Customer";
-    protected override async Task<OperationResult<InternalUserDto>> RegisterAsync(RegisterUserDto request) => 
+    protected override async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto request) => 
         await _accountService.RegisterAsync
         (
             request, 

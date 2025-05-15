@@ -242,7 +242,7 @@ public class CustomerService : ICustomerService
         }
     }
     private static Customer MapToCustomer(CreateCustomerDto dto) =>
-        new Customer
+        new 
         (
             dto.FirstName,
             dto.LastName,
@@ -250,8 +250,7 @@ public class CustomerService : ICustomerService
             dto.Email,
             dto.Phone,
             dto.Address,
-            dto.MarketingConsent,
-            null
+            dto.MarketingConsent
         );
     private static CustomerDto MapToDto(Customer customer) =>
         new()
