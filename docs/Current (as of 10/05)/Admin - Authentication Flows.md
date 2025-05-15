@@ -8,6 +8,37 @@ This document visualizes the data flow and mapping for all authentication-relate
 
 **Endpoint:** `POST /api/auth/login`
 
+**DTO/Model Shapes:**
+- **LoginRequestDto**
+  ```ts
+  {
+    identifier: string, // email or username
+    password: string
+  }
+  ```
+- **AuthResponseDto**
+  ```ts
+  {
+    accessToken: string,
+    tokenType: string,
+    expiresIn: number,
+    refreshToken?: string
+  }
+  ```
+- **User (domain)**
+  ```ts
+  {
+    id: UserId,
+    email: string,
+    userName: string,
+    passwordHash: string,
+    roles: string[],
+    status: string,
+    isEmailConfirmed: boolean,
+    ...
+  }
+  ```
+
 | Layer       | Input DTO/Model      | Output DTO/Model     | Mapping/Notes                                 |
 |-------------|----------------------|----------------------|-----------------------------------------------|
 | Controller  | LoginRequestDto      | AuthResponseDto      | Receives login request, returns auth response |
@@ -29,6 +60,37 @@ flowchart LR
 ## 2. Register
 
 **Endpoint:** `POST /api/auth/register`
+
+**DTO/Model Shapes:**
+- **RegisterUserDto**
+  ```ts
+  {
+    firstName: string,
+    lastName: string,
+    userName: string,
+    email: string,
+    phone?: string,
+    password: string,
+    confirmPassword: string,
+    roles: string[],
+    isEmailConfirmed?: boolean
+  }
+  ```
+- **InternalUserDto**
+  ```ts
+  {
+    id: UserId,
+    firstName: string,
+    lastName: string,
+    userName: string,
+    email: string,
+    roles: string[],
+    isEmailConfirmed: boolean,
+    ...
+  }
+  ```
+- **User (domain)**
+  (see Login)
 
 | Layer       | Input DTO/Model        | Output DTO/Model         | Mapping/Notes                                 |
 |-------------|------------------------|--------------------------|-----------------------------------------------|
@@ -54,6 +116,24 @@ flowchart LR
 
 **Endpoint:** `POST /api/auth/forgot-password`
 
+**DTO/Model Shapes:**
+- **ForgotPasswordRequestDto**
+  ```ts
+  {
+    email?: string,
+    userName?: string
+  }
+  ```
+- **OperationResult**
+  ```ts
+  {
+    success: boolean,
+    errors?: string[]
+  }
+  ```
+- **User (domain)**
+  (see Login)
+
 | Layer       | Input DTO/Model            | Output DTO/Model     | Mapping/Notes                                 |
 |-------------|----------------------------|----------------------|-----------------------------------------------|
 | Controller  | ForgotPasswordRequestDto   | OperationResult      | Receives request, returns result              |
@@ -77,6 +157,22 @@ flowchart LR
 ## 4. Reset Password
 
 **Endpoint:** `POST /api/auth/reset-password`
+
+**DTO/Model Shapes:**
+- **ResetPasswordRequestDto**
+  ```ts
+  {
+    email?: string,
+    userName?: string,
+    token: string,
+    newPassword: string,
+    confirmPassword: string
+  }
+  ```
+- **OperationResult**
+  (see Forgot Password)
+- **User (domain)**
+  (see Login)
 
 | Layer       | Input DTO/Model            | Output DTO/Model     | Mapping/Notes                                 |
 |-------------|----------------------------|----------------------|-----------------------------------------------|
@@ -102,6 +198,18 @@ flowchart LR
 
 **Endpoint:** `POST /api/auth/resend-verification`
 
+**DTO/Model Shapes:**
+- **ResendEmailVerificationRequestDto**
+  ```ts
+  {
+    email: string
+  }
+  ```
+- **OperationResult**
+  (see Forgot Password)
+- **User (domain)**
+  (see Login)
+
 | Layer       | Input DTO/Model                  | Output DTO/Model     | Mapping/Notes                                 |
 |-------------|----------------------------------|----------------------|-----------------------------------------------|
 | Controller  | ResendEmailVerificationRequestDto| OperationResult      | Receives request, returns result              |
@@ -125,6 +233,31 @@ flowchart LR
 ## 6. Social Login
 
 **Endpoint:** `POST /api/auth/social-login`
+
+**DTO/Model Shapes:**
+- **SocialAuthRequestDto**
+  ```ts
+  {
+    authCode: string,
+    state?: string,
+    nonce?: string,
+    provider: 'Google' | 'Apple' | string
+  }
+  ```
+- **SocialAuthResponseDto**
+  ```ts
+  {
+    token: string,
+    internalUser: InternalUserDto,
+    isNewUser: boolean,
+    socialId?: string,
+    socialEmail?: string
+  }
+  ```
+- **InternalUserDto**
+  (see Register)
+- **User (domain)**
+  (see Login)
 
 | Layer       | Input DTO/Model         | Output DTO/Model         | Mapping/Notes                                 |
 |-------------|-------------------------|--------------------------|-----------------------------------------------|
