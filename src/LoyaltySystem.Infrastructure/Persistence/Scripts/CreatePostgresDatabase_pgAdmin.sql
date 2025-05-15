@@ -384,11 +384,12 @@ CREATE INDEX IF NOT EXISTS idx_rewards_program_active ON rewards(program_id, is_
 CREATE TABLE IF NOT EXISTS users 
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    prefixed_id VARCHAR(35) NOT NULL,
+    prefixed_id VARCHAR(35) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(30) NOT NULL UNIQUE,
     email_confirmed BOOLEAN NOT NULL DEFAULT FALSE;
     password_hash VARCHAR(255) NOT NULL,
     status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
@@ -397,21 +398,21 @@ CREATE TABLE IF NOT EXISTS users
     last_login_at TIMESTAMP NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uix_users_prefixedid ON users(prefixed_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_name ON users(first_name, last_name);
+CREATE INDEX IF NOT EXISTS idx_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 
 -- Create Customers table
 CREATE TABLE IF NOT EXISTS customers
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
-    prefixed_id VARCHAR(35) NOT NULL,
+    prefixed_id VARCHAR(35) NOT NULL UNIQUE,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(100) NULL,
-    phone VARCHAR(50) NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(30) NOT NULL UNIQUE,
     marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP NULL,

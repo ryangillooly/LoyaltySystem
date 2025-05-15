@@ -70,16 +70,22 @@ public class UserService : IUserService
     public async Task<OperationResult<InternalUserDto>> GetByUsernameAsync(string username)
     {
         var user = await _userRepository.GetByUsernameAsync(username);
-        
         return user is null
             ? OperationResult<InternalUserDto>.FailureResult("User not found for the given Customer ID.")
+            : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
+    }
+
+    public async Task<OperationResult<InternalUserDto>> GetByPhoneNumberAsync(string phoneNumber)
+    {
+        var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber);
+        return user is null
+            ? OperationResult<InternalUserDto>.FailureResult("User not found for the given Phone Number.")
             : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
     public async Task<OperationResult<InternalUserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
     {
         var user = await _userRepository.GetByCustomerIdAsync(customerId);
-        
         return user is null
             ? OperationResult<InternalUserDto>.FailureResult("User not found for the given Customer ID.")
             : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));

@@ -10,6 +10,7 @@ namespace LoyaltySystem.Domain.Repositories
     {
         Task<User?> GetByIdAsync(UserId id);
         Task<User?> GetByUsernameAsync(string username);
+        Task<User?> GetByPhoneNumberAsync(string phoneNumber);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByCustomerIdAsync(CustomerId customerId);
         Task<User?> GetByEmailConfirmationTokenAsync(string token);

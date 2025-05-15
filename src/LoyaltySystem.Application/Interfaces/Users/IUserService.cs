@@ -12,6 +12,7 @@ public interface IUserService
     Task<OperationResult<InternalUserDto>> GetByIdAsync(UserId userId);
     Task<OperationResult<InternalUserDto>> GetByEmailAsync(string email);
     Task<OperationResult<InternalUserDto>> GetByUsernameAsync(string username);
+    Task<OperationResult<InternalUserDto>> GetByPhoneNumberAsync(string phoneNumber);
     Task<OperationResult<InternalUserDto>> GetUserByCustomerIdAsync(CustomerId customerId);
     
     Task<OperationResult<InternalUserDto>> AddAsync(User user, IDbTransaction? transaction = null);

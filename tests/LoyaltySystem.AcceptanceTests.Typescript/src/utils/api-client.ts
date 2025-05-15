@@ -1,21 +1,15 @@
 import { APIRequestContext, request } from '@playwright/test';
 import { AuthResponse, LoginRequest } from '../models/auth.models';
 
-/**
- * API client utility for managing API requests and authentication
- */
 export class ApiClient {
-  private context: APIRequestContext | null = null;
-  private authToken: string | null = null;
+  protected context: APIRequestContext | null = null;
+  protected authToken: string | null = null;
   private readonly baseUrl: string;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
-  /**
-   * Initialize the API context
-   */
   async init(): Promise<void> {
     this.context = await request.newContext({
       baseURL: this.baseUrl,
@@ -25,10 +19,7 @@ export class ApiClient {
       }
     });
   }
-
-  /**
-   * Authenticate with the API and store the token
-   */
+  
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     if (!this.context) {
       await this.init();
@@ -39,14 +30,11 @@ export class ApiClient {
     });
 
     const authResponse = await response.json() as AuthResponse;
-    this.authToken = authResponse.token;
+    this.authToken = authResponse.access_token;
     
     return authResponse;
   }
-
-  /**
-   * Make an authenticated GET request
-   */
+  
   async get<T>(url: string): Promise<T> {
     if (!this.context) {
       await this.init();
@@ -64,10 +52,7 @@ export class ApiClient {
     
     return await response.json() as T;
   }
-
-  /**
-   * Make an authenticated POST request
-   */
+  
   async post<T>(url: string, data: any): Promise<T> {
     if (!this.context) {
       await this.init();
@@ -89,10 +74,7 @@ export class ApiClient {
     
     return await response.json() as T;
   }
-
-  /**
-   * Make an authenticated PUT request
-   */
+  
   async put<T>(url: string, data: any): Promise<T> {
     if (!this.context) {
       await this.init();
@@ -115,9 +97,6 @@ export class ApiClient {
     return await response.json() as T;
   }
 
-  /**
-   * Make an authenticated DELETE request
-   */
   async delete<T>(url: string): Promise<T> {
     if (!this.context) {
       await this.init();
@@ -136,14 +115,15 @@ export class ApiClient {
     
     return await response.json() as T;
   }
-
-  /**
-   * Close the API context
-   */
+  
   async dispose(): Promise<void> {
     if (this.context) {
       await this.context.dispose();
       this.context = null;
     }
+  }
+
+  public setAuthToken(token: string) {
+    this.authToken = token;
   }
 } 

@@ -4,14 +4,12 @@ import { AdminApiClient } from '../../utils/admin-api-client';
 test.describe('Loyalty Program Management Journey', () => {
   let adminClient: AdminApiClient;
   
-  // Test data
   const testId = `test-${Date.now()}`;
   let brandId: string;
   let programId: string;
   let rewardId: string;
 
   test.beforeAll(async () => {
-    // Set up API client and login
     adminClient = new AdminApiClient();
     await adminClient.init();
     await adminClient.loginAdmin();
@@ -26,13 +24,9 @@ test.describe('Loyalty Program Management Journey', () => {
     brandId = brandResponse.id;
   });
 
-  test.afterAll(async () => {
-    // Clean up
-    await adminClient.dispose();
-  });
+  test.afterAll(async () => { await adminClient.dispose();} );
 
   test('1. Should create a new loyalty program', async () => {
-    // Create loyalty program request
     const createProgramRequest = {
       name: `Test Loyalty Program ${testId}`,
       brandId: brandId,
@@ -45,24 +39,19 @@ test.describe('Loyalty Program Management Journey', () => {
       enrollmentBonusPoints: 100
     };
     
-    // Create the program
     const createResponse = await adminClient.createLoyaltyProgram(createProgramRequest);
     
-    // Verify program created successfully
     expect(createResponse).toBeDefined();
     expect(createResponse.id).toBeDefined();
     expect(createResponse.name).toBe(createProgramRequest.name);
     expect(createResponse.brandId).toBe(brandId);
     
-    // Store program ID for next tests
     programId = createResponse.id;
   });
 
   test('2. Should retrieve the created loyalty program by ID', async () => {
-    // Get the program by ID
     const retrievedProgram = await adminClient.getLoyaltyProgramById(programId);
     
-    // Verify the retrieved program
     expect(retrievedProgram).toBeDefined();
     expect(retrievedProgram.id).toBe(programId);
     expect(retrievedProgram.brandId).toBe(brandId);
@@ -70,7 +59,6 @@ test.describe('Loyalty Program Management Journey', () => {
   });
 
   test('3. Should create a reward for the loyalty program', async () => {
-    // Create reward request
     const createRewardRequest = {
       title: `Test Reward ${testId}`,
       description: 'A test reward created by automated tests',
@@ -78,11 +66,8 @@ test.describe('Loyalty Program Management Journey', () => {
       validFrom: new Date().toISOString(),
       validTo: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
     };
-    
-    // Create the reward
     const createResponse = await adminClient.createReward(programId, createRewardRequest);
     
-    // Verify reward created successfully
     expect(createResponse).toBeDefined();
     expect(createResponse.id).toBeDefined();
     expect(createResponse.title).toBe(createRewardRequest.title);

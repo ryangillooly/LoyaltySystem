@@ -5,6 +5,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export class Credentials {
+  constructor(username: string, password: string) {
+    this.username = username;
+    this.password = password;
+  }
+  username: string;
+  password: string;
+}
+
 export interface RegisterRequest extends LoginRequest {
   firstName?: string;
   lastName?: string;
@@ -13,8 +22,10 @@ export interface RegisterRequest extends LoginRequest {
 
 // Authentication response models
 export interface AuthResponse {
-  token: string;
-  user: UserResponse;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
 }
 
 export interface UserResponse {

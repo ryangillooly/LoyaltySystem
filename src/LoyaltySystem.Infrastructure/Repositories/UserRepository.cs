@@ -93,6 +93,29 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 throw;
             }
         }
+
+        public async Task<User?> GetByPhoneNumberAsync(string phoneNumber)
+        {
+            ArgumentNullException.ThrowIfNull(phoneNumber);
+            
+            const string sql = $"""
+                SELECT 
+                    {UserSelectFields}
+                FROM 
+                    {Users} u
+                WHERE 
+                    u.username = @PhoneNumber
+            """;
+
+            var connection = await _dbConnection.GetConnectionAsync();
+            var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { phoneNumber });
+
+            if (user is { })
+                await LoadRolesAsync(user);
+
+            return user;
+        }
+        
         public async Task<User?> GetByEmailAsync(string email)
         {
             ArgumentNullException.ThrowIfNull(email);
@@ -239,12 +262,12 @@ namespace LoyaltySystem.Infrastructure.Repositories
             const string sql = $"""
                 INSERT INTO {Users} 
                 (
-                    id, prefixed_id, first_name, last_name, username, email, password_hash, 
+                    id, prefixed_id, first_name, last_name, username, email, phone, password_hash, 
                     email_confirmed, status, created_at, updated_at, last_login_at
                 ) 
                 VALUES 
                 (
-                    @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @PasswordHash, 
+                    @Id, @PrefixedId, @FirstName, @LastName, @Username, @Email, @Phone, @PasswordHash, 
                     @IsEmailConfirmed, @Status, @CreatedAt, @UpdatedAt, @LastLoginAt
                 )
             """;
@@ -258,6 +281,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                 user.LastName,
                 user.UserName,
                 user.Email,
+                user.Phone,
                 user.PasswordHash,
                 user.IsEmailConfirmed,
                 Status = (short)user.Status, 

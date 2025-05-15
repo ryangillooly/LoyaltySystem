@@ -156,6 +156,10 @@ public class AccountService : IAccountService
         var getByUsernameResult = await _userService.GetByUsernameAsync(registerRequestDto.UserName);
         if (getByUsernameResult.Success)
             return OperationResult<RegisterUserResponseDto>.FailureResult($"Username '{registerRequestDto.UserName}' already exists.");
+        
+        var getByPhoneResult = await _userService.GetByPhoneNumberAsync(registerRequestDto.UserName);
+        if (getByPhoneResult.Success)
+            return OperationResult<RegisterUserResponseDto>.FailureResult($"Phone Number '{registerRequestDto.Phone}' already exists.");
 
         var user = BuildUserObject(registerRequestDto, roles);
         var customer = BuildCreateCustomerDto(registerRequestDto, createCustomer, customerData);
