@@ -35,16 +35,21 @@ export class ApiClient {
     return authResponse;
   }
   
+  protected buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+    return headers;
+  }
+
   async get<T>(url: string): Promise<T> {
     if (!this.context) {
       await this.init();
     }
-
-    const headers: Record<string, string> = {};
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
-    }
-
+    const headers = this.buildHeaders();
     const response = await this.context!.get(url, { headers });
     if (!response.ok()) {
       throw new Error(`GET request failed: ${response.statusText()}`);
@@ -57,12 +62,7 @@ export class ApiClient {
     if (!this.context) {
       await this.init();
     }
-
-    const headers: Record<string, string> = {};
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
-    }
-
+    const headers = this.buildHeaders();
     const response = await this.context!.post(url, {
       data,
       headers

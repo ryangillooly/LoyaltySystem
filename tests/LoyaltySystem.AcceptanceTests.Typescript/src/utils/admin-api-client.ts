@@ -1,10 +1,11 @@
 import { ApiClient } from './api-client';
 import { AuthResponse, LoginRequest } from '../models/auth.models';
+import { envConfig as config } from './config';
 
 export class AdminApiClient extends ApiClient {
     
   constructor() {
-    const baseUrl = 'http://localhost:5001';
+    const baseUrl = config.adminApiUrl;
     super(baseUrl);
   }
 
@@ -65,5 +66,9 @@ export class AdminApiClient extends ApiClient {
    */
   async register(registerRequest: any): Promise<any> {
     return await this.post<any>('/api/auth/register', registerRequest);
+  }
+
+  async postToAccount(endpoint: string, data: any): Promise<any> {
+    return await this.post<any>(`/api/account/${endpoint}`, data);
   }
 } 

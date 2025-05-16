@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AdminApiClient } from '../../utils/admin-api-client';
+import { Credentials } from '../../models/auth.models';
 
 test.describe('Loyalty Program Management Journey', () => {
   let adminClient: AdminApiClient;
@@ -12,7 +13,7 @@ test.describe('Loyalty Program Management Journey', () => {
   test.beforeAll(async () => {
     adminClient = new AdminApiClient();
     await adminClient.init();
-    await adminClient.loginAdmin();
+    await adminClient.login(new Credentials("admin", "admin"));
     
     // Create a test brand to use for all tests in this suite
     const brandResponse = await adminClient.createBrand({

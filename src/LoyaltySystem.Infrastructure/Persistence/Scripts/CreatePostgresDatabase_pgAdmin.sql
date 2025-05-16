@@ -549,9 +549,13 @@ DELETE FROM users WHERE username = 'admin';
 -- We can actually insert directly here without a nested DO block since we are already inside the main one
 DECLARE
     admin_uuid UUID;
+    staff_uuid UUID; 
+    manager_uuid UUID;
 BEGIN
     -- Generate UUID for the admin user
     admin_uuid := uuid_generate_v4();
+    staff_uuid := uuid_generate_v4();
+    manager_uuid := uuid_generate_v4();
     
     -- Insert admin user with the generated UUID and a hardcoded PrefixedId
     INSERT INTO users
@@ -572,11 +576,43 @@ BEGIN
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP,
         true
+    ),
+    (
+        staff_uuid, -- Use generated UUID
+        'usr_t36klk2uczyedfc7ogufqb6222', -- Use hardcoded placeholder PrefixedId
+        'staff',
+        'staff',
+        'staff',
+        'staff@loyaltysystem.com',
+        'AQAAAAIAAYagAAAAEMhipWjYGgWGXfBRQ3CIOi7X5sU2iAKpcZZi4rCmvnLtgzMTrHWvwuAe7LTdNCUqnA==',
+        1, -- Active status
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,
+        true
+    ),
+    (
+        manager_uuid, -- Use generated UUID
+        'usr_t36klk2uczyedfc7ogufqb6333', -- Use hardcoded placeholder PrefixedId
+        'manager',
+        'manager',
+        'manager',
+        'manager@loyaltysystem.com',
+        'AQAAAAIAAYagAAAAEMhipWjYGgWGXfBRQ3CIOi7X5sU2iAKpcZZi4rCmvnLtgzMTrHWvwuAe7LTdNCUqnA==',
+        1, -- Active status
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,
+        true
     );
 
     -- Add SuperAdmin role to the admin user using the generated UUID
     INSERT INTO user_roles (user_id, role)
-    VALUES (admin_uuid, 'SuperAdmin');
+    VALUES 
+        (admin_uuid, 'User'),
+        (staff_uuid, 'User'),
+        (manager_uuid, 'User'),
+        (staff_uuid, 'Staff'),
+        (manager_uuid, 'Manager'),
+        (admin_uuid, 'SuperAdmin');
 END;
 -- End of direct insertion logic (removed nested DO block)
 
@@ -810,7 +846,7 @@ $$;
 CREATE TABLE verification_tokens
 (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES Users(id),
+    user_id UUID NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
     token VARCHAR(256) NOT NULL,
     token_type VARCHAR(50) NOT NULL,
     is_valid BOOLEAN NOT NULL DEFAULT TRUE,

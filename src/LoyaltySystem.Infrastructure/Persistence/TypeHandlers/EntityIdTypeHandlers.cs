@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using Dapper;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 
 namespace LoyaltySystem.Infrastructure.Data.TypeHandlers
@@ -66,40 +67,43 @@ namespace LoyaltySystem.Infrastructure.Data.TypeHandlers
 
         public override string Parse(object value)
         {
-            if (value == null || value is DBNull)
-                return null;
-                
-            // If it's a GUID, create a CustomerId and return its string representation
-            if (value is Guid guid)
+            switch (value)
             {
-                var customerId = new CustomerId(guid);
-                return customerId.ToString();
+                case null:
+                case DBNull:
+                    return null;
+                
+                case Guid guid:
+                {
+                    var customerId = new CustomerId(guid);
+                    return customerId.ToString();
+                }
+                default:
+                    return value.ToString();
             }
-            
-            // Just return the string value
-            return value.ToString();
+
         }
     }
+
+    public class VerificationTokenIdTypeHandler : SqlMapper.TypeHandler<VerificationTokenId>
+    {
+        public override void SetValue(IDbDataParameter parameter, VerificationTokenId value) =>
+            parameter.Value = value.Value;
+        
+        public override VerificationTokenId Parse(object value) => new ((Guid) value);
+    }
     
-    /// <summary>
-    /// Type handler for UserStatus enum
-    /// </summary>
     public class UserStatusTypeHandler : SqlMapper.TypeHandler<UserStatus>
     {
-        public override void SetValue(IDbDataParameter parameter, UserStatus value)
-        {
+        public override void SetValue(IDbDataParameter parameter, UserStatus value) =>
             parameter.Value = (int)value;
-        }
 
-        public override UserStatus Parse(object value)
-        {
-            return value == null ? UserStatus.Active : (UserStatus)Convert.ToInt32(value);
-        }
+        public override UserStatus Parse(object value) => 
+            value is null 
+                ? UserStatus.Active 
+                : (UserStatus) Convert.ToInt32(value);
     }
     
-    /// <summary>
-    /// Static class to register all type handlers in one place
-    /// </summary>
     public static class TypeHandlerConfig
     {
         private static bool _initialized = false;
@@ -115,14 +119,18 @@ namespace LoyaltySystem.Infrastructure.Data.TypeHandlers
                 
                 // Register all EntityId handlers
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<UserId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<UserRoleId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<StaffId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<CustomerId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<LoyaltyCardId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<LoyaltyProgramId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<LoyaltyTierId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<StoreId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<RewardId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<TransactionId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<BrandId>());
                 SqlMapper.AddTypeHandler(new EntityIdTypeHandler<BusinessId>());
+                SqlMapper.AddTypeHandler(new EntityIdTypeHandler<VerificationTokenId>());
                 
                 // Register other special handlers
                 SqlMapper.AddTypeHandler(new CustomerIdStringHandler());

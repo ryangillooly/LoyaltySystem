@@ -26,11 +26,12 @@ public class ResetPasswordRequestDtoValidator : AbstractValidator<ResetPasswordR
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty().WithMessage("ConfirmPassword is required.")
             .Equal(x => x.NewPassword).WithMessage("ConfirmPassword does not match.");
-        
+
         RuleFor(x => x)
-            // Ensures only either Email OR Username is present, but not both (^ == XOR Operator)
             .Must(x => !string.IsNullOrEmpty(x.Email) ^ !string.IsNullOrEmpty(x.UserName))
-            .WithMessage("Either Email or Username must be provided, but not both.")
+            .WithMessage("Either Email or Username must be provided, but not both.");
+            
+        RuleFor(x => x)
             .Must(x => !string.IsNullOrEmpty(x.Email) || !string.IsNullOrEmpty(x.UserName))
             .WithMessage("Either Email or Username is required.");
     }

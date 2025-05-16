@@ -5,6 +5,7 @@ namespace LoyaltySystem.Domain.Entities;
 
 public class VerificationToken : Entity<VerificationTokenId>
 {
+    public VerificationToken() : base(new VerificationTokenId()) { }
     public VerificationToken
     (
         UserId userId,
