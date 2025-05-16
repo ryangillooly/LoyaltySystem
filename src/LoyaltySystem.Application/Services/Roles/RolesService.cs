@@ -19,42 +19,65 @@ public class RolesService : IRolesService
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     }
     
-    public async Task<OperationResult<InternalUserDto>> AddCustomerRoleToUserAsync(string userId)
+    public async Task<OperationResult<GetRolesResponseDto>> GetRolesAsync(string userIdString)
     {
-        var user = await _userRepository.GetByIdAsync(UserId.FromString(userId));
+        var userId = UserId.FromString(userIdString);
+        
+        var roles = await _userRepository.GetRolesAsync(userId);
+        if (roles is null)
+            return OperationResult<GetRolesResponseDto>.FailureResult("Roles not found");
+        
+        var response = new GetRolesResponseDto(userId, roles.ToList());
+        return OperationResult<GetRolesResponseDto>.SuccessResult(response);
+    }
+
+    public async Task<OperationResult<AddRolesResponseDto>> AddCustomerRoleToUserAsync(string userIdString)
+    {
+        var userId = UserId.FromString(userIdString);
+        
+        var user = await _userRepository.GetByIdAsync(userId);
         if (user is null)
-            return OperationResult<InternalUserDto>.FailureResult("User not found.");
+            return OperationResult<AddRolesResponseDto>.FailureResult("User not found.");
 
         if (user.CustomerId is null)
-            return OperationResult<InternalUserDto>.FailureResult("User is not linked to a customer record.");
+            return OperationResult<AddRolesResponseDto>.FailureResult("User is not linked to a customer record.");
 
-        await _userRepository.AddRoleAsync(user.Id, new List<RoleType> { RoleType.Customer });
+        var role = new List<RoleType> { RoleType.Customer };
         
-        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
-        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(updatedUser!));
+        await _userRepository.AddRoleAsync(userId, role);
+        var updatedRoles = await _userRepository.GetRolesAsync(userId);
+        
+        var response = new AddRolesResponseDto(user.Id, role, updatedRoles.ToList());
+        return OperationResult<AddRolesResponseDto>.SuccessResult(response);
     }
     
-    public async Task<OperationResult<InternalUserDto>> AddRoleAsync(string userId, List<RoleType> roles)
+    public async Task<OperationResult<AddRolesResponseDto>> AddRoleAsync(string userIdString, AddRolesRequestDto request)
     {
-        var user = await _userRepository.GetByIdAsync(UserId.FromString(userId));
+        var userId = UserId.FromString(userIdString);
+        
+        var user = await _userRepository.GetByIdAsync(userId);
         if (user is null)
-            return OperationResult<InternalUserDto>.FailureResult("User not found.");
+            return OperationResult<AddRolesResponseDto>.FailureResult("User not found.");
             
-        await _userRepository.AddRoleAsync(user.Id, roles);
-
-        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
-        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(updatedUser!)); 
+        await _userRepository.AddRoleAsync(userId, request.Roles);
+        var updatedRoles = await _userRepository.GetRolesAsync(userId);
+        
+        var response = new AddRolesResponseDto(userId, request.Roles, updatedRoles.ToList());
+        return OperationResult<AddRolesResponseDto>.SuccessResult(response); 
     }
     
-    public async Task<OperationResult<InternalUserDto>> RemoveRoleAsync(string userId, List<RoleType> roles)
+    public async Task<OperationResult<RemoveRolesResponseDto>> RemoveRoleAsync(string userIdString, RemoveRolesRequestDto request)
     {
-        var user = await _userRepository.GetByIdAsync(UserId.FromString(userId));
-        if (user is null)
-            return OperationResult<InternalUserDto>.FailureResult("User not found.");
-            
-        await _userRepository.RemoveRoleAsync(user.Id, roles);
+        var userId = UserId.FromString(userIdString);
         
-        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
-        return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(updatedUser!)); 
+        var user = await _userRepository.GetRolesAsync(userId);
+        if (user is null)
+            return OperationResult<RemoveRolesResponseDto>.FailureResult("User not found.");
+            
+        await _userRepository.RemoveRoleAsync(userId, request.Roles);
+        var updatedRoles = await _userRepository.GetRolesAsync(userId);
+        
+        var response = new RemoveRolesResponseDto(userId, request.Roles, updatedRoles.ToList());
+        return OperationResult<RemoveRolesResponseDto>.SuccessResult(response); 
     }
 }

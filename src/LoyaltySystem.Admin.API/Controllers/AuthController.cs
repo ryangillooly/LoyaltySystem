@@ -85,20 +85,16 @@ public class AuthController : BaseAuthController
         );
     
     [Authorize(Roles = "SuperAdmin,Admin")]
-    [HttpPost("users/{userId}/roles")]
-    public async Task<IActionResult> AddRole([FromRoute] string userId, [FromBody] AddRolesRequestDto roles)
+    [HttpPost("users/{userId}/roles/add")]
+    public async Task<IActionResult> AddRole([FromRoute] string userId, [FromBody] AddRolesRequestDto request)
     {
-        var rolesString = string.Join(", ", roles);
+        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(request);
+        
+        var rolesString = string.Join(", ", request.Roles);
         _logger.Information("Admin role add request: {UserId}, Roles: {Role}", userId, rolesString);
-            
-        if (!EntityId.TryParse<UserId>(userId, out _))
-        {
-            _logger.Warning("Invalid user ID in route: {UserId}", userId);
-            return NotFound(new { message = "User Id not found" });
-        }
-                
-        var result = await _rolesService.AddRoleAsync(userId, roles.Roles);
-            
+        
+        var result = await _rolesService.AddRoleAsync(userId, request);
         if (!result.Success)
         {
             _logger.Warning("Admin role add failed: {UserId}, Roles: {Role} - {Error}", userId, rolesString, result.Errors);
@@ -110,21 +106,16 @@ public class AuthController : BaseAuthController
     }
 
     [Authorize(Roles = "SuperAdmin,Admin")]
-    [HttpDelete("users/{userId}/roles")]
-    public async Task<IActionResult> RemoveRole([FromRoute] string userId, [FromBody] RemoveRolesRequestDto roles)
+    [HttpPost("users/{userId}/roles/remove")]
+    public async Task<IActionResult> RemoveRole([FromRoute] string userId, [FromBody] RemoveRolesRequestDto request)
     {
-        var roleList = string.Join(", ", roles);
+        ArgumentNullException.ThrowIfNull(userId);
+        ArgumentNullException.ThrowIfNull(request);
+        
+        var roleList = string.Join(", ", request.Roles);
         _logger.Information("Admin role remove request: {UserId}, Role: {Role}", userId, nameof(roleList));
         
-        // Parse the user ID using the extension method
-        if (!EntityId.TryParse<UserId>(userId, out _))
-        {
-            _logger.Warning("Invalid user ID in route: {UserId}", userId);
-            return NotFound(new { message = "User Id not found" });
-        }
-        
-        var result = await _rolesService.RemoveRoleAsync(userId, roles.Roles);
-            
+        var result = await _rolesService.RemoveRoleAsync(userId, request);
         if (!result.Success)
         {
             _logger.Warning("Admin role remove failed: {UserId}, Role: {Role} - {Error}", userId, nameof(roleList), result.Errors);
@@ -134,11 +125,26 @@ public class AuthController : BaseAuthController
         _logger.Information("Admin role removed successfully: {UserId}, Role: {Role}", userId, nameof(roleList));
         return Ok(result.Data);
     }
+    
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    [HttpGet("users/{userId}/roles")]
+    public async Task<IActionResult> RemoveRole([FromRoute] string userId)
+    {
+        ArgumentNullException.ThrowIfNull(userId);
+        
+        var result = await _rolesService.GetRolesAsync(userId);
+        if (!result.Success)
+            return BadRequest(new { message = result.Errors });
+         
+        return Ok(result.Data);
+    }
 
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/link-customer")]
     public async Task<IActionResult> LinkCustomer(LinkCustomerDto linkRequest)
     {
+        ArgumentNullException.ThrowIfNull(linkRequest);
+        
         _logger.Information("Admin link customer request: {UserId}, CustomerId: {CustomerId}", 
             linkRequest.UserId, linkRequest.CustomerId);
             

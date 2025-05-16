@@ -22,29 +22,37 @@ export class AdminApiClient extends ApiClient {
   }
   
   async getBrands() {
-    return await this.get<any[]>('/api/admin/brands');
+    return await this.get<any[]>('/api/brands');
   }
   async getBrandById(brandId: string) {
-    return await this.get<any>(`/api/admin/brands/${brandId}`);
+    return await this.get<any>(`/api/brands/${brandId}`);
   }
   async createBrand(brandData: any) {
-    return await this.post<any>('/api/admin/brands', brandData);
+    return await this.post<any>('/api/brands', brandData);
   }
   async getLoyaltyPrograms() {
-    return await this.get<any[]>('/api/admin/loyaltyPrograms');
+    return await this.get<any[]>('/api/loyaltyPrograms');
   }
   async getLoyaltyProgramById(programId: string) {
-    return await this.get<any>(`/api/admin/loyaltyPrograms/${programId}`);
+    return await this.get<any>(`/api/loyaltyPrograms/${programId}`);
   }
   async createLoyaltyProgram(programData: any) {
-    return await this.post<any>('/api/admin/loyaltyPrograms', programData);
+    return await this.post<any>('/api/loyaltyPrograms', programData);
   }
   async getRewardsByProgramId(programId: string) {
-    return await this.get<any[]>(`/api/admin/programs/${programId}/rewards`);
+    return await this.get<any[]>(`/api/programs/${programId}/rewards`);
   }
   async createReward(programId: string, rewardData: any) {
-    return await this.post<any>(`/api/admin/programs/${programId}/rewards`, rewardData);
+    return await this.post<any>(`/api/programs/${programId}/rewards`, rewardData);
   }
+  
+  async addRole(userId: string, roles: string[]){
+    return await this.post<any>(`/api/auth/users/${userId}/roles/add`, roles);
+  };
+  
+  async removeRole(userId: string, roles: string[]){
+    return await this.post<any>(`/api/auth/users/${userId}/roles/remove`, roles);
+  };
   
   async register(registerRequest: any): Promise<any> {
     return await this.post<any>('/api/auth/register', registerRequest);

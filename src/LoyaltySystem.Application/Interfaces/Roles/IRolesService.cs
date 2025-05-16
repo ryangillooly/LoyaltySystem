@@ -6,7 +6,8 @@ namespace LoyaltySystem.Application.Interfaces.Roles;
 
 public interface IRolesService 
 {
-    Task<OperationResult<InternalUserDto>> AddCustomerRoleToUserAsync(string userId);
-    Task<OperationResult<InternalUserDto>> AddRoleAsync(string userId, List<RoleType> roles);
-    Task<OperationResult<InternalUserDto>> RemoveRoleAsync(string userId, List<RoleType> role);
+    Task<OperationResult<GetRolesResponseDto>> GetRolesAsync(string userIdString);
+    Task<OperationResult<AddRolesResponseDto>> AddCustomerRoleToUserAsync(string userIdString);
+    Task<OperationResult<AddRolesResponseDto>> AddRoleAsync(string userIdString, AddRolesRequestDto request);
+    Task<OperationResult<RemoveRolesResponseDto>> RemoveRoleAsync(string userIdString, RemoveRolesRequestDto request);
 }

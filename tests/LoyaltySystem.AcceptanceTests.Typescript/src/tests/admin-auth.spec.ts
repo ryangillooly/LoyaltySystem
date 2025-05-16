@@ -73,6 +73,35 @@ test.describe('Admin Authentication', () => {
     });
   });
 
+  test('should successfully add role to a user', async () => {
+    // 1. Login and get JWT
+    const response = await adminClient.login(credentials);
+    adminClient.setAuthToken(response.response.access_token);
+
+    // 2. Register new user (using Admin API, as you cannot register via Staff API)
+    const unique = Date.now();
+    const registerPayload = {
+      firstName: 'Admin',
+      lastName: 'Admin',
+      userName: `admin_${unique}`,
+      email: `admin_${unique}@example.com`,
+      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
+      password: 'admin1',
+      confirmPassword: 'admin1',
+      roles: ['Admin']
+    };
+    const register = await adminClient.register(registerPayload);
+    
+    // 3. Add Role to user
+    const rolesToAdd = ["Staff", "Manager"];
+    console.log(`UserID: ${register.body.id}`)
+    const roleResponse = await adminClient.addRole(register.body.id, rolesToAdd); 
+    console.log(`RolestoAdd: ${JSON.stringify(roleResponse)}`);
+    expect(roleResponse.status).toBe(200);
+    
+    // 4. Get user to validate
+  });
+
   test('should fail to register with invalid payload', async () => {
     const login = await adminClient.login(credentials)
     adminClient.setAuthToken(login.response.access_token);
