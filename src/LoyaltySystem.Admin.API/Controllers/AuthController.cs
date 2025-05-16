@@ -86,7 +86,7 @@ public class AuthController : BaseAuthController
     
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/{userId}/roles/add")]
-    public async Task<IActionResult> AddRole([FromRoute] string userId, [FromBody] AddRolesRequestDto request)
+    public async Task<IActionResult> AddRoles([FromRoute] string userId, [FromBody] AddRolesRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(userId);
         ArgumentNullException.ThrowIfNull(request);
@@ -107,7 +107,7 @@ public class AuthController : BaseAuthController
 
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/{userId}/roles/remove")]
-    public async Task<IActionResult> RemoveRole([FromRoute] string userId, [FromBody] RemoveRolesRequestDto request)
+    public async Task<IActionResult> RemoveRoles([FromRoute] string userId, [FromBody] RemoveRolesRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(userId);
         ArgumentNullException.ThrowIfNull(request);
@@ -128,7 +128,7 @@ public class AuthController : BaseAuthController
     
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpGet("users/{userId}/roles")]
-    public async Task<IActionResult> RemoveRole([FromRoute] string userId)
+    public async Task<IActionResult> GetRoles([FromRoute] string userId)
     {
         ArgumentNullException.ThrowIfNull(userId);
         

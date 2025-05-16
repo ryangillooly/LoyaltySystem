@@ -14,7 +14,10 @@ using LoyaltySystem.Domain.Settings;
 using LoyaltySystem.Infrastructure.Json;
 using LoyaltySystem.Shared.API.Serialization;
 using LoyaltySystem.Shared.API.ModelBinding;
-using Serilog;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using LoyaltySystem.Application.Validation;
+using System.Text.Json;
 
 namespace LoyaltySystem.Shared.API.Configuration;
 
@@ -33,8 +36,11 @@ public static class ApiConfiguration
             {
                 options.ModelBinderProviders.Insert(0, new EntityIdModelBinderProvider());
             })
+            
             .AddJsonOptions(options => 
             {
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+                
                 options.JsonSerializerOptions.Converters.Add(new OperatingHoursConverter());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserId>());
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<CustomerId>());
@@ -47,8 +53,10 @@ public static class ApiConfiguration
                 options.JsonSerializerOptions.Converters.Add(new EntityIdJsonConverter<UserRoleId>());
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
-            
+        
         builder.Services
+            .AddFluentValidationAutoValidation()
+            .AddValidatorsFromAssemblyContaining<LoginRequestDtoValidator>()
             .AddEndpointsApiExplorer()
             .AddSingleton<IJwtService, JwtService>()
             .AddJwtAuthentication(builder.Configuration)

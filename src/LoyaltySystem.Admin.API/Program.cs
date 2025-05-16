@@ -17,4 +17,4 @@ builder
 var app = builder.Build();
 app.UseSharedMiddleware();
 
-await app.RunAsync(); 
+await app.RunAsync();

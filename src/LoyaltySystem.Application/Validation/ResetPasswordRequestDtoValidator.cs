@@ -8,9 +8,9 @@ public class ResetPasswordRequestDtoValidator : AbstractValidator<ResetPasswordR
 {
     public ResetPasswordRequestDtoValidator()
     {
-        RuleFor(x => x.UserName)
+        RuleFor(x => x.Username)
             .Length(2, 100).WithMessage("Username must be between 2 and 100 characters.")
-            .When(x => !string.IsNullOrEmpty(x.UserName));
+            .When(x => !string.IsNullOrEmpty(x.Username));
         
         RuleFor(x => x.Email)
             .EmailAddress().WithMessage("A valid email address is required.")
@@ -28,11 +28,11 @@ public class ResetPasswordRequestDtoValidator : AbstractValidator<ResetPasswordR
             .Equal(x => x.NewPassword).WithMessage("ConfirmPassword does not match.");
 
         RuleFor(x => x)
-            .Must(x => !string.IsNullOrEmpty(x.Email) ^ !string.IsNullOrEmpty(x.UserName))
+            .Must(x => !string.IsNullOrEmpty(x.Email) ^ !string.IsNullOrEmpty(x.Username))
             .WithMessage("Either Email or Username must be provided, but not both.");
             
         RuleFor(x => x)
-            .Must(x => !string.IsNullOrEmpty(x.Email) || !string.IsNullOrEmpty(x.UserName))
+            .Must(x => !string.IsNullOrEmpty(x.Email) || !string.IsNullOrEmpty(x.Username))
             .WithMessage("Either Email or Username is required.");
     }
 }

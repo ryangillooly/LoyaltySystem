@@ -53,6 +53,10 @@ export class AdminApiClient extends ApiClient {
   async removeRole(userId: string, roles: string[]){
     return await this.post<any>(`/api/auth/users/${userId}/roles/remove`, roles);
   };
+
+  async getRoles(userId: string){
+    return await this.get<any>(`/api/auth/users/${userId}/roles`);
+  };
   
   async register(registerRequest: any): Promise<any> {
     return await this.post<any>('/api/auth/register', registerRequest);
