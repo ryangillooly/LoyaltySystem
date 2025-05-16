@@ -1,5 +1,5 @@
 import { ApiClient } from './api-client';
-import { AuthResponse, LoginRequest } from '../models/auth.models';
+import { AuthResponseDto, AuthResponse, LoginRequest } from '../models/auth.models';
 import { envConfig as config } from './config';
 
 export class StaffApiClient extends ApiClient {
@@ -7,17 +7,17 @@ export class StaffApiClient extends ApiClient {
         const baseUrl = config.staffApiUrl;
         super(baseUrl);
     }
-
-    async login(credentials: LoginRequest): Promise<AuthResponse> {
+    
+    async login(credentials: LoginRequest): Promise<any> {
         if (!this.context) {
             await this.init();
         }
         const response = await this.context!.post('/api/auth/login', {
             data: credentials
         });
-        const authResponse = await response.json() as AuthResponse;
+        const authResponse = await response.json();
         this.authToken = authResponse.access_token;
-        return authResponse;
+        return new AuthResponseDto(response.status(), authResponse);
     }
 
     setAuthToken(token: string): void {

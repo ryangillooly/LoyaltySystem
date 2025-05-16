@@ -1,5 +1,5 @@
 import { APIRequestContext, request } from '@playwright/test';
-import { AuthResponse, LoginRequest } from '../models/auth.models';
+import { AuthResponse, AuthResponseDto, LoginRequest } from '../models/auth.models';
 
 export class ApiClient {
   protected context: APIRequestContext | null = null;
@@ -20,7 +20,7 @@ export class ApiClient {
     });
   }
   
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<any> {
     if (!this.context) {
       await this.init();
     }
@@ -29,10 +29,10 @@ export class ApiClient {
       data: credentials
     });
 
-    const authResponse = await response.json() as AuthResponse;
+    const authResponse = await response.json();
     this.authToken = authResponse.access_token;
     
-    return authResponse;
+    return new AuthResponseDto(response.status(), authResponse);
   }
   
   protected buildHeaders(): Record<string, string> {
@@ -57,8 +57,8 @@ export class ApiClient {
     
     return await response.json() as T;
   }
-  
-  async post<T>(url: string, data: any): Promise<T> {
+
+  async post<T>(url: string, data: any): Promise<{ status: number, body: T }> {
     if (!this.context) {
       await this.init();
     }
@@ -68,11 +68,15 @@ export class ApiClient {
       headers
     });
 
-    if (!response.ok()) {
-      throw new Error(`POST request failed: ${response.statusText()}`);
+    let body: T;
+    try {
+      body = await response.json();
+    } catch {
+      // fallback for non-JSON responses
+      body = (await response.text()) as any;
     }
-    
-    return await response.json() as T;
+
+    return { status: response.status(), body };
   }
   
   async put<T>(url: string, data: any): Promise<T> {

@@ -14,11 +14,7 @@ interface MailHogResponse {
   items: MailHogMessage[];
 }
 
-/**
- * Extracts the reset token from the email body, handling quoted-printable line breaks and padding artifacts.
- * @param body - The email body string
- * @returns The cleaned token, or null if not found
- */
+
 function extractToken(body: string): string | null {
   // 1. Extract everything after the phrase
   const match = body.match(/use this token: ([\s\S]+)/i);
@@ -45,8 +41,7 @@ export async function purgeMailhog(): Promise<void> {
 
 export async function getTokenFromMailhog(
   recipient: string,
-  subjectContains: string,
-  tokenRegex?: RegExp // Optional, for future flexibility
+  subjectContains: string
 ): Promise<string | null> {
   const response = await fetch(config.mailhogUrl + 'api/v2/messages');
   if (!response.ok) {
@@ -63,7 +58,7 @@ export async function getTokenFromMailhog(
       // Use the improved extraction logic
       const token = extractToken(body);
       if (token) {
-        return token;
+        return token.replace(/\s+/g, '').trim();
       }
     }
   }

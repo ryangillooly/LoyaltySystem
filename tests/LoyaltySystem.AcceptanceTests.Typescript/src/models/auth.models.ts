@@ -35,4 +35,13 @@ export interface UserResponse {
   firstName?: string;
   lastName?: string;
   roles: string[];
-} 
+}
+
+export class AuthResponseDto {
+  constructor(status: number, response: AuthResponse) {
+    this.status = status;
+    this.response = response;
+  }
+  status: number;
+  response: AuthResponse;
+}

@@ -1,36 +1,31 @@
 import { test, expect } from '@playwright/test';
 import { AdminApiClient } from '../../utils/admin-api-client';
-import { StaffApiClient } from '../../utils/staff-api-client';
 import { getTokenFromMailhog, purgeMailhog } from '../../utils/mailhog';
 
-test.describe('Staff Onboarding and Password Reset Journey', () => {
-  let adminClient: AdminApiClient;
-  let staffClient: StaffApiClient;
-  const adminCredentials = { username: 'admin', password: 'admin' };
+// E2E User Flow Journey Tests for Admin Authentication
+// Covers real-world scenarios involving multiple API calls and state changes
 
-  // Generate unique staff user details
+test.describe('Admin Auth User Flow Journey', () => {
+  let adminClient: AdminApiClient;
   const unique = Date.now();
-  const staffUsername = `staff_${unique}`;
-  const staffEmail = `staff_${unique}@example.com`;
-  const initialPassword = 'Staff123!';
-  const newPassword = 'Staff456!';
+  const adminUsername = `admin_${unique}`;
+  const adminEmail = `admin_${unique}@example.com`;
+  const initialPassword = 'Admin123!';
+  const newPassword = 'Admin456!';
+  const adminCredentials = { username: 'admin', password: 'admin' };
 
   test.beforeEach(async () => {
     adminClient = new AdminApiClient();
-    staffClient = new StaffApiClient();
     await adminClient.init();
-    await staffClient.init();
     await purgeMailhog();
   });
 
-  test.afterEach(async () => {
-    await adminClient.dispose();
-    await staffClient.dispose();
-  });
+  test.afterEach(async () => { await adminClient.dispose(); });
 
-  test('should onboard and manage staff user password', async () => {
+  test('should onboard and manage admin user password', async () => {
     // 1. Login as Admin
     const adminLogin = await adminClient.login(adminCredentials);
+    expect(adminLogin.status).toBe(200);
     expect(adminLogin.response).toMatchObject({
       access_token: expect.any(String),
       expires_in: 3599,
@@ -39,18 +34,19 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
     });
     
     adminClient.setAuthToken(adminLogin.response.access_token);
-
-    // 2. Register new Staff user
+    
+    // 2. Register new Admin user
     const registerPayload = {
       firstName: 'Test',
-      lastName: 'Staff',
-      userName: staffUsername,
-      email: staffEmail,
+      lastName: 'Admin',
+      userName: adminUsername,
+      email: adminEmail,
       phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
       password: initialPassword,
       confirmPassword: initialPassword,
-      roles: ['Staff']
+      roles: ['Admin']
     };
+    
     const register = await adminClient.register(registerPayload);
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
@@ -62,53 +58,49 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
       status: 'Active',
       customerId: null,
       phone: registerPayload.phone,
-      roles: ['User', 'Staff' ],
+      roles: ['User', 'Admin' ],
       isEmailConfirmed: false,
     });
 
-    // 3. Login as new Staff user (initial password) - Rejection due to no email confirmation
-    const staffLogin = await staffClient.login({ 
-      username: staffUsername, 
-      password: initialPassword 
+    // 3. Login as new Admin user (initial password) - Rejection due to no email confirmation
+    const newAdminLogin = await adminClient.login({ 
+      username: registerPayload.userName, 
+      password: registerPayload.password 
     });
-    expect(staffLogin.response.message).toEqual(["Email has not been confirmed"]);
-
+    expect(newAdminLogin.response.message).toEqual(["Email has not been confirmed"]);
+    
     // 4. Resend Verification Email
-    const resendEmailVerification = await staffClient.resendVerificationEmail({ email: staffEmail });
+    const resendEmailVerification = await adminClient.postToAccount('resend-verification', { email: adminEmail });
     expect(resendEmailVerification.status).toBe(200);
     expect(resendEmailVerification.body.message).toEqual("If the account exists, a verification email has been sent.");
 
     // 5. Get Token from Email
-    const rawToken = await getTokenFromMailhog(staffEmail, 'Email Verification');
-    expect(rawToken).not.toBeNull();
-    const cleanToken = rawToken!.replace(/\s+/g, '').trim();
-    
-    // 6. Verify email with token
-    const verifyEmail = await staffClient.verifyEmail(cleanToken);
+    const verifyToken = await getTokenFromMailhog(adminEmail, 'Email Verification');
+
+    // 6. Verify email with token 
+    const verifyEmail = await adminClient.postToAccount(`verify-email?Token=${verifyToken}`, null);
     expect(verifyEmail.status).toBe(200);
     expect(verifyEmail.body).toEqual(`Email verified successfully!`);
 
     // 7. Forgot password
-    const forgotResponse = await staffClient.postToAccount('forgot-password', { email: staffEmail });
+    const forgotResponse = await adminClient.postToAccount('forgot-password', { email: adminEmail });
     expect(forgotResponse.body.message).toEqual('If the account exists, a password reset email has been sent.');
 
     // 8. Get token from MailHog
-    const rawToken2 = await getTokenFromMailhog(staffEmail, 'Password Reset Request');
-    expect(rawToken2).not.toBeNull();
-    const cleanToken2 = rawToken2 ? rawToken2.replace(/\s+/g, '').trim() : null;
-    
+    const resetToken = await getTokenFromMailhog(adminEmail, 'Password Reset Request');
+
     // 9. Reset password
-    const resetResponse = await staffClient.postToAccount('reset-password', {
-      username: staffUsername,
-      token: cleanToken2,
+    const resetResponse = await adminClient.postToAccount('reset-password', {
+      username: adminUsername,
+      token: resetToken,
       newPassword,
       confirmPassword: newPassword
     });
     expect(resetResponse.body.message).toContain('Password has been reset');
 
-    // 10. Login as new Staff user with new password (should succeed)
-    const newLogin = await staffClient.login({ 
-      username: staffUsername, 
+    // 10. Login as new Admin user with new password (should succeed)
+    const newLogin = await adminClient.login({ 
+      username: adminUsername, 
       password: newPassword 
     });
     expect(newLogin.status).toBe(200);
@@ -119,12 +111,12 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
       token_type: 'Bearer'
     });
 
-    // 11. Login as new Staff user with old password (should fail)
-    const oldLogin = await staffClient.login({ 
-      username: staffUsername, 
+    // 11. Login as new Admin user with old password (should fail)
+    const oldLogin = await adminClient.login({ 
+      username: adminUsername, 
       password: initialPassword 
     });
     expect(oldLogin.status).toBe(401);
     expect(oldLogin.response.message).toEqual(['Invalid username/email or password']);
   });
-});
+}); 

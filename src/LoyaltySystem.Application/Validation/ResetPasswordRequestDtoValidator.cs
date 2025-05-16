@@ -21,7 +21,7 @@ public class ResetPasswordRequestDtoValidator : AbstractValidator<ResetPasswordR
         
         RuleFor(x => x.NewPassword)
             .NotEmpty().WithMessage("NewPassword is required.")
-            .Length(6, 100).WithMessage("NewPassword must be between 6 and 100 characters.");
+            .Length(5, 100).WithMessage("NewPassword must be between 5 and 100 characters.");
 
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty().WithMessage("ConfirmPassword is required.")

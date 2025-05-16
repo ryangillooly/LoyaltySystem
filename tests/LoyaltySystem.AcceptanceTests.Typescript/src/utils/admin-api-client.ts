@@ -1,5 +1,5 @@
 import { ApiClient } from './api-client';
-import { AuthResponse, LoginRequest } from '../models/auth.models';
+import { AuthResponse, AuthResponseDto, LoginRequest } from '../models/auth.models';
 import { envConfig as config } from './config';
 
 export class AdminApiClient extends ApiClient {
@@ -9,31 +9,16 @@ export class AdminApiClient extends ApiClient {
     super(baseUrl);
   }
 
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<any> {
     if (!this.context) {
       await this.init();
     }
-
     const response = await this.context!.post('/api/auth/login', {
       data: credentials
     });
-
-    // Check for non-OK or non-JSON responses
-    if (!response.ok()) {
-      const text = await response.text();
-      throw new Error(`Login failed: ${response.status()} - ${text}`);
-    }
-
-    const contentType = response.headers()['content-type'];
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      throw new Error(`Expected JSON but got: ${contentType || 'no content-type'} - ${text}`);
-    }
-
-    const authResponse = await response.json() as AuthResponse;
+    const authResponse = await response.json();
     this.authToken = authResponse.access_token;
-
-    return authResponse;
+    return new AuthResponseDto(response.status(), authResponse);
   }
   
   async getBrands() {
@@ -60,10 +45,7 @@ export class AdminApiClient extends ApiClient {
   async createReward(programId: string, rewardData: any) {
     return await this.post<any>(`/api/admin/programs/${programId}/rewards`, rewardData);
   }
-
-  /**
-   * Register a new user
-   */
+  
   async register(registerRequest: any): Promise<any> {
     return await this.post<any>('/api/auth/register', registerRequest);
   }
