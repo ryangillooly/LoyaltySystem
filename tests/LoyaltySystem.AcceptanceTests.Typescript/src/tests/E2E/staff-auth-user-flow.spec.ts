@@ -2,17 +2,12 @@ import { test, expect } from '@playwright/test';
 import { AdminApiClient } from '../../utils/admin-api-client';
 import { StaffApiClient } from '../../utils/staff-api-client';
 import { getTokenFromMailhog, purgeMailhog } from '../../utils/mailhog';
+import { createRegisterRequest } from '../../utils/helpers';
 
 test.describe('Staff Onboarding and Password Reset Journey', () => {
   let adminClient: AdminApiClient;
   let staffClient: StaffApiClient;
   const adminCredentials = { username: 'admin', password: 'admin' };
-
-  // Generate unique staff user details
-  const unique = Date.now();
-  const staffUsername = `staff_${unique}`;
-  const staffEmail = `staff_${unique}@example.com`;
-  const initialPassword = 'Staff123!';
   const newPassword = 'Staff456!';
 
   test.beforeEach(async () => {
@@ -41,45 +36,36 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
     adminClient.setAuthToken(adminLogin.response.access_token);
 
     // 2. Register new Staff user
-    const registerPayload = {
-      firstName: 'Test',
-      lastName: 'Staff',
-      userName: staffUsername,
-      email: staffEmail,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: initialPassword,
-      confirmPassword: initialPassword,
-      roles: ['Staff']
-    };
+    const registerPayload = createRegisterRequest('Staff', ['Staff']);
     const register = await adminClient.register(registerPayload);
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Staff' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
 
     // 3. Login as new Staff user (initial password) - Rejection due to no email confirmation
     const staffLogin = await staffClient.login({ 
-      username: staffUsername, 
-      password: initialPassword 
+      username: registerPayload.username, 
+      password: registerPayload.password, 
     });
     expect(staffLogin.response.message).toEqual(["Email has not been confirmed"]);
 
     // 4. Resend Verification Email
-    const resendEmailVerification = await staffClient.resendVerificationEmail({ email: staffEmail });
+    const resendEmailVerification = await staffClient.resendVerificationEmail({ email: registerPayload.email });
     expect(resendEmailVerification.status).toBe(200);
     expect(resendEmailVerification.body.message).toEqual("If the account exists, a verification email has been sent.");
 
     // 5. Get Token from Email
-    const rawToken = await getTokenFromMailhog(staffEmail, 'Email Verification');
+    const rawToken = await getTokenFromMailhog(registerPayload.email, 'Email Verification');
     expect(rawToken).not.toBeNull();
     const cleanToken = rawToken!.replace(/\s+/g, '').trim();
     
@@ -89,26 +75,27 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
     expect(verifyEmail.body).toEqual(`Email verified successfully!`);
 
     // 7. Forgot password
-    const forgotResponse = await staffClient.postToAccount('forgot-password', { email: staffEmail });
+    const forgotResponse = await staffClient.postToAccount('forgot-password', { username: registerPayload.username });
     expect(forgotResponse.body.message).toEqual('If the account exists, a password reset email has been sent.');
 
     // 8. Get token from MailHog
-    const rawToken2 = await getTokenFromMailhog(staffEmail, 'Password Reset Request');
+    const rawToken2 = await getTokenFromMailhog(registerPayload.email, 'Password Reset Request');
     expect(rawToken2).not.toBeNull();
     const cleanToken2 = rawToken2 ? rawToken2.replace(/\s+/g, '').trim() : null;
     
     // 9. Reset password
     const resetResponse = await staffClient.postToAccount('reset-password', {
-      username: staffUsername,
+      username: registerPayload.username,
       token: cleanToken2,
-      newPassword,
-      confirmPassword: newPassword
+      new_password: newPassword,
+      confirm_password: newPassword
     });
+        
     expect(resetResponse.body.message).toContain('Password has been reset');
 
     // 10. Login as new Staff user with new password (should succeed)
     const newLogin = await staffClient.login({ 
-      username: staffUsername, 
+      username: registerPayload.username, 
       password: newPassword 
     });
     expect(newLogin.status).toBe(200);
@@ -121,8 +108,8 @@ test.describe('Staff Onboarding and Password Reset Journey', () => {
 
     // 11. Login as new Staff user with old password (should fail)
     const oldLogin = await staffClient.login({ 
-      username: staffUsername, 
-      password: initialPassword 
+      username: registerPayload.username, 
+      password: registerPayload.password, 
     });
     expect(oldLogin.status).toBe(401);
     expect(oldLogin.response.message).toEqual(['Invalid username/email or password']);
