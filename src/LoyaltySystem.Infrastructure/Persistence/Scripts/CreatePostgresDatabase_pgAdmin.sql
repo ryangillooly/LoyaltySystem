@@ -540,6 +540,190 @@ CREATE TABLE IF NOT EXISTS user_roles
 -- Add proper indexing for user_roles table
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
 
+
+-- Create Password Reset Table
+CREATE TABLE IF NOT EXISTS verification_tokens
+(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+    token VARCHAR(256) NOT NULL,
+    token_type VARCHAR(50) NOT NULL,
+    is_valid BOOLEAN NOT NULL DEFAULT TRUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_verification_tokens_userid ON verification_tokens(user_id);
+CREATE INDEX idx_verification_tokens_token ON verification_tokens(token);
+
+-- Webhooks & Integrations
+CREATE TABLE IF NOT EXISTS webhooks
+(
+    id UUID PRIMARY KEY,
+    business_id UUID REFERENCES businesses(id),
+    url VARCHAR(255) NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    secret VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS webhook_deliveries
+(
+    id UUID PRIMARY KEY,
+    webhook_id UUID REFERENCES webhooks(id),
+    payload JSONB,
+    status VARCHAR(50),
+    response_code INT,
+    response_body TEXT,
+    attempted_at TIMESTAMP,
+    retry_count INT DEFAULT 0
+);
+
+-- Notifications
+CREATE TABLE IF NOT EXISTS notification_templates
+(
+    id UUID PRIMARY KEY,
+    business_id UUID REFERENCES businesses(id),
+    type VARCHAR(50),
+    event_type VARCHAR(100),
+    subject VARCHAR(255),
+    body TEXT,
+    language VARCHAR(10),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS notification_logs
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    type VARCHAR(50),
+    event_type VARCHAR(100),
+    sent_at TIMESTAMP,
+    status VARCHAR(50),
+    payload JSONB
+);
+
+CREATE TABLE IF NOT EXISTS notification_preferences
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    type VARCHAR(50),
+    subscribed BOOLEAN NOT NULL DEFAULT TRUE,
+    language VARCHAR(10),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+-- Audit & API Usage
+CREATE TABLE IF NOT EXISTS audit_logs
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    action VARCHAR(100),
+    entity_type VARCHAR(100),
+    entity_id UUID,
+    details JSONB,
+    performed_at TIMESTAMP,
+    ip_address VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS api_clients
+(
+    id UUID PRIMARY KEY,
+    business_id UUID REFERENCES businesses(id),
+    name VARCHAR(100),
+    api_key VARCHAR(255),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_usage_logs
+(
+    id UUID PRIMARY KEY,
+    api_client_id UUID REFERENCES api_clients(id),
+    endpoint VARCHAR(255),
+    method VARCHAR(10),
+    status_code INT,
+    request_at TIMESTAMP,
+    response_time_ms INT
+);
+
+-- Localization
+CREATE TABLE IF NOT EXISTS locales 
+(
+    id UUID PRIMARY KEY,
+    code VARCHAR(10) NOT NULL,
+    name VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS translatable_strings
+(
+    id UUID PRIMARY KEY,
+    key VARCHAR(100) NOT NULL,
+    default_text VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS translations
+(
+    id UUID PRIMARY KEY,
+    translatable_string_id UUID REFERENCES translatable_strings(id),
+    locale_id UUID REFERENCES locales(id),
+    text VARCHAR(255)
+);
+
+-- Privacy/Compliance
+CREATE TABLE IF NOT EXISTS data_export_requests
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    requested_at TIMESTAMP NOT NULL,
+    status VARCHAR(50),
+    download_url VARCHAR(255),
+    completed_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS account_deletion_requests
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    requested_at TIMESTAMP NOT NULL,
+    status VARCHAR(50),
+    completed_at TIMESTAMP
+);
+
+-- Reward Fulfillment
+CREATE TABLE IF NOT EXISTS reward_redemptions
+(
+    id UUID PRIMARY KEY,
+    reward_id UUID REFERENCES rewards(id),
+    loyalty_card_id UUID REFERENCES loyalty_cards(id),
+    customer_id UUID REFERENCES customers(id),
+    status VARCHAR(50),
+    requested_at TIMESTAMP,
+    fulfilled_at TIMESTAMP,
+    fulfillment_details JSONB,
+    staff_id UUID REFERENCES users(id)
+);
+
+-- Support/Escalation
+CREATE TABLE IF NOT EXISTS support_tickets
+(
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    subject VARCHAR(255),
+    description TEXT,
+    status VARCHAR(50),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    assigned_to_staff_id UUID REFERENCES users(id)
+);
+
+
 -- MOVED INSIDE main DO block: Delete any existing admin users to avoid duplicates
 DELETE FROM users WHERE username = 'admin';
 -- We can keep the delete for manager for safety or remove if not needed
@@ -760,6 +944,8 @@ END LOOP;
 END $$;
 
 -- Apply triggers after tables exist
+
+
 DO $$
 BEGIN
     -- Apply timestamp update triggers to all tables that need it
@@ -841,19 +1027,5 @@ DROP POLICY IF EXISTS business_isolation ON businesses;
         );
 END;
 $$;
-
--- Create Password Reset Table
-CREATE TABLE verification_tokens
-(
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
-    token VARCHAR(256) NOT NULL,
-    token_type VARCHAR(50) NOT NULL,
-    is_valid BOOLEAN NOT NULL DEFAULT TRUE,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-CREATE INDEX idx_verification_tokens_userid ON verification_tokens(user_id);
-CREATE INDEX idx_verification_tokens_token ON verification_tokens(token);
 
 COMMIT; 

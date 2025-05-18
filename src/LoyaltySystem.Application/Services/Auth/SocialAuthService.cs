@@ -62,7 +62,7 @@ public class SocialAuthService : ISocialAuthService
                var registerDto = new RegisterUserRequestDto
                {
                    Email = socialUser.Email,
-                   UserName = socialUser.Email,
+                   Username = socialUser.Email,
                    FirstName = socialUser.FirstName!,
                    LastName = socialUser.LastName!,
                    Password = "xxxxx", // Random password, not used
@@ -98,7 +98,7 @@ public class SocialAuthService : ISocialAuthService
                {
                    Id = user.Id,
                    Email = user.Email,
-                   UserName = user.UserName
+                   Username = user.Username
                },
                IsNewUser = isNewUser
            });

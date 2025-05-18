@@ -26,7 +26,7 @@ namespace LoyaltySystem.Domain.Entities
             Phone = phone ?? throw new ArgumentNullException(nameof(phone));
             Email = email ?? throw new ArgumentNullException(nameof(email));
             LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
-            UserName = username ?? throw new ArgumentNullException(nameof(username));
+            Username = username ?? throw new ArgumentNullException(nameof(username));
             FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
             MarketingConsent = marketingConsent;
             Address = address;
@@ -37,7 +37,7 @@ namespace LoyaltySystem.Domain.Entities
         public UserId UserId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
@@ -65,7 +65,7 @@ namespace LoyaltySystem.Domain.Entities
 
             FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
             LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
-            UserName = username ?? throw new ArgumentNullException(nameof(username));
+            Username = username ?? throw new ArgumentNullException(nameof(username));
             Email = email ?? throw new ArgumentNullException(nameof(email));
             Phone = phone ?? throw new ArgumentNullException(nameof(phone));
             Address = address;

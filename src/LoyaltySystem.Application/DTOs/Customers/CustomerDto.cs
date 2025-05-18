@@ -11,7 +11,7 @@ public class CustomerDto
     public string PrefixedId { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public string UserName { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
@@ -31,7 +31,7 @@ public class CustomerDto
             UserId      = customer.UserId,
             FirstName   = customer.FirstName,
             LastName    = customer.LastName,
-            UserName    = customer.UserName,
+            Username    = customer.Username,
             Email       = customer.Email,
             Status      = customer.Status.ToString(),
             CreatedAt   = customer.CreatedAt,

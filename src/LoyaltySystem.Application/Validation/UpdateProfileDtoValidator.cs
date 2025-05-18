@@ -16,10 +16,10 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateUserRequestDto>
             .EmailAddress().WithMessage("A valid email address is required.")
             .When(x => !string.IsNullOrEmpty(x.Email));
         
-        RuleFor(x => x.UserName)
+        RuleFor(x => x.Username)
             .NotEmpty().WithMessage("Username is required.")
             .Length(2, 100).WithMessage("Username must be between 2 and 100 characters.")
-            .When(x => !string.IsNullOrEmpty(x.UserName));
+            .When(x => !string.IsNullOrEmpty(x.Username));
         
         RuleFor(x => x.Phone)
             .MinimumLength(7).WithMessage("Phone number must be at least 7 digits.") // Adjust min length if needed

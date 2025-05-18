@@ -8,7 +8,7 @@ public class InternalUserDto
     public UserId Id { get; set; } // Changed type from string to Guid
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public string UserName { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string CustomerId { get; set; } = string.Empty; 
@@ -26,7 +26,7 @@ public class InternalUserDto
             Id = user.Id,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            UserName = user.UserName,
+            Username = user.Username,
             Email = user.Email,
             PasswordHash = user.PasswordHash,
             Phone = user.Phone,

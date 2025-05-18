@@ -3,6 +3,7 @@ import { StaffApiClient } from '../utils/staff-api-client';
 import { AdminApiClient } from '../utils/admin-api-client';
 import { getTokenFromMailhog, purgeMailhog } from '../utils/mailhog';
 import { Credentials } from '../models/auth.models';
+import { createRegisterRequest } from '../utils/helpers';
 
 test.describe('Staff API Authentication', () => {
   let staffClient: StaffApiClient;
@@ -57,31 +58,21 @@ test.describe('Staff API Authentication', () => {
     adminApiClient.setAuthToken(response.response.access_token);
     
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Staff',
-      lastName: 'Staff',
-      userName: `staff_${unique}`,
-      email: `staff_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'staff1',
-      confirmPassword: 'staff1',
-      roles: ['Staff']
-    };
+    const registerPayload = createRegisterRequest('Staff', ['Staff']);
     const register = await adminApiClient.register(registerPayload);
     
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Staff' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
         
     // 3. Forgot Password
@@ -94,10 +85,10 @@ test.describe('Staff API Authentication', () => {
     
     // 5. Reset Password
     const resetResponse = await staffClient.postToAccount('reset-password', {
-      username: registerPayload.userName,
+      username: registerPayload.username,
       token: token,
-      newPassword: 'NewPassword123!',
-      confirmPassword: 'NewPassword123!'
+      new_password: 'NewPassword123!',
+      confirm_password: 'NewPassword123!'
     });
     expect(resetResponse.status).toBe(200);
     expect(resetResponse.body.message).toContain('Password has been reset');
@@ -109,31 +100,21 @@ test.describe('Staff API Authentication', () => {
     adminApiClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Staff',
-      lastName: 'Staff',
-      userName: `staff_${unique}`,
-      email: `staff_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'staff1',
-      confirmPassword: 'staff1',
-      roles: ['Staff']
-    };
+    const registerPayload = createRegisterRequest('Staff', ['Staff'])
     const register = await adminApiClient.register(registerPayload);
 
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Staff' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
     
     // 3. Get Email Verification Code
@@ -151,31 +132,21 @@ test.describe('Staff API Authentication', () => {
     adminApiClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Staff',
-      lastName: 'Staff',
-      userName: `staff_${unique}`,
-      email: `staff_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'staff1',
-      confirmPassword: 'staff1',
-      roles: ['Staff']
-    };
+    const registerPayload = createRegisterRequest('Staff', ['Staff'])
     const register = await adminApiClient.register(registerPayload);
 
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Staff' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
 
     // 3. Resend Verification Email

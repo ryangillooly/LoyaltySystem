@@ -91,8 +91,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
                         CustomerId = customer.Id.Value,
                         customer.PrefixedId, // Add the new property
                         customer.FirstName,
-                        customer.LastName,
-                        customer.UserName,
+                        customer.LastName, UserName = customer.Username,
                         customer.Email,
                         customer.Phone,
                         customer.MarketingConsent,
@@ -171,7 +170,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             (
                 dbObjectDto.FirstName ?? string.Empty, 
                 dbObjectDto.LastName ?? string.Empty,  
-                dbObjectDto.UserName ?? string.Empty, 
+                dbObjectDto.Username ?? string.Empty, 
                 dbObjectDto.Email ?? string.Empty,    
                 dbObjectDto.Phone ?? string.Empty,    
                 null, 
@@ -217,8 +216,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             {
                 Id = customerId,
                 customer.FirstName,
-                customer.LastName,
-                customer.UserName,
+                customer.LastName, UserName = customer.Username,
                 customer.Email,
                 customer.Phone,
                 customer.MarketingConsent,
@@ -314,7 +312,7 @@ namespace LoyaltySystem.Infrastructure.Repositories
             public string PrefixedId { get; set; } = string.Empty; // Maps to prefixed_id
             public string FirstName { get; set; } = string.Empty; // Maps to first_name
             public string LastName { get; set; } = string.Empty; // Maps to last_name
-            public string UserName { get; set; } = string.Empty; // Maps to username
+            public string Username { get; set; } = string.Empty; // Maps to username
             public string Email { get; set; } = string.Empty; // Maps to email
             public string Phone { get; set; } = string.Empty; // Maps to phone
             public bool MarketingConsent { get; set; } // Maps to marketing_consent

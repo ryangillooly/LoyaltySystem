@@ -44,18 +44,15 @@ export class ApiClient {
     }
     return headers;
   }
-
-  async get<T>(url: string): Promise<T> {
+  
+  async get<T>(url: string): Promise<{ status: number, body: T }> {
     if (!this.context) {
       await this.init();
     }
     const headers = this.buildHeaders();
     const response = await this.context!.get(url, { headers });
-    if (!response.ok()) {
-      throw new Error(`GET request failed: ${response.statusText()}`);
-    }
-    
-    return await response.json() as T;
+    const body = await response.json() as T;
+    return { status: response.status(), body };
   }
 
   async post<T>(url: string, data: any): Promise<{ status: number, body: T }> {

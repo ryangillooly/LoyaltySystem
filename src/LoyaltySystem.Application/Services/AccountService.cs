@@ -153,11 +153,11 @@ public class AccountService : IAccountService
         if (getByEmailResult.Success)
             return OperationResult<RegisterUserResponseDto>.FailureResult($"Email '{registerRequestDto.Email}' already exists.");
 
-        var getByUsernameResult = await _userService.GetByUsernameAsync(registerRequestDto.UserName);
+        var getByUsernameResult = await _userService.GetByUsernameAsync(registerRequestDto.Username);
         if (getByUsernameResult.Success)
-            return OperationResult<RegisterUserResponseDto>.FailureResult($"Username '{registerRequestDto.UserName}' already exists.");
+            return OperationResult<RegisterUserResponseDto>.FailureResult($"Username '{registerRequestDto.Username}' already exists.");
         
-        var getByPhoneResult = await _userService.GetByPhoneNumberAsync(registerRequestDto.UserName);
+        var getByPhoneResult = await _userService.GetByPhoneNumberAsync(registerRequestDto.Username);
         if (getByPhoneResult.Success)
             return OperationResult<RegisterUserResponseDto>.FailureResult($"Phone Number '{registerRequestDto.Phone}' already exists.");
 
@@ -200,7 +200,7 @@ public class AccountService : IAccountService
               {
                 FirstName = requestDto.FirstName,
                 LastName = requestDto.LastName,
-                UserName = requestDto.UserName,
+                Username = requestDto.Username,
                 Email = requestDto.Email,
                 Phone = requestDto.Phone,
                 Address = customerData?.Address,
@@ -214,7 +214,7 @@ public class AccountService : IAccountService
         (
             registerRequestDto.FirstName,
             registerRequestDto.LastName,
-            registerRequestDto.UserName,
+            registerRequestDto.Username,
             registerRequestDto.Email,
             string.Empty,
             registerRequestDto.Phone,

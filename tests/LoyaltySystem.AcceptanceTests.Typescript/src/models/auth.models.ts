@@ -45,3 +45,35 @@ export class AuthResponseDto {
   status: number;
   response: AuthResponse;
 }
+
+export class RegisterUserDto
+{
+  constructor(
+      firstName: string,
+      lastName: string,
+      username: string,
+      email: string,
+      phone: string,
+      password: string,
+      confirmPassword: string,
+      roles: string[],
+  ) {
+    this.first_name = firstName;
+    this.last_name = lastName;
+    this.username = username;
+    this.email = email;
+    this.phone = phone;
+    this.password = password;
+    this.confirm_password = confirmPassword;
+    this.roles = roles;
+  }
+
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirm_password: string;
+  roles: string[]
+}

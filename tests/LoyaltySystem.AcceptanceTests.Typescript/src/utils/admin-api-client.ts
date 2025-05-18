@@ -47,11 +47,15 @@ export class AdminApiClient extends ApiClient {
   }
   
   async addRole(userId: string, roles: string[]){
-    return await this.post<any>(`/api/auth/users/${userId}/roles/add`, roles);
+    return await this.post<any>(`/api/auth/users/${userId}/roles/add`, {
+      roles: roles
+    });
   };
   
   async removeRole(userId: string, roles: string[]){
-    return await this.post<any>(`/api/auth/users/${userId}/roles/remove`, roles);
+    return await this.post<any>(`/api/auth/users/${userId}/roles/remove`, {
+      roles: roles
+    });
   };
 
   async getRoles(userId: string){

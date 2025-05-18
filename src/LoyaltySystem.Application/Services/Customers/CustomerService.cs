@@ -121,7 +121,7 @@ public class CustomerService : ICustomerService
             if (customer == null)
                 return OperationResult<CustomerDto>.FailureResult($"Customer with ID {id} not found");
 
-            customer.Update(dto.FirstName, dto.LastName, dto.UserName, dto.Email, dto.Phone, dto.Address, false);
+            customer.Update(dto.FirstName, dto.LastName, dto.Username, dto.Email, dto.Phone, dto.Address, false);
             return await _unitOfWork.ExecuteInTransactionAsync(async () =>
             {
                 await _customerRepository.UpdateAsync(customer);
@@ -246,7 +246,7 @@ public class CustomerService : ICustomerService
         (
             dto.FirstName,
             dto.LastName,
-            dto.UserName,
+            dto.Username,
             dto.Email,
             dto.Phone,
             dto.Address,

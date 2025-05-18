@@ -9,7 +9,7 @@ public class RegisterUserResponseDto
     public UserId? Id { get; set; } = null;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public string UserName { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public CustomerId? CustomerId { get; set; } = null; 
@@ -23,7 +23,7 @@ public class RegisterUserResponseDto
             Id = user.Id,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            UserName = user.UserName,
+            Username = user.Username,
             Email = user.Email,
             Phone = user.Phone,
             Status = user.Status.ToString(),

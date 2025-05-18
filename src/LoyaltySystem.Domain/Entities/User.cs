@@ -10,7 +10,7 @@ namespace LoyaltySystem.Domain.Entities
         public CustomerId? CustomerId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
@@ -37,7 +37,7 @@ namespace LoyaltySystem.Domain.Entities
             CustomerId   = customerId;
             FirstName    = firstName    ?? throw new ArgumentNullException(nameof(firstName));
             LastName     = lastName     ?? throw new ArgumentNullException(nameof(lastName));
-            UserName     = userName     ?? throw new ArgumentNullException(nameof(userName));
+            Username     = userName     ?? throw new ArgumentNullException(nameof(userName));
             Email        = email        ?? throw new ArgumentNullException(nameof(email));
             Phone        = phone        ?? throw new ArgumentNullException(nameof(phone));
             PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
@@ -58,7 +58,7 @@ namespace LoyaltySystem.Domain.Entities
         {
             ArgumentNullException.ThrowIfNull(userName, nameof(userName));
                 
-            UserName = userName;
+            Username = userName;
             UpdatedAt = DateTime.UtcNow;
         }
         

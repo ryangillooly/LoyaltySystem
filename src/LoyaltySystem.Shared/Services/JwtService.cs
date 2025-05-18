@@ -180,8 +180,8 @@ public class JwtService : IJwtService
             claims.Add(new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()));
         }
 
-        if (!string.IsNullOrEmpty(user.UserName))
-            claims.Add(new Claim("Username", user.UserName));
+        if (!string.IsNullOrEmpty(user.Username))
+            claims.Add(new Claim("Username", user.Username));
         
         if (!string.IsNullOrEmpty(user.Email))
             claims.Add(new Claim("Email", user.Email));

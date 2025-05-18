@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { AdminApiClient } from '../utils/admin-api-client';
-import { Credentials } from '../models/auth.models';
+import { Credentials, RegisterUserDto } from '../models/auth.models';
 import { getTokenFromMailhog } from '../utils/mailhog';
+import { createRegisterRequest } from '../utils/helpers';
 
 test.describe('Admin Authentication', () => {
   let adminClient: AdminApiClient;
@@ -34,42 +35,28 @@ test.describe('Admin Authentication', () => {
   });
   
   test('should successfully register a new user as an Admin', async () => {
-    const unique = Math.random().toString(36).slice(2)
-    const userName = `testuser_${unique}`;
-    const email = `testuser_${unique}@example.com`;
-    const phone = `+447${Math.floor(100000000 + Math.random() * 900000000)}`; // UK-style, random 9 digits
-
     // Step 1: Login as admin and get the token
     const loginResponse = await adminClient.login(credentials);
     adminClient.setAuthToken(loginResponse.response.access_token);
 
     // Step 2: Prepare registration payload
-    const registerPayload = {
-      firstName: 'Ryan',
-      lastName: 'Gillooly',
-      userName: userName,
-      email: email,
-      phone: phone,
-      password: 'ryangillooly',
-      confirmPassword: 'ryangillooly',
-      roles: ['SuperAdmin']
-    };
+    const registerPayload = createRegisterRequest('TestUser');
 
     // Step 3: Register the new user
     const response = await adminClient.register(registerPayload);
-
+    
     // Step 4: Validate the response
     expect(response.body).toMatchObject({
       id: expect.stringMatching("usr_"),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: expect.arrayContaining(['User', 'SuperAdmin']),
-      isEmailConfirmed: false
+      is_email_confirmed: false
     });
   });
   
@@ -86,7 +73,7 @@ test.describe('Admin Authentication', () => {
         "LastName is required.",
         "LastName must be between 3 and 100 characters.",
         "Password is required.",
-        "Password must be between 6 and 100 characters.",
+        "Password must be between 5 and 100 characters.",
         "ConfirmPassword is required."
       ]
     })
@@ -98,31 +85,21 @@ test.describe('Admin Authentication', () => {
     adminClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Admin',
-      lastName: 'Admin',
-      userName: `admin_${unique}`,
-      email: `admin_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'admin1',
-      confirmPassword: 'admin1',
-      roles: ['Admin']
-    };
+    const registerPayload = createRegisterRequest('Admin', ["Admin"]);
     const register = await adminClient.register(registerPayload);
 
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Admin' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
 
     // 3. Forgot Password
@@ -135,10 +112,10 @@ test.describe('Admin Authentication', () => {
 
     // 5. Reset Password
     const resetResponse = await adminClient.postToAccount('reset-password', {
-      username: registerPayload.userName,
+      username: registerPayload.username,
       token: token,
-      newPassword: 'NewPassword123!',
-      confirmPassword: 'NewPassword123!'
+      new_password: 'NewPassword123!',
+      confirm_password: 'NewPassword123!'
     });
     expect(resetResponse.status).toBe(200);
     expect(resetResponse.body.message).toContain('Password has been reset');
@@ -150,31 +127,21 @@ test.describe('Admin Authentication', () => {
     adminClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Admin',
-      lastName: 'Admin',
-      userName: `admin_${unique}`,
-      email: `admin_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'admin1',
-      confirmPassword: 'admin1',
-      roles: ['Admin']
-    };
+    const registerPayload = createRegisterRequest('Admin', ["Admin"]);
     const register = await adminClient.register(registerPayload);
 
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Admin' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
 
     // 3. Get Email Verification Code
@@ -192,31 +159,21 @@ test.describe('Admin Authentication', () => {
     adminClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Admin',
-      lastName: 'Admin',
-      userName: `admin_${unique}`,
-      email: `admin_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'admin1',
-      confirmPassword: 'admin1',
-      roles: ['Admin']
-    };
+    const registerPayload = createRegisterRequest('Admin', ["Admin"]);
     const register = await adminClient.register(registerPayload);
-
+    
     expect(register.status).toBe(201);
     expect(register.body).toMatchObject({
       id: expect.stringMatching(/^usr_/),
-      firstName: registerPayload.firstName,
-      lastName: registerPayload.lastName,
-      userName: registerPayload.userName,
+      first_name: registerPayload.first_name,
+      last_name: registerPayload.last_name,
+      username: registerPayload.username,
       email: registerPayload.email,
       status: 'Active',
-      customerId: null,
+      customer_id: null,
       phone: registerPayload.phone,
       roles: ['User', 'Admin' ],
-      isEmailConfirmed: false,
+      is_email_confirmed: false,
     });
 
     // 3. Resend Verification Email
@@ -239,34 +196,21 @@ test.describe('Admin Authentication', () => {
     adminClient.setAuthToken(response.response.access_token);
 
     // 2. Register new user (using Admin API, as you cannot register via Staff API)
-    const unique = Date.now();
-    const registerPayload = {
-      firstName: 'Admin',
-      lastName: 'Admin',
-      userName: `admin_${unique}`,
-      email: `admin_${unique}@example.com`,
-      phone: `07${Math.floor(100000000 + Math.random() * 900000000)}`,
-      password: 'admin1',
-      confirmPassword: 'admin1',
-      roles: ['Admin']
-    };
+    const registerPayload = createRegisterRequest('Admin', ["Admin"]);
     const register = await adminClient.register(registerPayload);
     const userId = register.body.id;
     
     // 3. Add Role to user
-    const rolesToAdd = ["Staff", "Manager"];
-    console.log(`UserID: ${register.body.id}`)
-    const roleResponse = await adminClient.addRole(userId, rolesToAdd);
-    console.log(`RolestoAdd: ${JSON.stringify(roleResponse)}`);
+    const roleResponse = await adminClient.addRole(userId, ["Staff", "Manager"]);
     expect(roleResponse.status).toBe(200);
     expect(roleResponse.body).toMatchObject({
       message: "Roles added successfully.",
-      userId: userId,
-      addedRoles: [
+      user_id: userId,
+      added_roles: [
         "Staff",
         "Manager"
       ],
-      currentRoles: [
+      current_roles: [
         "User",
         "Admin",
         "Staff",
@@ -278,7 +222,13 @@ test.describe('Admin Authentication', () => {
     const getRolesResponse = await adminClient.getRoles(userId);
     expect(getRolesResponse.status).toBe(200);
     expect(getRolesResponse.body).toMatchObject({
-      user_id
+      user_id: userId,
+      roles: [
+        "User",
+        "Admin",
+        "Staff",
+        "Manager"
+      ]
     })
   });
 }); 

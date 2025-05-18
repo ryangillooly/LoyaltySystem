@@ -106,8 +106,8 @@ public class UserService : IUserService
         if (user is null)
             return OperationResult<InternalUserDto>.FailureResult("User not found.");
         
-        if (!string.IsNullOrEmpty(updateRequestDto.UserName))
-            user.UpdateUserName(updateRequestDto.UserName);
+        if (!string.IsNullOrEmpty(updateRequestDto.Username))
+            user.UpdateUserName(updateRequestDto.Username);
             
         if (!string.IsNullOrEmpty(updateRequestDto.Email))
             user.UpdateEmail(updateRequestDto.Email);
