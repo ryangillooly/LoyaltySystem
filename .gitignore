@@ -248,3 +248,9 @@ secrets.json
 
 # Explicitly exclude specific files
 src/LoyaltySystem.Admin.API/obj/Debug/net8.0/LoyaltySystem.Admin.API.csproj.FileListAbsolute.txt
+
+# .NET build artifacts
+bin/
+obj/
+node_modules/
+package-lock.json
