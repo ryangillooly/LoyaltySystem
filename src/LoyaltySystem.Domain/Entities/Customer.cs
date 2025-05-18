@@ -1,7 +1,5 @@
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
 
 namespace LoyaltySystem.Domain.Entities
 {
@@ -9,97 +7,69 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
-        public Customer() : base(new CustomerId())
-        {
-            _loyaltyCards = new List<LoyaltyCard>();
-        }
-
-        public Customer(
-            CustomerId? customerId,
+        public Customer
+        (
             string firstName,
             string lastName,
             string username,
             string email,
             string phone,
             Address? address,
-            bool marketingConsent = false)
+            bool marketingConsent = false
+        ) 
+            : base(new CustomerId())
         {
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
+            const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
+                throw new ArgumentException("Invalid email format", nameof(email));
             
-            if (string.IsNullOrWhiteSpace(lastName))
-                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
-
-            if (!string.IsNullOrWhiteSpace(email))
-            {
-                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
-                    throw new ArgumentException("Invalid email format", nameof(email));
-            }
-
-            Id = customerId ?? new CustomerId();
-            FirstName = firstName;
-            LastName = lastName;
-            UserName = username;
-            Email = email;
-            Phone = phone;
+            Phone = phone ?? throw new ArgumentNullException(nameof(phone));
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+            LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
+            Username = username ?? throw new ArgumentNullException(nameof(username));
+            FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
             MarketingConsent = marketingConsent;
             Address = address;
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
+            
             _loyaltyCards = new List<LoyaltyCard>();
         }
         
+        public UserId UserId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         public bool MarketingConsent { get; set; }
+        public DateTime? LastLoginAt { get; private set; }
         public Address? Address { get; set; }
-        public DateTime? LastLoginAt { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
+        public List<string> Roles { get; set; } = new();
         
         public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
-
         
-        
-        public void Update(
+        public void Update
+        (
             string firstName,
             string lastName,
             string username,
             string email,
             string phone,
             Address? address,
-            bool marketingConsent)
+            bool marketingConsent
+        )
         {
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ArgumentException("FirstName cannot be empty", nameof(firstName));
-            
-            if (string.IsNullOrWhiteSpace(lastName))
-                throw new ArgumentException("LastName cannot be empty", nameof(lastName));
+            const string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
+                throw new ArgumentException("Invalid email format", nameof(email));
 
-            if (!string.IsNullOrWhiteSpace(email))
-            {
-                var emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-                if (!System.Text.RegularExpressions.Regex.IsMatch(email, emailPattern))
-                    throw new ArgumentException("Invalid email format", nameof(email));
-            }
-
-            FirstName = firstName;
-            LastName = lastName;
-            UserName = username;
-            Email = email;
+            FirstName = firstName ?? throw new ArgumentNullException(nameof(firstName));
+            LastName = lastName ?? throw new ArgumentNullException(nameof(lastName));
+            Username = username ?? throw new ArgumentNullException(nameof(username));
+            Email = email ?? throw new ArgumentNullException(nameof(email));
+            Phone = phone ?? throw new ArgumentNullException(nameof(phone));
             Address = address;
-            Phone = phone;
             MarketingConsent = marketingConsent;
-            UpdatedAt = DateTime.UtcNow;
-        }
-
-        public void RecordLogin()
-        {
-            LastLoginAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
         

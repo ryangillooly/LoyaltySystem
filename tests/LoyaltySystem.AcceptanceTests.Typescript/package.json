@@ -1,0 +1,28 @@
+{
+  "name": "loyaltysystem-acceptance-tests",
+  "version": "1.0.0",
+  "description": "TypeScript acceptance tests for Loyalty System",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:admin": "playwright test admin",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
+  },
+  "keywords": [
+    "acceptance-tests",
+    "api-tests",
+    "playwright",
+    "typescript"
+  ],
+  "dependencies": {
+    "dotenv": "16.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.2",
+    "@types/node": "20.11.16",
+    "@types/node-fetch": "^2.6.12",
+    "node-fetch": "^3.3.2",
+    "typescript": "5.3.3"
+  }
+}

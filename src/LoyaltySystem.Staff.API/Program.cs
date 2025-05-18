@@ -2,14 +2,15 @@ using LoyaltySystem.Shared.API.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add shared services with Staff-specific configuration
+Console.WriteLine("Env:" + builder.Environment.EnvironmentName );
+
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
 builder.AddSharedServices("Loyalty System Staff API");
 
-// Add Staff-specific services if needed
-
 var app = builder.Build();
-
-// Use shared middleware
 app.UseSharedMiddleware();
-
 app.Run(); 

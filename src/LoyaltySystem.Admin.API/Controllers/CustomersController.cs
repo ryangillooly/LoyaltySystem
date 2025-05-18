@@ -1,5 +1,7 @@
 using LoyaltySystem.Application.DTOs;
+using LoyaltySystem.Application.DTOs.Customers;
 using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.Interfaces.Customers;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/[controller]")]
+[Route("api/customers")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class CustomersController : ControllerBase
 {
@@ -94,7 +96,7 @@ public class CustomersController : ControllerBase
     {
         _logger.LogInformation("Admin creating customer with email: {Email}", request.Email);
             
-        var result = await _customerService.CreateCustomerAsync(request);
+        var result = await _customerService.AddCustomerAsync(request);
         if (!result.Success)
         {
             _logger.LogWarning("Admin create customer failed - {Error}", result.Errors);

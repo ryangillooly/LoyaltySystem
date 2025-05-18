@@ -1,169 +1,106 @@
-using System;
 
-namespace LoyaltySystem.Domain.Common
+namespace LoyaltySystem.Domain.Common;
+
+public class BusinessId : EntityId
 {
-    /// <summary>
-    /// Business identifier (bus_xxxxxxxx)
-    /// </summary>
-    public class BusinessId : EntityId
-    {
-        public override string Prefix => "bus_";
-        
-        public BusinessId() : base(Guid.NewGuid()) { }
-        
-        public BusinessId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static BusinessId FromString(string prefixed) => Parse<BusinessId>(prefixed);
-    }
+    public override string Prefix => "bus";
+    public BusinessId() : base(Guid.NewGuid()) { }
+    public BusinessId(Guid value) : base(value) { }
+    public static BusinessId FromString(string prefixed) => Parse<BusinessId>(prefixed);
+}
     
-    /// <summary>
-    /// Business identifier (bus_xxxxxxxx)
-    /// </summary>
-    public class StaffId : EntityId
-    {
-        public override string Prefix => "stf_";
-        
-        public StaffId() : base(Guid.NewGuid()) { }
-        
-        public StaffId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static StaffId FromString(string prefixed) => Parse<StaffId>(prefixed);
-    }
+public class StaffId : EntityId
+{
+    public override string Prefix => "sta";
+    public StaffId() : base(Guid.NewGuid()) { }
+    public StaffId(Guid value) : base(value) { }
+    public static StaffId FromString(string prefixed) => Parse<StaffId>(prefixed);
+}
     
-    /// <summary>
-    /// Brand identifier (bnd_xxxxxxxx)
-    /// </summary>
-    public class BrandId : EntityId
-    {
-        public override string Prefix => "bnd_";
-        
-        public BrandId() : base(Guid.NewGuid()) { }
-        
-        public BrandId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static BrandId FromString(string prefixed) => Parse<BrandId>(prefixed);
-    }
+public class BrandId : EntityId
+{
+    public override string Prefix => "bra";
+    public BrandId() : base(Guid.NewGuid()) { }
+    public BrandId(Guid value) : base(value) { }
+    public static BrandId FromString(string prefixed) => Parse<BrandId>(prefixed);
+}
+
+public class StoreId : EntityId
+{
+    public override string Prefix => "sto";
+    public StoreId() : base(Guid.NewGuid()) { }
+    public StoreId(Guid value) : base(value) { }
+    public static StoreId FromString(string prefixed) => Parse<StoreId>(prefixed);
+}
     
-    /// <summary>
-    /// Store identifier (sto_xxxxxxxx)
-    /// </summary>
-    public class StoreId : EntityId
-    {
-        public override string Prefix => "sto_";
-        
-        public StoreId() : base(Guid.NewGuid()) { }
-        
-        public StoreId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static StoreId FromString(string prefixed) => Parse<StoreId>(prefixed);
-    }
+public class CustomerId : EntityId
+{
+    public override string Prefix => "cus";
+    public CustomerId() : base(Guid.NewGuid()) { }
+    public CustomerId(Guid value) : base(value) { }
+    public static CustomerId FromString(string prefixed) => Parse<CustomerId>(prefixed);
+}
     
-    /// <summary>
-    /// Customer identifier (cus_xxxxxxxx)
-    /// </summary>
-    public class CustomerId : EntityId
-    {
-        public override string Prefix => "cus_";
-        
-        public CustomerId() : base(Guid.NewGuid()) { }
-        
-        public CustomerId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static CustomerId FromString(string prefixed) => Parse<CustomerId>(prefixed);
-    }
+public class LoyaltyProgramId : EntityId
+{
+    public override string Prefix => "pro";
+    public LoyaltyProgramId() : base(Guid.NewGuid()) { }
+    public LoyaltyProgramId(Guid value) : base(value) { }
+    public static LoyaltyProgramId FromString(string prefixed) => Parse<LoyaltyProgramId>(prefixed);
+}
     
-    /// <summary>
-    /// Loyalty Program identifier (prg_xxxxxxxx)
-    /// </summary>
-    public class LoyaltyProgramId : EntityId
-    {
-        public override string Prefix => "prg_";
-        
-        public LoyaltyProgramId() : base(Guid.NewGuid()) { }
-        
-        public LoyaltyProgramId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static LoyaltyProgramId FromString(string prefixed) => Parse<LoyaltyProgramId>(prefixed);
-    }
+public class LoyaltyCardId : EntityId
+{
+    public override string Prefix => "loy";
+    public LoyaltyCardId() : base(Guid.NewGuid()) { }
+    public LoyaltyCardId(Guid value) : base(value) { }
+    public static LoyaltyCardId FromString(string prefixed) => Parse<LoyaltyCardId>(prefixed);
+}
     
-    /// <summary>
-    /// Loyalty Card identifier (lcy_xxxxxxxx)
-    /// </summary>
-    public class LoyaltyCardId : EntityId
-    {
-        public override string Prefix => "lcy_";
-        
-        public LoyaltyCardId() : base(Guid.NewGuid()) { }
-        
-        public LoyaltyCardId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static LoyaltyCardId FromString(string prefixed) => Parse<LoyaltyCardId>(prefixed);
-    }
+public class RewardId : EntityId
+{
+    public override string Prefix => "rew";
+    public RewardId() : base(Guid.NewGuid()) { }
+    public RewardId(Guid value) : base(value) { }
+    public static RewardId FromString(string prefixed) => Parse<RewardId>(prefixed);
+}
     
-    /// <summary>
-    /// Reward identifier (rwd_xxxxxxxx)
-    /// </summary>
-    public class RewardId : EntityId
-    {
-        public override string Prefix => "rwd_";
-        
-        public RewardId() : base(Guid.NewGuid()) { }
-        
-        public RewardId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static RewardId FromString(string prefixed) => Parse<RewardId>(prefixed);
-    }
+public class TransactionId : EntityId
+{
+    public override string Prefix => "trx";
+    public TransactionId() : base(Guid.NewGuid()) { }
+    public TransactionId(Guid value) : base(value) { }
+    public static TransactionId FromString(string prefixed) => Parse<TransactionId>(prefixed);
+}
     
-    /// <summary>
-    /// Transaction identifier (txn_xxxxxxxx)
-    /// </summary>
-    public class TransactionId : EntityId
-    {
-        public override string Prefix => "txn_";
-        
-        public TransactionId() : base(Guid.NewGuid()) { }
-        
-        public TransactionId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static TransactionId FromString(string prefixed) => Parse<TransactionId>(prefixed);
-    }
+public class UserId : EntityId
+{
+    public override string Prefix => "usr";
+    public UserId() : base(Guid.NewGuid()) { }
+    public UserId(Guid value) : base(value) { }
+    public static UserId FromString(string prefixed) => Parse<UserId>(prefixed);
+}
     
-    /// <summary>
-    /// User identifier (usr_xxxxxxxx)
-    /// </summary>
-    public class UserId : EntityId
-    {
-        public override string Prefix => "usr_";
-        
-        public UserId() : base(Guid.NewGuid()) { }
-        
-        public UserId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static UserId FromString(string prefixed) => Parse<UserId>(prefixed);
-    }
-    
-    /// <summary>
-    /// User Role identifier (rol_xxxxxxxx)
-    /// </summary>
-    public class UserRoleId : EntityId
-    {
-        public override string Prefix => "rol_";
-        
-        public UserRoleId() : base(Guid.NewGuid()) { }
-        
-        public UserRoleId(Guid value) : base(value) { }
-        
-        // Create from string representation
-        public static UserRoleId FromString(string prefixed) => Parse<UserRoleId>(prefixed);
-    }
-} 
+public class UserRoleId : EntityId
+{
+    public override string Prefix => "role";
+    public UserRoleId() : base(Guid.NewGuid()) { }
+    public UserRoleId(Guid value) : base(value) { }
+    public static UserRoleId FromString(string prefixed) => Parse<UserRoleId>(prefixed);
+}
+
+public class VerificationTokenId : EntityId
+{
+    public override string Prefix => "vto";
+    public VerificationTokenId() : base(Guid.NewGuid()) { }
+    public VerificationTokenId(Guid value) : base(value) { }
+    public static VerificationTokenId FromString(string prefixed) => Parse<VerificationTokenId>(prefixed);
+}
+
+public class LoyaltyTierId : EntityId
+{
+    public override string Prefix => "ltid";
+    public LoyaltyTierId() : base(Guid.NewGuid()) { }
+    public LoyaltyTierId(Guid value) : base(value) { }
+    public static LoyaltyTierId FromString(string prefixed) => Parse<LoyaltyTierId>(prefixed);
+}

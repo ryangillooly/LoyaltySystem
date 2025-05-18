@@ -153,27 +153,24 @@ public class LoyaltyProgramService : ILoyaltyProgramService
             }
 
             var program = new LoyaltyProgram
-            {
-                Id = new LoyaltyProgramId(),
-                BrandId = EntityId.Parse<BrandId>(dto.BrandId),
-                Name = dto.Name,
-                Description = dto.Description,
-                Type = dto.Type,
-                ExpirationPolicy = dto.ExpirationPolicy.ToExpirationPolicy(),
-                StampThreshold = dto.StampThreshold,
-                PointsConversionRate = dto.PointsConversionRate,
-                PointsConfig = dto.PointsConfig.ToPointsConfig(),
-                DailyStampLimit = dto.DailyStampLimit,
-                MinimumTransactionAmount = dto.MinimumTransactionAmount,
-                IsActive = dto.IsActive,
-                HasTiers = dto.HasTiers,
-                TermsAndConditions = dto.TermsAndConditions,
-                EnrollmentBonusPoints = dto.EnrollmentBonusPoints,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+            (
+                brandId: BrandId.FromString(dto.BrandId),
+                name: dto.Name,
+                description: dto.Description,
+                type: dto.Type,
+                expirationPolicy: dto.ExpirationPolicy.ToExpirationPolicy(),
+                stampThreshold: dto.StampThreshold,
+                pointsConversionRate: dto.PointsConversionRate,
+                pointsConfig: dto.PointsConfig.ToPointsConfig(),
+                dailyStampLimit: dto.DailyStampLimit,
+                minimumTransactionAmount: dto.MinimumTransactionAmount,
+                isActive: dto.IsActive,
+                hasTiers: dto.HasTiers,
+                termsAndConditions: dto.TermsAndConditions,
+                enrollmentBonusPoints: dto.EnrollmentBonusPoints,
+                startDate: dto.StartDate,
+                endDate: dto.EndDate
+            );
 
             // Add tiers if the program supports them
             if (dto is { HasTiers: true, Tiers: { } } && dto.Tiers.Any())
@@ -301,7 +298,7 @@ public class LoyaltyProgramService : ILoyaltyProgramService
     {
         if (program == null) return null;
         
-        var rewards = program.Rewards?.Select(MapToRewardDto).ToList() ?? new List<RewardDto>();
+        var rewards = program.Rewards?.Select(r => new RewardDto(r)).ToList() ?? new List<RewardDto>();
         
         var tiers = program.Tiers?.Select(t => new TierDto
         {
@@ -342,22 +339,6 @@ public class LoyaltyProgramService : ILoyaltyProgramService
             IsActive = program.IsActive,
             Rewards = rewards,
             Tiers = tiers
-        };
-    }
-
-    private RewardDto MapToRewardDto(Reward reward)
-    {
-        if (reward == null) return null;
-        
-        return new RewardDto
-        {
-            Id = reward.Id.ToString(),
-            ProgramId = reward.ProgramId.ToString(),
-            Title = reward.Title,
-            Description = reward.Description,
-            RequiredPoints = reward.RequiredValue,
-            StartDate = reward.ValidFrom,
-            EndDate = reward.ValidTo
         };
     }
 

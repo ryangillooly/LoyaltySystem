@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Customer.API.Controllers;
 
 [ApiController]
-[Route("api/customer/[controller]")]
+[Route("api/loyalty-cards")]
 [Authorize]
 public class LoyaltyCardsController : ControllerBase
 {

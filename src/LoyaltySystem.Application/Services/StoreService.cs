@@ -109,8 +109,9 @@ namespace LoyaltySystem.Application.Services
                     dto.Location.Longitude
                 );
                 
-                var store = new Store(
-                    brandId.ToString(),
+                var store = new Store
+                (
+                    brandId,
                     dto.Name,
                     address,
                     location,
@@ -210,14 +211,14 @@ namespace LoyaltySystem.Application.Services
                         Id = transaction.Id.ToString(),
                         CardId = transaction.CardId.ToString(),
                         StoreId = transaction.StoreId.ToString(),
-                        StoreName = transaction.Store?.Name ?? string.Empty,
+                        // StoreName = transaction.Store?.Name ?? string.Empty,
                         TransactionDate = transaction.Timestamp,
                         TransactionType = transaction.Type.ToString(),
                         Amount = transaction.TransactionAmount ?? 0,
                         PointsEarned = transaction.PointsAmount ?? 0,
                         StampsEarned = transaction.Quantity ?? 0,
                         RewardId = transaction.RewardId?.ToString(),
-                        RewardTitle = transaction.Reward?.Title ?? string.Empty,
+                        // RewardTitle = transaction.Reward?.Title ?? string.Empty,
                         PosTransactionId = transaction.PosTransactionId ?? string.Empty
                     });
                 }

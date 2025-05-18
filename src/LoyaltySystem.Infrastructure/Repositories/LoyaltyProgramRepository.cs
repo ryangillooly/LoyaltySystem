@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using Dapper;
-using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
@@ -13,6 +7,7 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.ValueObjects;
 using LoyaltySystem.Infrastructure.Data;
 using LoyaltySystem.Infrastructure.Data.Extensions;
+using System.Data;
 
 namespace LoyaltySystem.Infrastructure.Repositories;
 
@@ -193,20 +188,21 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
             await dbConnection.ExecuteAsync(@"
                 INSERT INTO 
                     loyalty_programs 
-                        (id, brand_id, name, type, stamp_threshold, points_conversion_rate,
+                        (id, prefixed_id, brand_id, name, type, stamp_threshold, points_conversion_rate,
                         daily_stamp_limit, minimum_transaction_amount, is_active, description, 
                         points_rounding_rule, enrollment_bonus_points, minimum_points_for_redemption,
                         points_per_pound, start_date, end_date, has_tiers, terms_and_conditions, created_at, updated_at) 
                     VALUES 
-                        (@Id, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
+                        (@Id, @PrefixedId, @BrandId, @Name, @Type::loyalty_program_type, @StampThreshold, @PointsConversionRate,
                         @DailyStampLimit, @MinimumTransactionAmount, @IsActive, @Description, @PointsRoundingRule,
                         @EnrollmentBonusPoints, @MinimumPointsForRedemption, @PointsPerPound, @StartDate, @EndDate,
                         @HasTiers, @TermsAndConditions, @CreatedAt, @UpdatedAt)
                 ",
                 new
                 {
-                    program.Id,
-                    program.BrandId,
+                    program.Id, // Use raw Guid
+                    program.PrefixedId,
+                    program.BrandId, // Use raw Guid
                     program.Name,
                     Type = program.Type.ToString(),
                     program.StampThreshold,
@@ -218,7 +214,8 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                     program.PointsRoundingRule,
                     program.EnrollmentBonusPoints,
                     program.MinimumPointsForRedemption, 
-                    program.PointsConfig.PointsPerPound,
+                    // Assuming PointsConfig might be null, handle safely
+                    PointsPerPound = program.PointsConfig?.PointsPerPound ?? 0, 
                     program.StartDate,
                     program.EndDate,
                     program.HasTiers,
@@ -260,22 +257,31 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
                 await AddRewardAsync(reward, transaction);
             }
 
+            // Only commit if this method created the transaction
             if (ownsTransaction)
+            {
                 transaction.Commit();
+            }
 
             return program;
         }
         catch (Exception ex)
         {
-            if (ownsTransaction)
-                transaction.Rollback();
-
-            throw new Exception($"Error adding program: {ex.Message}", ex);
+            // Only rollback if this method created the transaction
+            if (ownsTransaction && transaction != null)
+            {
+                try { transaction.Rollback(); } catch { /* Ignore rollback exceptions */ }
+            }
+            Console.WriteLine($"Error adding loyalty program: {ex.Message}");
+            throw;
         }
         finally
         {
+            // Only dispose if this method created the transaction
             if (ownsTransaction && transaction != null)
+            {
                 transaction.Dispose();
+            }
         }
     }
 
@@ -369,7 +375,7 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         var dtos = await dbConnection.QueryAsync<RewardDto>(sql, parameters);
         
         // Convert DTOs to domain entities
-        return dtos.Select(dto => dto.ToDomain());
+        return dtos.Select(RewardDto.ToDomain);
     }
 
     public async Task<IEnumerable<Reward>> GetActiveRewardsForProgramAsync(LoyaltyProgramId programId)
@@ -397,7 +403,7 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         var dtos = await dbConnection.QueryAsync<RewardDto>(sql, parameters);
         
         // Convert DTOs to domain entities
-        return dtos.Select(dto => dto.ToDomain());
+        return dtos.Select(RewardDto.ToDomain);
     }
 
     public async Task<Reward> GetRewardByIdAsync(RewardId rewardId)
@@ -423,7 +429,7 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         // Use RewardDto to properly map database values
         var dto = await dbConnection.QuerySingleOrDefaultAsync<RewardDto>(sql, parameters);
         
-        return dto?.ToDomain();
+        return RewardDto.ToDomain(dto);
     }
 
     public async Task AddRewardAsync(Reward reward)
@@ -614,63 +620,32 @@ public class LoyaltyProgramRepository : ILoyaltyProgramRepository
         public string terms_and_conditions { get; set; }
         public DateTime start_date { get; set; }
         public DateTime end_date { get; set; }
-        
+
         public LoyaltyProgram ToDomain()
         {
             return new LoyaltyProgram
+            (
+                brandId: new BrandId(brand_id),
+                name: name,
+                type: Enum.Parse<LoyaltyProgramType>(type),
+                stampThreshold: stamp_threshold,
+                pointsConversionRate: points_conversion_rate,
+                dailyStampLimit: daily_stamp_limit,
+                minimumTransactionAmount: minimum_transaction_amount,
+                isActive: is_active,
+                hasTiers: has_tiers,
+                enrollmentBonusPoints: enrollment_bonus_points,
+                description: description,
+                termsAndConditions: terms_and_conditions,
+                startDate: start_date,
+                endDate: end_date
+            )
             {
-                Id = new LoyaltyProgramId(id),
-                BrandId = new BrandId(brand_id),
-                Name = name,
-                Type = Enum.Parse<LoyaltyProgramType>(type),
-                StampThreshold = stamp_threshold,
-                PointsConversionRate = points_conversion_rate,
-                DailyStampLimit = daily_stamp_limit,
-                MinimumTransactionAmount = minimum_transaction_amount,
-                IsActive = is_active,
                 CreatedAt = created_at,
                 UpdatedAt = updated_at,
-                HasTiers = has_tiers,
                 PointsPerPound = points_per_pound,
                 MinimumPointsForRedemption = minimum_points_for_redemption,
                 PointsRoundingRule = (PointsRoundingRule)points_rounding_rule,
-                EnrollmentBonusPoints = enrollment_bonus_points,
-                Description = description,
-                TermsAndConditions = terms_and_conditions,
-                StartDate = start_date,
-                EndDate = end_date
-            };
-        }
-    }
-    
-    // DTO for mapping reward data to/from the database
-    private class RewardDto
-    {
-        public Guid id { get; set; }
-        public Guid program_id { get; set; }
-        public string title { get; set; }
-        public string description { get; set; }
-        public int required_value { get; set; }
-        public DateTime? valid_from { get; set; }
-        public DateTime? valid_to { get; set; }
-        public bool is_active { get; set; }
-        public DateTime created_at { get; set; }
-        public DateTime updated_at { get; set; }
-        
-        public Reward ToDomain()
-        {
-            return new Reward
-            {
-                Id = new RewardId(id),
-                ProgramId = new LoyaltyProgramId(program_id),
-                Title = title,
-                Description = description,
-                RequiredValue = required_value,
-                ValidFrom = valid_from,
-                ValidTo = valid_to,
-                IsActive = is_active,
-                CreatedAt = created_at,
-                UpdatedAt = updated_at
             };
         }
     }

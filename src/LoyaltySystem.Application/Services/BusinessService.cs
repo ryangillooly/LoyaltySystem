@@ -219,12 +219,10 @@ namespace LoyaltySystem.Application.Services
 
                 // Check if business has any brands
                 var brands = await _businessRepository.GetBrandsForBusinessAsync(businessId);
-                if (brands.GetEnumerator().MoveNext())
-                {
+                if (!brands.Any())
                     return OperationResult<bool>.FailureResult(
                         "Cannot delete business because it has associated brands. " +
                         "Please delete all brands first or deactivate the business instead.");
-                }
 
                 // Use ExecuteInTransactionAsync to handle the transaction properly
                 return await _unitOfWork.ExecuteInTransactionAsync(async () =>
