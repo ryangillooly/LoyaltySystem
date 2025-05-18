@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Customer.API.Controllers;
 
 [ApiController]
-[Route("api/customer/loyalty-programs")]
+[Route("api/loyalty-programs")]
 [Authorize]
 public class LoyaltyProgramsController : ControllerBase
 {

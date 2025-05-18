@@ -207,6 +207,151 @@ erDiagram
         datetime UpdatedAt
     }
 
+    %% Extensibility & Integrations
+    Webhooks {
+        UUID Id PK
+        UUID BusinessId FK
+        string Url
+        string EventType
+        string Secret
+        boolean IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+    WebhookDeliveries {
+        UUID Id PK
+        UUID WebhookId FK
+        json Payload
+        string Status
+        int ResponseCode
+        string ResponseBody
+        datetime AttemptedAt
+        int RetryCount
+    }
+
+    %% Notifications
+    NotificationTemplates {
+        UUID Id PK
+        UUID BusinessId FK
+        string Type
+        string EventType
+        string Subject
+        text Body
+        string Language
+        boolean IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+    NotificationLogs {
+        UUID Id PK
+        UUID UserId FK
+        string Type
+        string EventType
+        datetime SentAt
+        string Status
+        json Payload
+    }
+    NotificationPreferences {
+        UUID Id PK
+        UUID UserId FK
+        string Type
+        boolean Subscribed
+        string Language
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
+    %% Audit & API Usage
+    AuditLogs {
+        UUID Id PK
+        UUID UserId FK
+        string Action
+        string EntityType
+        UUID EntityId
+        json Details
+        datetime PerformedAt
+        string IPAddress
+    }
+    ApiClients {
+        UUID Id PK
+        UUID BusinessId FK
+        string Name
+        string ApiKey
+        boolean IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+    ApiUsageLogs {
+        UUID Id PK
+        UUID ApiClientId FK
+        string Endpoint
+        string Method
+        int StatusCode
+        datetime RequestAt
+        int ResponseTimeMs
+    }
+
+    %% Localization
+    Locales {
+        UUID Id PK
+        string Code
+        string Name
+        boolean IsActive
+    }
+    TranslatableStrings {
+        UUID Id PK
+        string Key
+        string DefaultText
+    }
+    Translations {
+        UUID Id PK
+        UUID TranslatableStringId FK
+        UUID LocaleId FK
+        string Text
+    }
+
+    %% Privacy/Compliance
+    DataExportRequests {
+        UUID Id PK
+        UUID UserId FK
+        datetime RequestedAt
+        string Status
+        string DownloadUrl
+        datetime CompletedAt
+    }
+    AccountDeletionRequests {
+        UUID Id PK
+        UUID UserId FK
+        datetime RequestedAt
+        string Status
+        datetime CompletedAt
+    }
+
+    %% Reward Fulfillment
+    RewardRedemptions {
+        UUID Id PK
+        UUID RewardId FK
+        UUID LoyaltyCardId FK
+        UUID CustomerId FK
+        string Status
+        datetime RequestedAt
+        datetime FulfilledAt
+        json FulfillmentDetails
+        UUID StaffId FK
+    }
+
+    %% Support/Escalation
+    SupportTickets {
+        UUID Id PK
+        UUID UserId FK
+        string Subject
+        text Description
+        string Status
+        datetime CreatedAt
+        datetime UpdatedAt
+        UUID AssignedToStaffId FK
+    }
+
     %% Relationship Definitions
     Businesses ||--|| BusinessContacts : "has"
     Businesses ||--|| BusinessAddresses : "has"
@@ -233,4 +378,23 @@ erDiagram
     
     Stores ||--|{ Transactions : "processes"
     Rewards }|--|{ Transactions : "redeemed_in"
+
+    %% New Relationships
+    Businesses ||--|{ Webhooks : "has"
+    Webhooks ||--|{ WebhookDeliveries : "delivers"
+    Businesses ||--|{ NotificationTemplates : "has"
+    Users ||--|{ NotificationLogs : "receives"
+    Users ||--|{ NotificationPreferences : "sets"
+    Users ||--|{ AuditLogs : "performs"
+    Businesses ||--|{ ApiClients : "has"
+    ApiClients ||--|{ ApiUsageLogs : "logs"
+    Locales ||--|{ Translations : "provides"
+    TranslatableStrings ||--|{ Translations : "has"
+    Users ||--|{ DataExportRequests : "requests"
+    Users ||--|{ AccountDeletionRequests : "requests"
+    Rewards ||--|{ RewardRedemptions : "redeemed_by"
+    LoyaltyCards ||--|{ RewardRedemptions : "used_for"
+    Customers ||--|{ RewardRedemptions : "redeems"
+    Users ||--|{ SupportTickets : "creates"
+    Users ||--|{ SupportTickets : "assigned"
 ``` 

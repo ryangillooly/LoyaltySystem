@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs.LoyaltyPrograms;
+using LoyaltySystem.Application.DTOs.Rewards;
 using LoyaltySystem.Application.Interfaces;
 using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
@@ -34,7 +35,7 @@ namespace LoyaltySystem.Application.Services
             {
                 var programIdObj = EntityId.Parse<LoyaltyProgramId>(programId);
                 var rewards = await _rewardsRepository.GetByProgramIdAsync(programIdObj);
-                var rewardDtos = rewards.Select(MapToDto).ToList();
+                var rewardDtos = rewards.Select(r => new RewardDto(r)).ToList();
                 
                 return OperationResult<List<RewardDto>>.SuccessResult(rewardDtos);
             }
@@ -51,7 +52,7 @@ namespace LoyaltySystem.Application.Services
             {
                 var programIdObj = EntityId.Parse<LoyaltyProgramId>(programId);
                 var rewards = await _rewardsRepository.GetActiveByProgramIdAsync(programIdObj);
-                var rewardDtos = rewards.Select(MapToDto).ToList();
+                var rewardDtos = rewards.Select(r => new RewardDto(r)).ToList();
                 
                 return OperationResult<List<RewardDto>>.SuccessResult(rewardDtos);
             }
@@ -71,7 +72,7 @@ namespace LoyaltySystem.Application.Services
                 
                 return reward == null 
                     ? OperationResult<RewardDto>.FailureResult($"Reward with ID {rewardId} not found") 
-                    : OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+                    : OperationResult<RewardDto>.SuccessResult(new RewardDto(reward));
 
             }
             catch (Exception ex)
@@ -104,7 +105,7 @@ namespace LoyaltySystem.Application.Services
                     reward.Deactivate();
 
                 var createdReward = await _rewardsRepository.AddAsync(reward);
-                return OperationResult<RewardDto>.SuccessResult(MapToDto(createdReward));
+                return OperationResult<RewardDto>.SuccessResult(new RewardDto(createdReward));
             }
             catch (Exception ex)
             {
@@ -137,7 +138,7 @@ namespace LoyaltySystem.Application.Services
                     reward.Deactivate();
 
                 await _rewardsRepository.UpdateAsync(reward);
-                return OperationResult<RewardDto>.SuccessResult(MapToDto(reward));
+                return OperationResult<RewardDto>.SuccessResult(new RewardDto(reward));
             }
             catch (Exception ex)
             {
@@ -342,23 +343,6 @@ namespace LoyaltySystem.Application.Services
                 _logger.LogError(ex, "Error validating redemption code: {RedemptionCode}", redemptionCode);
                 return OperationResult<RewardRedemptionDto>.FailureResult(ex.ToString());
             }
-        }
-
-        private static RewardDto MapToDto(Reward reward)
-        {
-            return new RewardDto
-            {
-                Id = reward.Id.ToString(),
-                ProgramId = reward.ProgramId.ToString(),
-                Title = reward.Title,
-                Description = reward.Description,
-                RequiredPoints = reward.RequiredValue,
-                StartDate = reward.ValidFrom,
-                EndDate = reward.ValidTo,
-                IsActive = reward.IsActive,
-                CreatedAt = reward.CreatedAt,
-                UpdatedAt = reward.UpdatedAt
-            };
         }
     }
 }

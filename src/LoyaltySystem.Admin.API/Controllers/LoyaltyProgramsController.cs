@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltySystem.Admin.API.Controllers;
 
 [ApiController]
-[Route("api/admin/loyalty-programs")]
+[Route("api/loyalty-programs")]
 [Authorize(Roles = "SuperAdmin,Admin")]
 public class LoyaltyProgramsController : ControllerBase
 {

@@ -1,37 +1,40 @@
 using LoyaltySystem.Application.DTOs;
-using LoyaltySystem.Application.Interfaces;
+using LoyaltySystem.Application.DTOs.Auth;
+using LoyaltySystem.Application.DTOs.Auth.Social;
+using LoyaltySystem.Application.Interfaces.Auth;
+using LoyaltySystem.Application.Interfaces.Users;
+using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Shared.API.Controllers;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ILogger = Serilog.ILogger;
 
-namespace LoyaltySystem.Staff.API.Controllers
-{
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : BaseAuthController
+namespace LoyaltySystem.Staff.API.Controllers;
+
+[ApiController]
+[Route("api/auth")]
+public class AuthController : BaseAuthController {
+
+    public AuthController(
+        IAuthenticationService authService,
+        IUserService userService,
+        ILogger logger
+        )
+        : base(
+            authService,
+            logger
+        ) { }
+
+    protected override string UserType => "Staff";
+    
+    protected override Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequest)
     {
-        public AuthController(IAuthService authService, ILogger<AuthController> logger) 
-            : base(authService, logger)
-        {
-        }
-
-        // Override the registration method to prevent customer registration through staff API
-        [HttpPost("register")]
-        public override async Task<IActionResult> RegisterUser(RegisterUserDto registerRequest)
-        {
-            // Staff API should not allow customer registration
-            _logger.LogWarning("Attempt to register through Staff API blocked: {email}", registerRequest.Email);
-            return StatusCode(403, new { message = "Registration not allowed through Staff API" });
-        }
-        
-        // Staff-specific endpoints
-        
-        [Authorize(Roles = "Staff,StoreManager,BrandManager,Admin")]
-        [HttpGet("validate-staff")]
-        public IActionResult ValidateStaffCredentials()
-        {
-            // This endpoint exists just to validate that the user has staff access
-            return Ok(new { message = "Valid staff credentials" });
-        }
+        // Staff API should not allow user registration
+        _logger.Warning("Attempt to register through Staff API blocked: {Email}", registerRequest.Email);
+        return Task.FromResult(
+            OperationResult<RegisterUserResponseDto>.FailureResult(
+                new [] { "Registration not allowed through Staff API" }));
     }
-} 
+    
+    protected override Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
+        throw new NotImplementedException();
+}

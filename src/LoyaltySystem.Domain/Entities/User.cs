@@ -3,50 +3,52 @@ using LoyaltySystem.Domain.Enums;
 
 namespace LoyaltySystem.Domain.Entities
 {
-    public class User : Entity<UserId>
+    public class User : Entity<UserId> 
     {
         private readonly List<UserRole> _roles = new();
         
+        public CustomerId? CustomerId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
+        public UserStatus Status { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
+        public bool IsEmailConfirmed { get; set; }
+
         public User() : base(new UserId()) { }
         
-        public User(
+        public User
+        (
             string firstName,
             string lastName,
             string userName,
             string email,
             string passwordHash,
-            string passwordSalt) : base(new UserId())
+            string phone,
+            CustomerId? customerId = null,
+            UserId? id = null
+        ) 
+        : base(id ?? new UserId())
         {
-            FirstName = firstName;
-            LastName = lastName;
-            Email = email;
-            UserName = userName;
-            PasswordHash = passwordHash;
-            PasswordSalt = passwordSalt;
-            Status = UserStatus.Active;
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
-            LastLoginAt = null;
-            CustomerId = new CustomerId();
+            CustomerId   = customerId;
+            FirstName    = firstName    ?? throw new ArgumentNullException(nameof(firstName));
+            LastName     = lastName     ?? throw new ArgumentNullException(nameof(lastName));
+            Username     = userName     ?? throw new ArgumentNullException(nameof(userName));
+            Email        = email        ?? throw new ArgumentNullException(nameof(email));
+            Phone        = phone        ?? throw new ArgumentNullException(nameof(phone));
+            PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
+            Status       = UserStatus.Active;
+            
+            _roles = new List<UserRole> { new (Id, RoleType.User) };
         }
-        
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
-        public string UserName { get; private set; }
-        public string Email { get; private set; }
-        public string PasswordHash { get; private set; }
-        public string PasswordSalt { get; private set; }
-        public UserStatus Status { get; private set; }
-        public DateTime CreatedAt { get; private set; }
-        public DateTime UpdatedAt { get; private set; }
-        public DateTime? LastLoginAt { get; private set; }
-        public CustomerId? CustomerId { get; set; }
-        public IReadOnlyCollection<UserRole> Roles => _roles.AsReadOnly();
         
         public void UpdateEmail(string email)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentException("Email cannot be empty.", nameof(email));
+            ArgumentNullException.ThrowIfNull(email, nameof(email));
                 
             Email = email;
             UpdatedAt = DateTime.UtcNow;
@@ -54,23 +56,17 @@ namespace LoyaltySystem.Domain.Entities
         
         public void UpdateUserName(string userName)
         {
-            if (string.IsNullOrWhiteSpace(userName))
-                throw new ArgumentException("Username cannot be empty.", nameof(userName));
+            ArgumentNullException.ThrowIfNull(userName, nameof(userName));
                 
-            UserName = userName;
+            Username = userName;
             UpdatedAt = DateTime.UtcNow;
         }
         
-        public void UpdatePassword(string passwordHash, string passwordSalt)
+        public void UpdatePassword(string passwordHash)
         {
-            if (string.IsNullOrWhiteSpace(passwordHash))
-                throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
-                
-            if (string.IsNullOrWhiteSpace(passwordSalt))
-                throw new ArgumentException("Password salt cannot be empty.", nameof(passwordSalt));
+            ArgumentNullException.ThrowIfNull(passwordHash, nameof(passwordHash));
                 
             PasswordHash = passwordHash;
-            PasswordSalt = passwordSalt;
             UpdatedAt = DateTime.UtcNow;
         }
         
@@ -82,6 +78,8 @@ namespace LoyaltySystem.Domain.Entities
         
         public void LinkToCustomer(string customerId)
         {
+            ArgumentNullException.ThrowIfNull(customerId, nameof(customerId));
+            
             CustomerId = EntityId.Parse<CustomerId>(customerId);
             UpdatedAt = DateTime.UtcNow;
             AddRole(RoleType.Customer);
@@ -89,35 +87,25 @@ namespace LoyaltySystem.Domain.Entities
         
         public void AddRole(RoleType role)
         {
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            
             if (!HasRole(role))
                 _roles.Add(new UserRole(Id, role));
         }
         
         public void RemoveRole(RoleType role)
         {
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            
             var roleToRemove = _roles.Find(r => r.Role == role);
             if (roleToRemove is { })
                 _roles.Remove(roleToRemove);
         }
-        
-        public bool HasRole(RoleType role) => _roles.Exists(r => r.Role == role);
-        
-        public void Activate()
+
+        public bool HasRole(RoleType role)
         {
-            Status = UserStatus.Active;
-            UpdatedAt = DateTime.UtcNow;
-        }
-        
-        public void Deactivate()
-        {
-            Status = UserStatus.Inactive;
-            UpdatedAt = DateTime.UtcNow;
-        }
-        
-        public void Lock()
-        {
-            Status = UserStatus.Locked;
-            UpdatedAt = DateTime.UtcNow;
+            ArgumentNullException.ThrowIfNull(role, nameof(role));
+            return _roles.Exists(r => r.Role == role);
         }
     }
 } 
