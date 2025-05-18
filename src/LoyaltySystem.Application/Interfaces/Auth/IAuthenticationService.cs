@@ -6,5 +6,10 @@ namespace LoyaltySystem.Application.Interfaces.Auth;
 
 public interface IAuthenticationService 
 {
-    Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto dto);
+    /// <summary>
+/// Authenticates a user based on the provided login request data.
+/// </summary>
+/// <param name="dto">The login request containing user credentials.</param>
+/// <returns>An operation result containing the login response data.</returns>
+Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto dto);
 }

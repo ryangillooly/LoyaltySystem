@@ -26,6 +26,14 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         set => throw new NotImplementedException();
     }
         
+    /// <summary>
+    /// Initializes a new loyalty card for a customer in a specified loyalty program.
+    /// </summary>
+    /// <param name="programId">The identifier of the loyalty program.</param>
+    /// <param name="customerId">The identifier of the customer.</param>
+    /// <param name="type">The type of loyalty program (stamp-based or points-based).</param>
+    /// <param name="expiresAt">Optional expiration date for the card.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="programId"/> or <paramref name="customerId"/> is null.</exception>
     public LoyaltyCard
     (
         LoyaltyProgramId programId,
@@ -47,6 +55,16 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         _transactions = new List<Transaction>();
     }
         
+    /// <summary>
+    /// Issues a specified number of stamps to a stamp-based loyalty card and records the transaction.
+    /// </summary>
+    /// <param name="quantity">The number of stamps to issue. Must be greater than zero.</param>
+    /// <param name="storeId">The identifier of the store where the stamps are issued. Must not be empty.</param>
+    /// <param name="staffId">Optional identifier of the staff member issuing the stamps.</param>
+    /// <param name="posTransactionId">Optional POS transaction identifier associated with the issuance.</param>
+    /// <returns>The transaction representing the stamp issuance.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the card is not stamp-based or is not active.</exception>
+    /// <exception cref="ArgumentException">Thrown if the quantity is not positive or the store ID is empty.</exception>
     public Transaction IssueStamps
     (
         int quantity,
@@ -84,6 +102,17 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         return transaction;
     }
         
+    /// <summary>
+    /// Adds points to a points-based loyalty card and records the issuance as a transaction.
+    /// </summary>
+    /// <param name="pointsAmount">The number of points to add. Must be greater than zero.</param>
+    /// <param name="transactionAmount">The monetary amount associated with the transaction. Must not be negative.</param>
+    /// <param name="storeId">The identifier of the store where the transaction occurred. Must not be empty.</param>
+    /// <param name="staffId">Optional identifier of the staff member who processed the transaction.</param>
+    /// <param name="posTransactionId">Optional POS transaction identifier.</param>
+    /// <returns>The transaction representing the points issuance.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the card is not points-based or is not active.</exception>
+    /// <exception cref="ArgumentException">Thrown if pointsAmount is not positive, transactionAmount is negative, or storeId is empty.</exception>
     public Transaction AddPoints
     (
         decimal pointsAmount,
@@ -126,6 +155,19 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         return transaction;
     }
         
+    /// <summary>
+    /// Redeems a reward using the card's stamps or points, deducting the required value and recording the transaction.
+    /// </summary>
+    /// <param name="reward">The reward to redeem. Must belong to the same program and be active and valid.</param>
+    /// <param name="storeId">The store where the redemption occurs. Must not be empty.</param>
+    /// <param name="staffId">Optional staff member involved in the redemption.</param>
+    /// <returns>The transaction representing the reward redemption.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="reward"/> or <paramref name="storeId"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="storeId"/> is empty.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the card is not active, the reward is from a different program, the reward is inactive or not valid,
+    /// or if the card does not have sufficient stamps or points for redemption.
+    /// </exception>
     public Transaction RedeemReward
     (
         Reward reward,
@@ -182,6 +224,10 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         return transaction;
     }
         
+    /// <summary>
+    /// Returns the total number of stamps issued to this card today, or zero if the card is not stamp-based.
+    /// </summary>
+    /// <returns>The number of stamps issued today.</returns>
     public int GetStampsIssuedToday()
     {
         if (Type != LoyaltyProgramType.Stamp)
@@ -194,6 +240,9 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
             .Sum(t => t.Quantity ?? 0);
     }
 
+    /// <summary>
+    /// Sets the card status to Expired if it is not already expired.
+    /// </summary>
     public void Expire()
     {
         if (Status is CardStatus.Expired)
@@ -203,6 +252,9 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         UpdatedAt = DateTime.UtcNow;
     }
         
+    /// <summary>
+    /// Suspends the loyalty card if it is not already suspended.
+    /// </summary>
     public void Suspend()
     {
         if (Status is CardStatus.Suspended)
@@ -212,6 +264,9 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         UpdatedAt = DateTime.UtcNow;
     }
         
+    /// <summary>
+    /// Reactivates the loyalty card by setting its status to Active and updating the timestamp.
+    /// </summary>
     public void Reactivate()
     { 
         ArgumentNullException.ThrowIfNull(Status);
@@ -219,6 +274,10 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         UpdatedAt = DateTime.UtcNow;
     }
         
+    /// <summary>
+    /// Sets the expiration date for the loyalty card.
+    /// </summary>
+    /// <param name="expirationDate">The date and time when the card will expire.</param>
     public void SetExpirationDate(DateTime expirationDate)
     {
         ArgumentNullException.ThrowIfNull(expirationDate);
@@ -226,6 +285,10 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Updates the QR code associated with the loyalty card.
+    /// </summary>
+    /// <param name="qrCode">The new QR code string to assign to the card.</param>
     public void UpdateQrCode(string qrCode)
     {
         ArgumentNullException.ThrowIfNull(qrCode);
@@ -233,9 +296,17 @@ public class LoyaltyCard : Entity<LoyaltyCardId>
         UpdatedAt = DateTime.UtcNow;
     }
         
-    public void AddTransaction(Transaction transaction) => 
+    /// <summary>
+        /// Adds a transaction to the loyalty card's transaction history.
+        /// </summary>
+        /// <param name="transaction">The transaction to add.</param>
+        public void AddTransaction(Transaction transaction) => 
         _transactions.Add(transaction);
 
+    /// <summary>
+    /// Generates a QR code string representing the loyalty card's unique identifier.
+    /// </summary>
+    /// <returns>The loyalty card ID as a string.</returns>
     private string GenerateQrCode()
     {
         // In a real implementation, this would generate a unique QR code

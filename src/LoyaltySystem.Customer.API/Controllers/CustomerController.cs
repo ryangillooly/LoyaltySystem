@@ -17,6 +17,13 @@ public class CustomerController : ControllerBase
     private readonly IUserService _userService;
     private readonly ILogger<CustomerController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustomerController"/> class with required services.
+    /// </summary>
+    /// <param name="customerService">Service for customer-related operations.</param>
+    /// <param name="userService">Service for user-related operations.</param>
+    /// <param name="logger">Logger for controller events.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any required service is null.</exception>
     public CustomerController(
         ICustomerService customerService,
         IUserService userService,
@@ -62,6 +69,12 @@ public class CustomerController : ControllerBase
         return Ok(result.Data);
     }
         
+    /// <summary>
+    /// Updates the profile of a specified customer by ID. Accessible only to users with Admin or SuperAdmin roles.
+    /// </summary>
+    /// <param name="id">The unique identifier of the customer to update.</param>
+    /// <param name="updateDto">The updated customer profile data.</param>
+    /// <returns>The updated customer data if successful; otherwise, a BadRequest with error details.</returns>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> UpdateCustomer([FromRoute] string id, [FromBody] UpdateCustomerDto updateDto)
@@ -79,6 +92,15 @@ public class CustomerController : ControllerBase
         return Ok(result.Data);
     }
         
+    /// <summary>
+    /// Links the authenticated user to an existing customer profile by customer ID.
+    /// </summary>
+    /// <param name="customerId">The ID of the customer profile to link.</param>
+    /// <returns>
+    /// Returns <see cref="OkObjectResult"/> with a success message if linking is successful; 
+    /// <see cref="BadRequestObjectResult"/> if the user is already linked, the customer does not exist, or linking fails; 
+    /// <see cref="UnauthorizedObjectResult"/> if the user is not authenticated.
+    /// </returns>
     [HttpPost("link/{customerId}")]
     public async Task<IActionResult> LinkCustomerToUser(string customerId)
     {

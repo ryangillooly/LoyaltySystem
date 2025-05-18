@@ -5,6 +5,9 @@ namespace LoyaltySystem.Application.Validation;
 
 public class ResendEmailVerificationRequestDtoValidator : AbstractValidator<RegisterUserRequestDto>
 {
+    /// <summary>
+    /// Initializes validation rules for the <c>Email</c> property of <c>RegisterUserRequestDto</c>, requiring it to be non-empty and in a valid email format.
+    /// </summary>
     public ResendEmailVerificationRequestDtoValidator()
     {
         RuleFor(x => x.Email)

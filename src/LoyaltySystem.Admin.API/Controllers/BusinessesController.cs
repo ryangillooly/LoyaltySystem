@@ -16,6 +16,10 @@ public class BusinessesController : ControllerBase
     private readonly ILoyaltyProgramService _programService;
     private readonly ILogger<BusinessesController> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BusinessesController"/> with required business, store, and loyalty program services and a logger.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown if any required dependency is null.</exception>
     public BusinessesController(
         IBusinessService businessService,
         IStoreService storeService,

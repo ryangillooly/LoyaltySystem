@@ -91,6 +91,11 @@ public class CustomersController : ControllerBase
         return Ok(result.Data);
     }
 
+    /// <summary>
+    /// Creates a new customer using the provided data.
+    /// </summary>
+    /// <param name="request">The customer information to create the new customer.</param>
+    /// <returns>A response with the created customer data and location, or a BadRequest if creation fails.</returns>
     [HttpPost]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto request)
     {

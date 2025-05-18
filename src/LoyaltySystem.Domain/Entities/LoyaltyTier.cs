@@ -18,6 +18,17 @@ namespace LoyaltySystem.Domain.Entities
         public int TierOrder { get; private set; }
         public IReadOnlyCollection<string> Benefits => _benefits.AsReadOnly();
 
+        /// <summary>
+        /// Initializes a new loyalty tier with the specified program, name, point threshold, multiplier, order, and optional benefits.
+        /// </summary>
+        /// <param name="programId">The identifier of the loyalty program this tier belongs to.</param>
+        /// <param name="name">The name of the tier.</param>
+        /// <param name="pointThreshold">The minimum points required to reach this tier. Must be non-negative.</param>
+        /// <param name="pointMultiplier">The multiplier applied to points earned in this tier. Must be greater than zero.</param>
+        /// <param name="tierOrder">The order of the tier within the program.</param>
+        /// <param name="benefits">An optional collection of benefits associated with the tier.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="programId"/> or <paramref name="name"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="pointThreshold"/> is negative or <paramref name="pointMultiplier"/> is not greater than zero.</exception>
         public LoyaltyTier
         (
             LoyaltyProgramId programId,
@@ -47,6 +58,11 @@ namespace LoyaltySystem.Domain.Entities
                     AddBenefit(benefit);
         }
         
+        /// <summary>
+        /// Adds a unique benefit to the loyalty tier if it does not already exist.
+        /// </summary>
+        /// <param name="benefit">The benefit to add.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="benefit"/> is null.</exception>
         public void AddBenefit(string benefit)
         {
             ArgumentNullException.ThrowIfNull(benefit, nameof(benefit));
@@ -58,6 +74,10 @@ namespace LoyaltySystem.Domain.Entities
             }
         }
         
+        /// <summary>
+        /// Removes a benefit from the tier if it exists.
+        /// </summary>
+        /// <param name="benefit">The benefit to remove.</param>
         public void RemoveBenefit(string benefit)
         {
             ArgumentNullException.ThrowIfNull(benefit, nameof(benefit));
@@ -66,6 +86,13 @@ namespace LoyaltySystem.Domain.Entities
                 UpdatedAt = DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// Updates the tier's name, point threshold, point multiplier, and order if the provided values are valid.
+        /// </summary>
+        /// <param name="name">The new name for the tier. Ignored if null, empty, or whitespace.</param>
+        /// <param name="pointThreshold">The new minimum points required for the tier. Must be non-negative to update.</param>
+        /// <param name="pointMultiplier">The new multiplier for points earned. Must be greater than zero to update.</param>
+        /// <param name="tierOrder">The new order of the tier.</param>
         public void Update
         (
             string name,

@@ -29,6 +29,11 @@ namespace LoyaltySystem.Application.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Retrieves all rewards associated with the specified loyalty program.
+        /// </summary>
+        /// <param name="programId">The unique identifier of the loyalty program.</param>
+        /// <returns>An operation result containing a list of reward DTOs if successful; otherwise, a failure result with an error message.</returns>
         public async Task<OperationResult<List<RewardDto>>> GetRewardsByProgramIdAsync(string programId)
         {
             try
@@ -46,6 +51,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Retrieves all active rewards associated with the specified loyalty program.
+        /// </summary>
+        /// <param name="programId">The unique identifier of the loyalty program.</param>
+        /// <returns>An operation result containing a list of active reward DTOs, or a failure result if an error occurs.</returns>
         public async Task<OperationResult<List<RewardDto>>> GetActiveRewardsByProgramIdAsync(string programId)
         {
             try
@@ -63,6 +73,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Retrieves a reward by its unique identifier.
+        /// </summary>
+        /// <param name="rewardId">The string representation of the reward's ID.</param>
+        /// <returns>An <see cref="OperationResult{RewardDto}"/> containing the reward data if found, or a failure result if not found or an error occurs.</returns>
         public async Task<OperationResult<RewardDto>> GetRewardByIdAsync(string rewardId)
         {
             try
@@ -82,6 +97,12 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Creates a new reward for the specified loyalty program and returns the created reward.
+        /// </summary>
+        /// <param name="programId">The ID of the loyalty program to associate with the new reward.</param>
+        /// <param name="dto">The data for the reward to be created.</param>
+        /// <returns>An <see cref="OperationResult{RewardDto}"/> containing the created reward if successful, or an error message if the operation fails.</returns>
         public async Task<OperationResult<RewardDto>> CreateRewardAsync(string programId, CreateRewardDto dto)
         {
             try
@@ -114,6 +135,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Updates an existing reward with new details and active status.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing updated reward information.</param>
+        /// <returns>An <see cref="OperationResult{RewardDto}"/> containing the updated reward data if successful, or an error message if the reward is not found or an exception occurs.</returns>
         public async Task<OperationResult<RewardDto>> UpdateRewardAsync(UpdateRewardDto dto)
         {
             try
@@ -319,6 +345,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Validates a reward redemption code and returns the associated redemption details if valid.
+        /// </summary>
+        /// <param name="redemptionCode">The redemption code to validate.</param>
+        /// <returns>An <see cref="OperationResult{RewardRedemptionDto}"/> containing the redemption details if the code is valid, or a failure result with an error message.</returns>
         public async Task<OperationResult<RewardRedemptionDto>> ValidateRedemptionCode(string redemptionCode)
         {
             try

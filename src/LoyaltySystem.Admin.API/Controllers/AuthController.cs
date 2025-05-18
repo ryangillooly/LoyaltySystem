@@ -27,6 +27,9 @@ public class AuthController : BaseAuthController
     protected override string UserType => "Admin";
     private const string UserId = "UserId";
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthController"/> class, configuring authentication, social authentication, customer management, account management, role management, and logging services for admin operations.
+    /// </summary>
     public AuthController(
         IAuthenticationService authService,
         ISocialAuthService socialAuthService,
@@ -46,9 +49,19 @@ public class AuthController : BaseAuthController
         _socialAuthService = socialAuthService ?? throw new ArgumentNullException(nameof(socialAuthService));
     }
     
+    /// <summary>
+    /// Registers a new admin or manager user with specified roles. Accessible only to users with SuperAdmin or Admin roles.
+    /// </summary>
+    /// <param name="request">The registration details for the new user.</param>
+    /// <returns>An IActionResult indicating the outcome of the registration.</returns>
     [HttpPost("register")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public override async Task<IActionResult> Register(RegisterUserRequestDto request) => await base.Register(request);
+    /// <summary>
+    /// Registers a new user with specified roles, enforcing that only SuperAdmins can assign admin roles and only Admins or SuperAdmins can assign manager roles.
+    /// </summary>
+    /// <param name="request">The registration request containing user details and desired roles.</param>
+    /// <returns>An operation result containing the registration response or error details if role assignment rules are violated or registration fails.</returns>
     protected override async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -77,13 +90,24 @@ public class AuthController : BaseAuthController
         return await Task.FromResult(OperationResult<RegisterUserResponseDto>.SuccessResult(result.Data));
     }
 
-    protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
+    /// <summary>
+        /// Authenticates a user via social login, allowing only Admin, Manager, or User roles, and registers the user if necessary without creating a customer.
+        /// </summary>
+        /// <param name="request">The social authentication request data.</param>
+        /// <returns>An operation result containing the social authentication response.</returns>
+        protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Admin, RoleType.Manager, RoleType.User },
             dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: false, customerData: null)
         );
     
+    /// <summary>
+    /// Adds one or more roles to a specified user.
+    /// </summary>
+    /// <param name="userId">The identifier of the user to whom roles will be added.</param>
+    /// <param name="request">The request containing the roles to add.</param>
+    /// <returns>HTTP 200 with updated role data on success; HTTP 400 with error messages on failure.</returns>
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/{userId}/roles/add")]
     public async Task<IActionResult> AddRoles([FromRoute] string userId, [FromBody] AddRolesRequestDto request)
@@ -105,6 +129,12 @@ public class AuthController : BaseAuthController
         return Ok(result.Data);
     }
 
+    /// <summary>
+    /// Removes one or more roles from a specified user.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user whose roles are to be removed.</param>
+    /// <param name="request">The request containing the list of roles to remove.</param>
+    /// <returns>HTTP 200 with updated role data on success; HTTP 400 with error messages on failure.</returns>
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/{userId}/roles/remove")]
     public async Task<IActionResult> RemoveRoles([FromRoute] string userId, [FromBody] RemoveRolesRequestDto request)
@@ -126,6 +156,11 @@ public class AuthController : BaseAuthController
         return Ok(result.Data);
     }
     
+    /// <summary>
+    /// Retrieves the roles assigned to a specified user.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user whose roles are to be retrieved.</param>
+    /// <returns>HTTP 200 with the user's roles if successful; otherwise, HTTP 400 with error details.</returns>
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpGet("users/{userId}/roles")]
     public async Task<IActionResult> GetRoles([FromRoute] string userId)
@@ -139,6 +174,11 @@ public class AuthController : BaseAuthController
         return Ok(result.Data);
     }
 
+    /// <summary>
+    /// Links a customer to a specified user by their IDs.
+    /// </summary>
+    /// <param name="linkRequest">The DTO containing the user ID and customer ID to link.</param>
+    /// <returns>An HTTP 200 response with the result data if successful; otherwise, an HTTP 400 response with error details.</returns>
     [Authorize(Roles = "SuperAdmin,Admin")]
     [HttpPost("users/link-customer")]
     public async Task<IActionResult> LinkCustomer(LinkCustomerDto linkRequest)

@@ -9,6 +9,9 @@ public class RegisterUserDtoValidator : AbstractValidator<RegisterUserRequestDto
 {
     private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
    
+    /// <summary>
+    /// Initializes validation rules for the <c>RegisterUserRequestDto</c>, enforcing required fields, length constraints, format checks, and password confirmation.
+    /// </summary>
     public RegisterUserDtoValidator()
     {
         RuleFor(x => x.FirstName)

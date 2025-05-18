@@ -18,6 +18,14 @@ public class AuthenticationService : IAuthenticationService
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthenticationService"/> class with required dependencies.
+    /// </summary>
+    /// <param name="userRepository">Repository for accessing user data.</param>
+    /// <param name="jwtService">Service for generating JWT tokens.</param>
+    /// <param name="passwordHasher">Hasher for verifying user passwords.</param>
+    /// <param name="logger">Logger for authentication events.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any dependency is null.</exception>
     public AuthenticationService
     (
         IUserRepository userRepository,
@@ -32,6 +40,11 @@ public class AuthenticationService : IAuthenticationService
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
     
+    /// <summary>
+    /// Authenticates a user by verifying credentials and returns a JWT token upon successful authentication.
+    /// </summary>
+    /// <param name="dto">The login request containing user identifier and password.</param>
+    /// <returns>An operation result containing the login response with access token if authentication succeeds; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto dto)
     {
         User? user = await GetUserByEmailOrUsernameAsync(dto);
@@ -64,7 +77,12 @@ public class AuthenticationService : IAuthenticationService
         return OperationResult<LoginResponseDto>.SuccessResult(response);
     }
     
-    private async Task<User?> GetUserByEmailOrUsernameAsync(AuthDto request) =>
+    /// <summary>
+        /// Retrieves a user by email or username based on the identifier type in the authentication request.
+        /// </summary>
+        /// <param name="request">The authentication request containing the identifier and its type.</param>
+        /// <returns>The matching user if found; otherwise, null.</returns>
+        private async Task<User?> GetUserByEmailOrUsernameAsync(AuthDto request) =>
         request.IdentifierType switch
         {
             AuthIdentifierType.Email    => await _userRepository.GetByEmailAsync(request.Identifier),

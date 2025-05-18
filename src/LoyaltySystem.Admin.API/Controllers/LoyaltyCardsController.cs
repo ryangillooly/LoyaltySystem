@@ -42,6 +42,11 @@ public class LoyaltyCardsController : ControllerBase
         return Ok(result.Data);
     }
         
+    /// <summary>
+    /// Retrieves a loyalty card by its unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the loyalty card.</param>
+    /// <returns>HTTP 200 with the loyalty card data if found; otherwise, HTTP 404 with error details.</returns>
     [HttpGet("{id}")]
     // Admin can access any card without ownership checks
     public async Task<IActionResult> GetById(string id)
@@ -59,7 +64,11 @@ public class LoyaltyCardsController : ControllerBase
         return Ok(result.Data);
     }
 
-    // Admin can access any customer's cards without ownership checks
+    /// <summary>
+    /// Retrieves all loyalty cards associated with the specified customer ID.
+    /// </summary>
+    /// <param name="customerId">The unique identifier of the customer whose loyalty cards are to be retrieved.</param>
+    /// <returns>An HTTP 200 response with the list of loyalty cards if found; otherwise, HTTP 404 with error details.</returns>
     [HttpGet("customer/{customerId}")]
     public async Task<IActionResult> GetByCustomerId(CustomerId customerId)
     {

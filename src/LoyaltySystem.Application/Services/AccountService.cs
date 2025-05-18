@@ -26,6 +26,9 @@ public class AccountService : IAccountService
     private readonly ICustomerService _customerService;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AccountService"/> class with required services for account management operations.
+    /// </summary>
     public AccountService(
         ITokenService tokenService,
         IEmailService emailService,
@@ -44,6 +47,11 @@ public class AccountService : IAccountService
         _customerService = customerService;
     }
     
+    /// <summary>
+    /// Verifies a user's email address using a verification token.
+    /// </summary>
+    /// <param name="token">The email verification token to validate.</param>
+    /// <returns>An <see cref="OperationResult"/> indicating success or failure of the email verification process.</returns>
     public async Task<OperationResult> VerifyEmailAsync(string token)
     {
         ArgumentNullException.ThrowIfNull(token);
@@ -59,6 +67,11 @@ public class AccountService : IAccountService
         await _tokenService.InvalidateAllTokensAsync(record.UserId, VerificationTokenType.EmailVerification);
         return OperationResult.SuccessResult();
     }
+    /// <summary>
+    /// Sends a new email verification link to the specified email address, invalidating any previous verification tokens.
+    /// </summary>
+    /// <param name="email">The email address to which the verification email will be sent.</param>
+    /// <returns>An <see cref="OperationResult"/> indicating success or failure.</returns>
     public async Task<OperationResult> ResendVerificationEmailAsync(string email)
     {
         ArgumentNullException.ThrowIfNull(email);
@@ -75,6 +88,11 @@ public class AccountService : IAccountService
         return OperationResult.SuccessResult();
     }
     
+    /// <summary>
+    /// Initiates the password reset process by validating the request, generating a password reset token, and sending a reset email to the user.
+    /// </summary>
+    /// <param name="request">The password reset request containing the user's identifier.</param>
+    /// <returns>An <see cref="OperationResult"/> indicating the success or failure of the operation.</returns>
     public async Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -101,6 +119,11 @@ public class AccountService : IAccountService
         return OperationResult.SuccessResult();
     }
     
+    /// <summary>
+    /// Resets a user's password using a valid password reset token.
+    /// </summary>
+    /// <param name="request">The password reset request containing user identifier, new password, and reset token.</param>
+    /// <returns>An <see cref="OperationResult"/> indicating success or failure, with error messages if applicable.</returns>
     public async Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -139,6 +162,14 @@ public class AccountService : IAccountService
         return OperationResult.SuccessResult();
     }
     
+    /// <summary>
+    /// Registers a new user with the specified roles, optionally creating an associated customer record, and sends an email verification link.
+    /// </summary>
+    /// <param name="registerRequestDto">The registration details for the new user.</param>
+    /// <param name="roles">The roles to assign to the user.</param>
+    /// <param name="createCustomer">Whether to create a customer record linked to the user.</param>
+    /// <param name="customerData">Optional extra data for customer creation.</param>
+    /// <returns>An <see cref="OperationResult{RegisterUserResponseDto}"/> indicating success or failure, with user registration details on success.</returns>
     public async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
     {
         var validator = new RegisterUserDtoValidator();
@@ -194,7 +225,14 @@ public class AccountService : IAccountService
     
     
     # region Helpers
-    private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserRequestDto requestDto, bool createCustomer, CustomerExtraData? customerData) =>
+    /// <summary>
+            /// Constructs a <see cref="CreateCustomerDto"/> from registration and optional customer data if customer creation is requested; otherwise returns null.
+            /// </summary>
+            /// <param name="requestDto">The registration request containing user details.</param>
+            /// <param name="createCustomer">Indicates whether to create a customer record.</param>
+            /// <param name="customerData">Optional additional customer data.</param>
+            /// <returns>A populated <see cref="CreateCustomerDto"/> if <paramref name="createCustomer"/> is true; otherwise, null.</returns>
+            private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserRequestDto requestDto, bool createCustomer, CustomerExtraData? customerData) =>
         createCustomer
             ? new CreateCustomerDto
               {
@@ -208,6 +246,12 @@ public class AccountService : IAccountService
               }
             : null;
     
+    /// <summary>
+    /// Constructs a new User entity from registration data and assigns specified roles with a hashed password.
+    /// </summary>
+    /// <param name="registerRequestDto">The registration data for the new user.</param>
+    /// <param name="roles">The roles to assign to the user.</param>
+    /// <returns>A User entity populated with the provided data and roles.</returns>
     private User BuildUserObject(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles)
     {
         User user =  new User 
@@ -231,6 +275,11 @@ public class AccountService : IAccountService
 
         return user;
     }
+    /// <summary>
+    /// Retrieves a user by email or username based on the identifier type specified in the authentication request.
+    /// </summary>
+    /// <param name="request">Authentication data containing the identifier and its type.</param>
+    /// <returns>An operation result containing the user if found, or a failure result if not found or if the identifier type is invalid.</returns>
     private async Task<OperationResult<InternalUserDto>> GetUserByEmailOrUsernameAsync(AuthDto request)
     {
         ArgumentNullException.ThrowIfNull(request);

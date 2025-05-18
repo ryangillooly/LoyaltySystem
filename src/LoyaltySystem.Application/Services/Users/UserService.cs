@@ -19,6 +19,14 @@ public class UserService : IUserService
     private readonly IPasswordHasher<InternalUserDto> _passwordHasher;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserService"/> class with required repositories, password hasher, and logger.
+    /// </summary>
+    /// <param name="userRepository">Repository for user data access.</param>
+    /// <param name="customerRepository">Repository for customer data access.</param>
+    /// <param name="passwordHasher">Hasher for user password operations.</param>
+    /// <param name="logger">Logger for recording service events.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any dependency is null.</exception>
     public UserService(
         IUserRepository userRepository, 
         ICustomerRepository customerRepository,
@@ -31,6 +39,11 @@ public class UserService : IUserService
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
     }
     
+    /// <summary>
+    /// Retrieves a user by their unique identifier asynchronously.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to retrieve.</param>
+    /// <returns>An operation result containing the user DTO if found; otherwise, a failure result.</returns>
     public async Task<OperationResult<InternalUserDto>> GetByIdAsync(UserId userId)
     {
         var user = await _userRepository.GetByIdAsync(userId);
@@ -49,6 +62,11 @@ public class UserService : IUserService
         
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
+    /// <summary>
+    /// Retrieves a user by email address asynchronously.
+    /// </summary>
+    /// <param name="userEmail">The email address of the user to retrieve.</param>
+    /// <returns>An operation result containing the user data if found; otherwise, a failure result.</returns>
     public async Task<OperationResult<InternalUserDto>> GetByEmailAsync(string userEmail)
     {
         var user = await _userRepository.GetByEmailAsync(userEmail);
@@ -67,6 +85,11 @@ public class UserService : IUserService
                     
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
+    /// <summary>
+    /// Retrieves a user by username asynchronously.
+    /// </summary>
+    /// <param name="username">The username to search for.</param>
+    /// <returns>An operation result containing the user DTO if found; otherwise, a failure result.</returns>
     public async Task<OperationResult<InternalUserDto>> GetByUsernameAsync(string username)
     {
         var user = await _userRepository.GetByUsernameAsync(username);
@@ -75,6 +98,11 @@ public class UserService : IUserService
             : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
+    /// <summary>
+    /// Retrieves a user by phone number asynchronously.
+    /// </summary>
+    /// <param name="phoneNumber">The phone number to search for.</param>
+    /// <returns>An operation result containing the user DTO if found; otherwise, a failure result.</returns>
     public async Task<OperationResult<InternalUserDto>> GetByPhoneNumberAsync(string phoneNumber)
     {
         var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber);
@@ -83,6 +111,11 @@ public class UserService : IUserService
             : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
+    /// <summary>
+    /// Retrieves a user associated with the specified customer ID.
+    /// </summary>
+    /// <param name="customerId">The unique identifier of the customer.</param>
+    /// <returns>An operation result containing the user DTO if found; otherwise, a failure result.</returns>
     public async Task<OperationResult<InternalUserDto>> GetUserByCustomerIdAsync(CustomerId customerId)
     {
         var user = await _userRepository.GetByCustomerIdAsync(customerId);
@@ -91,6 +124,12 @@ public class UserService : IUserService
             : OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
+    /// <summary>
+    /// Adds a new user to the system and returns the created user data.
+    /// </summary>
+    /// <param name="user">The user entity to add.</param>
+    /// <param name="transaction">Optional database transaction context.</param>
+    /// <returns>An operation result containing the added user's data.</returns>
     public async Task<OperationResult<InternalUserDto>> AddAsync(User user, IDbTransaction? transaction = null)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -100,6 +139,12 @@ public class UserService : IUserService
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
     
+    /// <summary>
+    /// Updates the specified user's details with the provided information.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to update.</param>
+    /// <param name="updateRequestDto">The data transfer object containing updated user information.</param>
+    /// <returns>An operation result containing the updated user DTO if successful, or a failure result if the user is not found.</returns>
     public async Task<OperationResult<InternalUserDto>> UpdateAsync(UserId userId, UpdateUserRequestDto updateRequestDto)
     {
         var user = await _userRepository.GetByIdAsync(userId);
@@ -120,9 +165,21 @@ public class UserService : IUserService
         return OperationResult<InternalUserDto>.SuccessResult(InternalUserDto.From(user));
     }
 
-    public async Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserRequestDto updateRequestDto) =>
+    /// <summary>
+        /// Not implemented. Intended to delete a user by user ID and update request data.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user to delete.</param>
+        /// <param name="updateRequestDto">The update request data associated with the deletion.</param>
+        /// <exception cref="NotImplementedException">Always thrown as this method is not implemented.</exception>
+        public async Task<OperationResult<InternalUserDto>> DeleteAsync(UserId userId, UpdateUserRequestDto updateRequestDto) =>
         throw new NotImplementedException();
 
+    /// <summary>
+    /// Updates a user's password by hashing the new password and saving it to the repository.
+    /// </summary>
+    /// <param name="internalUserDto">The user whose password will be updated.</param>
+    /// <param name="resetDto">Contains the new password to set.</param>
+    /// <returns>An operation result containing the updated user DTO.</returns>
     public async Task<OperationResult<InternalUserDto>> UpdatePasswordAsync(InternalUserDto internalUserDto, ResetPasswordRequestDto resetDto)
     {
         internalUserDto.PasswordHash = _passwordHasher.HashPassword(internalUserDto, resetDto.NewPassword);
@@ -131,6 +188,11 @@ public class UserService : IUserService
         return OperationResult<InternalUserDto>.SuccessResult(internalUserDto);
     }
     
+    /// <summary>
+    /// Confirms a user's email address and updates their record if not already confirmed.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to confirm.</param>
+    /// <returns>An <see cref="OperationResult"/> indicating success or failure.</returns>
     public async Task<OperationResult> ConfirmEmailAndUpdateAsync(UserId userId)
     {
         var user = await _userRepository.GetByIdAsync(userId);

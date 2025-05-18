@@ -16,6 +16,11 @@ public class RewardDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
         
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RewardDto"/> class by mapping properties from a <see cref="Reward"/> domain entity.
+    /// </summary>
+    /// <param name="reward">The <see cref="Reward"/> domain entity to map from. Must not be null.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="reward"/> is null.</exception>
     public RewardDto(Reward reward)
     {
         ArgumentNullException.ThrowIfNull(reward);
@@ -32,7 +37,12 @@ public class RewardDto
         UpdatedAt = reward.UpdatedAt;
     }
     
-    public static Reward ToDomain(RewardDto dto) =>
+    /// <summary>
+        /// Converts a <see cref="RewardDto"/> instance to a corresponding <see cref="Reward"/> domain entity.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing reward information.</param>
+        /// <returns>A new <see cref="Reward"/> domain entity with properties mapped from the DTO.</returns>
+        public static Reward ToDomain(RewardDto dto) =>
         new
         (
             LoyaltyProgramId.FromString(dto.ProgramId),

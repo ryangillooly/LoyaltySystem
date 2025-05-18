@@ -17,6 +17,10 @@ public class LoyaltyCardService : ILoyaltyCardService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<LoyaltyCardService> _logger;
         
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoyaltyCardService"/> class with required repositories, unit of work, and logger.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown if any required dependency is null.</exception>
     public LoyaltyCardService(
         ILoyaltyCardRepository cardRepository,
         ILoyaltyProgramRepository programRepository,
@@ -31,6 +35,12 @@ public class LoyaltyCardService : ILoyaltyCardService
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
+    /// <summary>
+    /// Retrieves a paged list of loyalty cards.
+    /// </summary>
+    /// <param name="skip">The number of records to skip for pagination.</param>
+    /// <param name="limit">The maximum number of records to return.</param>
+    /// <returns>An operation result containing a paged result of loyalty card DTOs, or a failure result with an error message if retrieval fails.</returns>
     public async Task<OperationResult<PagedResult<LoyaltyCardDto>>> GetAllAsync(int skip, int limit)
     {
         try
@@ -49,6 +59,11 @@ public class LoyaltyCardService : ILoyaltyCardService
             return OperationResult<PagedResult<LoyaltyCardDto>>.FailureResult($"Failed to get customers: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Retrieves a loyalty card by its unique identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the loyalty card.</param>
+    /// <returns>An <see cref="OperationResult{LoyaltyCardDto}"/> containing the card details if found, or a failure result if not found or on error.</returns>
     public async Task<OperationResult<LoyaltyCardDto>> GetByIdAsync(LoyaltyCardId id)
     {
         try
@@ -66,6 +81,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves a loyalty card by its QR code.
+    /// </summary>
+    /// <param name="qrCode">The QR code associated with the loyalty card.</param>
+    /// <returns>An operation result containing the loyalty card DTO if found; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<LoyaltyCardDto>> GetByQrCodeAsync(string qrCode)
     {
         try
@@ -83,6 +103,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves all loyalty cards associated with a specific customer.
+    /// </summary>
+    /// <param name="customerId">The unique identifier of the customer.</param>
+    /// <returns>An operation result containing a collection of loyalty card DTOs if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<IEnumerable<LoyaltyCardDto>>> GetByCustomerIdAsync(CustomerId customerId)
     {
         try
@@ -97,6 +122,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves all loyalty cards associated with a specific loyalty program.
+    /// </summary>
+    /// <param name="programId">The unique identifier of the loyalty program.</param>
+    /// <returns>An operation result containing a collection of loyalty card DTOs if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<IEnumerable<LoyaltyCardDto>>> GetByProgramIdAsync(LoyaltyProgramId programId)
     {
         try
@@ -111,6 +141,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Creates a new loyalty card for a customer in a specified loyalty program.
+    /// </summary>
+    /// <param name="dto">The data required to create the loyalty card, including customer and program identifiers.</param>
+    /// <returns>An operation result containing the created loyalty card DTO on success, or an error message on failure.</returns>
     public async Task<OperationResult<LoyaltyCardDto>> CreateCardAsync(CreateLoyaltyCardDto dto)
     {
         var programId = EntityId.Parse<LoyaltyProgramId>(dto.ProgramId);
@@ -147,6 +182,12 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Updates the status of a loyalty card to the specified value.
+    /// </summary>
+    /// <param name="id">The unique identifier of the loyalty card.</param>
+    /// <param name="status">The new status to set for the card (Expired, Suspended, or Active).</param>
+    /// <returns>An <see cref="OperationResult{LoyaltyCardDto}"/> containing the updated card data if successful, or an error message if the operation fails.</returns>
     public async Task<OperationResult<LoyaltyCardDto>> UpdateCardStatusAsync(LoyaltyCardId id, CardStatus status)
     {
         try
@@ -183,6 +224,15 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Issues a specified number of stamps to a stamp-based loyalty card and records the transaction.
+    /// </summary>
+    /// <param name="cardId">The unique identifier of the loyalty card.</param>
+    /// <param name="stampCount">The number of stamps to issue.</param>
+    /// <param name="storeId">The identifier of the store where the transaction occurred.</param>
+    /// <param name="purchaseAmount">The purchase amount associated with the stamp issuance.</param>
+    /// <param name="transactionReference">The reference identifier for the transaction.</param>
+    /// <returns>An <see cref="OperationResult{TransactionDto}"/> containing the transaction details if successful, or an error message if the operation fails.</returns>
     public async Task<OperationResult<TransactionDto>> IssueStampsAsync(
         LoyaltyCardId cardId, 
         int stampCount, 
@@ -241,6 +291,16 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Adds points to a points-based loyalty card and records the transaction.
+    /// </summary>
+    /// <param name="cardId">The unique identifier of the loyalty card.</param>
+    /// <param name="points">The number of points to add.</param>
+    /// <param name="purchaseAmount">The purchase amount associated with the points issuance.</param>
+    /// <param name="storeId">The identifier of the store where the transaction occurred.</param>
+    /// <param name="staffId">The identifier of the staff member processing the transaction, if applicable.</param>
+    /// <param name="posTransactionId">The point-of-sale transaction identifier.</param>
+    /// <returns>An operation result containing the transaction details if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal purchaseAmount, StoreId storeId, StaffId? staffId, string posTransactionId)
     {
         try
@@ -290,6 +350,15 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Redeems a reward for a loyalty card, deducting the required points or stamps and recording the transaction.
+    /// </summary>
+    /// <param name="cardId">The ID of the loyalty card.</param>
+    /// <param name="rewardId">The ID of the reward to redeem.</param>
+    /// <param name="storeId">The ID of the store where the redemption occurs.</param>
+    /// <param name="staffId">The ID of the staff member processing the redemption, if applicable.</param>
+    /// <param name="redemptionData">Additional data related to the redemption request.</param>
+    /// <returns>An <see cref="OperationResult{TransactionDto}"/> containing the reward redemption transaction if successful, or a failure result with an error message.</returns>
     public async Task<OperationResult<TransactionDto>> RedeemRewardAsync(LoyaltyCardId cardId, RewardId rewardId, StoreId storeId, StaffId? staffId, RedeemRequestData redemptionData)
     {
         try
@@ -366,6 +435,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Generates a new unique QR code for the specified loyalty card and updates the card with the generated code.
+    /// </summary>
+    /// <param name="cardId">The identifier of the loyalty card.</param>
+    /// <returns>An operation result containing the generated QR code string if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<string>> GenerateQrCodeAsync(LoyaltyCardId cardId)
     {
         try
@@ -391,6 +465,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves the QR code for a loyalty card, generating a new one if it does not exist.
+    /// </summary>
+    /// <param name="cardId">The unique identifier of the loyalty card.</param>
+    /// <returns>An operation result containing the QR code string if successful; otherwise, an error message.</returns>
     public async Task<OperationResult<string>> GetOrGenerateQrCodeAsync(LoyaltyCardId cardId)
     {
         try
@@ -411,6 +490,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves all transactions associated with a specified loyalty card.
+    /// </summary>
+    /// <param name="cardId">The unique identifier of the loyalty card.</param>
+    /// <returns>An operation result containing a collection of transaction DTOs if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<IEnumerable<TransactionDto>>> GetCardTransactionsAsync(LoyaltyCardId cardId)
     {
         try
@@ -429,6 +513,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves the total number of loyalty cards with the specified status.
+    /// </summary>
+    /// <param name="status">The status to filter loyalty cards by.</param>
+    /// <returns>An <see cref="OperationResult{T}"/> containing the count of cards with the given status, or a failure result if an error occurs.</returns>
     public async Task<OperationResult<int>> GetCardCountByStatusAsync(CardStatus status)
     {
         try
@@ -443,6 +532,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves analytics data for a specific loyalty program, including counts of cards, rewards, and program types.
+    /// </summary>
+    /// <param name="programId">The unique identifier of the loyalty program.</param>
+    /// <returns>An <see cref="OperationResult{ProgramAnalyticsDto}"/> containing the analytics data if successful; otherwise, a failure result with an error message.</returns>
     public async Task<OperationResult<DTOs.ProgramAnalyticsDto>> GetProgramCardAnalyticsAsync(LoyaltyProgramId programId)
     {
         try
@@ -487,6 +581,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves the number of active loyalty cards for a specified loyalty program.
+    /// </summary>
+    /// <param name="programId">The unique identifier of the loyalty program as a string.</param>
+    /// <returns>The count of active loyalty cards for the given program, or 0 if an error occurs.</returns>
     public async Task<int> GetActiveCardCountForProgramAsync(string programId)
     {
         try
@@ -502,6 +601,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Retrieves the total number of loyalty cards associated with a specified loyalty program.
+    /// </summary>
+    /// <param name="programId">The unique identifier of the loyalty program as a string.</param>
+    /// <returns>The count of loyalty cards for the program, or 0 if an error occurs.</returns>
     public async Task<int> GetCardCountForProgramAsync(string programId)
     {
         try
@@ -517,6 +621,11 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
+    /// <summary>
+    /// Returns the average number of transactions per loyalty card for a specified program.
+    /// </summary>
+    /// <param name="programId">The unique identifier of the loyalty program.</param>
+    /// <returns>The average transaction count per card, or 0 if unavailable or on error.</returns>
     public async Task<decimal> GetAverageTransactionsPerCardForProgramAsync(string programId)
     {
         try
@@ -542,7 +651,12 @@ public class LoyaltyCardService : ILoyaltyCardService
     /// </summary>
     /// <param name="cardId">The ID of the loyalty card to check</param>
     /// <param name="customerId">The ID of the customer</param>
-    /// <returns>Success result if the card belongs to the customer, failure otherwise</returns>
+    /// <summary>
+    /// Verifies whether a loyalty card belongs to the specified customer.
+    /// </summary>
+    /// <param name="cardId">The unique identifier of the loyalty card.</param>
+    /// <param name="customerId">The unique identifier of the customer.</param>
+    /// <returns>A result indicating success if the card belongs to the customer, or failure with an error message otherwise.</returns>
     public async Task<OperationResult<bool>> VerifyCardOwnership(string cardId, CustomerId customerId)
     {
         try
@@ -575,7 +689,12 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
-    private static LoyaltyCardDto MapToDto(LoyaltyCard card) =>
+    /// <summary>
+        /// Maps a <see cref="LoyaltyCard"/> entity to a <see cref="LoyaltyCardDto"/>.
+        /// </summary>
+        /// <param name="card">The loyalty card entity to map.</param>
+        /// <returns>A <see cref="LoyaltyCardDto"/> containing the card's details and transactions.</returns>
+        private static LoyaltyCardDto MapToDto(LoyaltyCard card) =>
         new ()
         {
             Id = card.Id,
@@ -592,7 +711,12 @@ public class LoyaltyCardService : ILoyaltyCardService
             TotalTransactions = card.Transactions.Count
         };
 
-    private static TransactionDto MapToTransactionDto(Transaction transaction) =>
+    /// <summary>
+        /// Converts a <see cref="Transaction"/> entity to a <see cref="TransactionDto"/> for data transfer.
+        /// </summary>
+        /// <param name="transaction">The transaction entity to map.</param>
+        /// <returns>A <see cref="TransactionDto"/> containing transaction details.</returns>
+        private static TransactionDto MapToTransactionDto(Transaction transaction) =>
         new ()
         {
             Id = transaction.Id.ToString(),

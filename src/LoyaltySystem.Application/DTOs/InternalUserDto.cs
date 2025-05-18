@@ -20,7 +20,12 @@ public class InternalUserDto
     public IReadOnlyCollection<string> Roles { get; set; } = new List<string>();
     public bool IsEmailConfirmed { get; set; }
     
-    public static InternalUserDto From(User user) =>
+    /// <summary>
+        /// Creates an <see cref="InternalUserDto"/> instance from a <see cref="User"/> entity by mapping its properties and converting complex types to strings.
+        /// </summary>
+        /// <param name="user">The user entity to convert.</param>
+        /// <returns>An <see cref="InternalUserDto"/> populated with data from the specified user.</returns>
+        public static InternalUserDto From(User user) =>
         new ()
         {
             Id = user.Id,

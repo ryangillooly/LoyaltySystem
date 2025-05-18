@@ -1,4 +1,3 @@
-
 using LoyaltySystem.Application.Common;
 using LoyaltySystem.Application.DTOs;
 using LoyaltySystem.Application.DTOs.Customers;
@@ -20,6 +19,10 @@ public class CustomerService : ICustomerService
     private readonly IStoreRepository _storeRepository;
     private readonly IUnitOfWork _unitOfWork;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustomerService"/> class with required repositories and unit of work.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown if any dependency is null.</exception>
     public CustomerService(
         ICustomerRepository customerRepository,
         IUserRepository userRepository,
@@ -32,6 +35,12 @@ public class CustomerService : ICustomerService
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
+    /// <summary>
+    /// Retrieves a paginated list of customers.
+    /// </summary>
+    /// <param name="skip">The number of customers to skip for pagination.</param>
+    /// <param name="limit">The maximum number of customers to return.</param>
+    /// <returns>An <see cref="OperationResult{T}"/> containing a paged result of <see cref="CustomerDto"/> objects, or a failure result with an error message if retrieval fails.</returns>
     public async Task<OperationResult<PagedResult<CustomerDto>>> GetAllAsync(int skip, int limit)
     {
         try
@@ -50,6 +59,11 @@ public class CustomerService : ICustomerService
             return OperationResult<PagedResult<CustomerDto>>.FailureResult($"Failed to get customers: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Retrieves a customer by their unique identifier.
+    /// </summary>
+    /// <param name="id">The string representation of the customer's ID.</param>
+    /// <returns>An <see cref="OperationResult{CustomerDto}"/> containing the customer data if found, or a failure result with an error message.</returns>
     public async Task<OperationResult<CustomerDto>> GetCustomerByIdAsync(string id)
     {
         try
@@ -67,6 +81,13 @@ public class CustomerService : ICustomerService
             return OperationResult<CustomerDto>.FailureResult($"Failed to get customer: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Searches for customers matching the specified query and returns a paginated list of customer DTOs.
+    /// </summary>
+    /// <param name="query">The search term to filter customers.</param>
+    /// <param name="page">The page number for pagination.</param>
+    /// <param name="pageSize">The number of results per page.</param>
+    /// <returns>An <see cref="OperationResult{T}"/> containing a paged result of <see cref="CustomerDto"/> objects that match the search criteria, or a failure result with an error message.</returns>
     public async Task<OperationResult<PagedResult<CustomerDto>>> SearchCustomersAsync(string query, int page, int pageSize)
     {
         try
@@ -90,6 +111,12 @@ public class CustomerService : ICustomerService
         }
     }
     
+    /// <summary>
+    /// Adds a new customer to the system with email validation and transactional safety.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing customer creation details.</param>
+    /// <param name="transaction">An optional database transaction to use for the operation.</param>
+    /// <returns>An <see cref="OperationResult{CustomerDto}"/> indicating success with the created customer data, or failure with an error message.</returns>
     public async Task<OperationResult<CustomerDto>> AddCustomerAsync(CreateCustomerDto dto, IDbTransaction? transaction = null)
     {
         try
@@ -111,6 +138,12 @@ public class CustomerService : ICustomerService
             return OperationResult<CustomerDto>.FailureResult($"Failed to create customer: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Updates an existing customer's information with the provided data.
+    /// </summary>
+    /// <param name="id">The unique identifier of the customer to update.</param>
+    /// <param name="dto">The data transfer object containing updated customer information.</param>
+    /// <returns>An <see cref="OperationResult{CustomerDto}"/> indicating success with the updated customer data, or failure with an error message if the customer is not found or the update fails.</returns>
     public async Task<OperationResult<CustomerDto>> UpdateCustomerAsync(string id, UpdateCustomerDto dto)
     {
         try
@@ -134,6 +167,12 @@ public class CustomerService : ICustomerService
             return OperationResult<CustomerDto>.FailureResult($"Failed to update customer: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Retrieves customers who signed up within the specified date range.
+    /// </summary>
+    /// <param name="start">The start date of the signup range (inclusive).</param>
+    /// <param name="end">The end date of the signup range (inclusive).</param>
+    /// <returns>An operation result containing a collection of customer DTOs who signed up within the date range.</returns>
     public async Task<OperationResult<IEnumerable<CustomerDto>>> GetCustomerSignupsByDateRangeAsync(DateTime start, DateTime end)
     {
         var customers = await _customerRepository.GetBySignupDateRangeAsync(start, end);
@@ -141,6 +180,10 @@ public class CustomerService : ICustomerService
         return OperationResult<IEnumerable<CustomerDto>>.SuccessResult(customerDtos);
     }
     
+    /// <summary>
+    /// Retrieves the count of customers grouped by age categories.
+    /// </summary>
+    /// <returns>A dictionary mapping age group labels to customer counts. Returns an empty dictionary if an error occurs.</returns>
     public async Task<Dictionary<string, int>> GetCustomerAgeGroupsAsync()
     {
         try
@@ -152,6 +195,10 @@ public class CustomerService : ICustomerService
             return new Dictionary<string, int>();
         }
     }
+    /// <summary>
+    /// Retrieves the distribution of customers by gender as a dictionary of gender labels and counts.
+    /// </summary>
+    /// <returns>A dictionary where keys are gender labels and values are the corresponding customer counts. Returns an empty dictionary if an error occurs.</returns>
     public async Task<Dictionary<string, int>> GetCustomerGenderDistributionAsync()
     {
         try
@@ -163,6 +210,11 @@ public class CustomerService : ICustomerService
             return new Dictionary<string, int>();
         }
     }
+    /// <summary>
+    /// Retrieves the top customer locations ranked by customer count, limited to the specified number.
+    /// </summary>
+    /// <param name="limit">The maximum number of locations to return.</param>
+    /// <returns>A list of key-value pairs where the key is the location and the value is the customer count. Returns an empty list if an error occurs.</returns>
     public async Task<List<KeyValuePair<string, int>>> GetTopCustomerLocationsAsync(int limit)
     {
         try
@@ -175,6 +227,10 @@ public class CustomerService : ICustomerService
             return new List<KeyValuePair<string, int>>();
         }
     }
+    /// <summary>
+    /// Retrieves the total number of customers.
+    /// </summary>
+    /// <returns>The total customer count, or 0 if an error occurs.</returns>
     public async Task<int> GetTotalCustomerCountAsync()
     {
         try
@@ -186,6 +242,10 @@ public class CustomerService : ICustomerService
             return 0;
         }
     }
+    /// <summary>
+    /// Retrieves the number of customers who possess loyalty cards.
+    /// </summary>
+    /// <returns>The count of customers with loyalty cards, or zero if an error occurs.</returns>
     public async Task<int> GetCustomersWithCardsCountAsync()
     {
         try
@@ -197,6 +257,13 @@ public class CustomerService : ICustomerService
             return 0;
         }
     }
+    /// <summary>
+    /// Retrieves a list of stores located within a specified radius of the given geographic coordinates.
+    /// </summary>
+    /// <param name="latitude">Latitude of the center point.</param>
+    /// <param name="longitude">Longitude of the center point.</param>
+    /// <param name="radiusKm">Search radius in kilometers.</param>
+    /// <returns>An <see cref="OperationResult{T}"/> containing a list of <see cref="StoreDto"/> objects representing nearby stores, or a failure result with an error message if the operation fails.</returns>
     public async Task<OperationResult<List<StoreDto>>> FindNearbyStoresAsync(double latitude, double longitude, double radiusKm)
     {
         try
@@ -241,7 +308,12 @@ public class CustomerService : ICustomerService
             return OperationResult<List<StoreDto>>.FailureResult($"Failed to find nearby stores: {ex.Message}");
         }
     }
-    private static Customer MapToCustomer(CreateCustomerDto dto) =>
+    /// <summary>
+        /// Maps a <see cref="CreateCustomerDto"/> to a <see cref="Customer"/> domain entity.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing customer creation details.</param>
+        /// <returns>A new <see cref="Customer"/> entity populated with the provided data.</returns>
+        private static Customer MapToCustomer(CreateCustomerDto dto) =>
         new 
         (
             dto.FirstName,
@@ -252,7 +324,12 @@ public class CustomerService : ICustomerService
             dto.Address,
             dto.MarketingConsent
         );
-    private static CustomerDto MapToDto(Customer customer) =>
+    /// <summary>
+        /// Converts a <see cref="Customer"/> domain entity to a <see cref="CustomerDto"/>.
+        /// </summary>
+        /// <param name="customer">The customer entity to convert.</param>
+        /// <returns>A <see cref="CustomerDto"/> representing the customer.</returns>
+        private static CustomerDto MapToDto(Customer customer) =>
         new()
         {
             Id = customer.Id,
@@ -264,6 +341,11 @@ public class CustomerService : ICustomerService
             UpdatedAt = customer.UpdatedAt,
             MarketingConsent = customer.MarketingConsent
         };
+    /// <summary>
+    /// Determines whether the specified email address is valid according to standard email format rules.
+    /// </summary>
+    /// <param name="email">The email address to validate.</param>
+    /// <returns>True if the email address is valid; otherwise, false.</returns>
     private static bool IsValidEmail(string email)
     {
         try
@@ -277,6 +359,12 @@ public class CustomerService : ICustomerService
         }
     }
     
+    /// <summary>
+    /// Links a user to a customer by assigning the customer ID and customer role to the user.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user to link.</param>
+    /// <param name="customerId">The unique identifier of the customer to link to the user.</param>
+    /// <returns>An <see cref="OperationResult{InternalUserDto}"/> indicating success with the updated user data, or failure with an error message if the user or customer is not found, or if the user is already linked.</returns>
     public async Task<OperationResult<InternalUserDto>> LinkCustomerAsync(UserId userId, string customerId)
     {
         var customerIdObj = CustomerId.FromString(customerId);

@@ -6,6 +6,9 @@ namespace LoyaltySystem.Application.Validation;
 
 public class ResetPasswordRequestDtoValidator : AbstractValidator<ResetPasswordRequestDto>
 {
+    /// <summary>
+    /// Initializes validation rules for <see cref="ResetPasswordRequestDto"/>, ensuring that either an email or username is provided (but not both), a valid token is present, and new password fields meet length and matching requirements.
+    /// </summary>
     public ResetPasswordRequestDtoValidator()
     {
         RuleFor(x => x.Username)

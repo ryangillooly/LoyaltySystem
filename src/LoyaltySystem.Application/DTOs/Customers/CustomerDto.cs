@@ -23,7 +23,12 @@ public class CustomerDto
     public List<string> Roles { get; set; } = new();
     public bool IsEmailConfirmed { get; set; }
     
-    public static CustomerDto From(Customer customer) =>
+    /// <summary>
+        /// Creates a <see cref="CustomerDto"/> from a <see cref="Customer"/> domain entity by mapping relevant fields.
+        /// </summary>
+        /// <param name="customer">The domain customer entity to convert.</param>
+        /// <returns>A new <see cref="CustomerDto"/> instance with mapped values from the provided customer.</returns>
+        public static CustomerDto From(Customer customer) =>
         new ()
         {
             Id          = customer.Id,

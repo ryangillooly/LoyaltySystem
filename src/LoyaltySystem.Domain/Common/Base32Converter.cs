@@ -18,7 +18,9 @@ public static class Base32Converter
     private static readonly Dictionary<char, int> CharMap = new();
     private static readonly char[] Digits = Base32StandardChars.ToCharArray();
     private static readonly int Mask = Digits.Length - 1;
-    private static readonly int Shift = NumberOfTrailingZeros(Digits.Length); // Should be 5
+    private static readonly int Shift = NumberOfTrailingZeros(Digits.Length); /// <summary>
+    /// Initializes the character-to-value mapping for Base32 decoding.
+    /// </summary>
 
     static Base32Converter()
     {
@@ -28,7 +30,11 @@ public static class Base32Converter
 
     /// <summary>
     /// Encodes a Guid into a fixed-length Base32 string (lowercase alphanumeric, RFC 4648 standard alphabet).
+    /// <summary>
+    /// Encodes a Guid into a fixed-length 26-character Base32 string using the RFC 4648 standard alphabet (lowercase, no padding).
     /// </summary>
+    /// <param name="guid">The Guid to encode.</param>
+    /// <returns>A 26-character Base32 string representation of the Guid.</returns>
     public static string Encode(Guid guid)
     {
         byte[] data = guid.ToByteArray(); // Use standard ToByteArray()
@@ -80,7 +86,14 @@ public static class Base32Converter
     /// <summary>
     /// Decodes a fixed-length Base32 string (lowercase alphanumeric, RFC 4648 standard) back into a Guid.
     /// </summary>
-    /// <exception cref="ArgumentException">Invalid Base32 string</exception>
+    /// <summary>
+    /// Decodes a fixed-length Base32 string into its corresponding <see cref="Guid"/>.
+    /// </summary>
+    /// <param name="encoded">A 26-character Base32 string representation of a Guid, using the RFC 4648 alphabet in lowercase without padding.</param>
+    /// <returns>The <see cref="Guid"/> represented by the input Base32 string.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown if the input string has an invalid length, contains invalid characters, or does not decode to exactly 16 bytes.
+    /// </exception>
     public static Guid Decode(string encoded)
     {
         encoded = encoded.TrimEnd('='); // Remove padding if present
@@ -125,7 +138,11 @@ public static class Base32Converter
         return new Guid(result);
     }
 
-    // Helper to count trailing zeros (used for shift calculation)
+    /// <summary>
+    /// Returns the number of trailing zero bits in the specified 32-bit integer.
+    /// </summary>
+    /// <param name="i">The integer to examine.</param>
+    /// <returns>The count of consecutive zero bits starting from the least significant bit.</returns>
     private static int NumberOfTrailingZeros(int i)
     {
         if (i == 0) return 32;

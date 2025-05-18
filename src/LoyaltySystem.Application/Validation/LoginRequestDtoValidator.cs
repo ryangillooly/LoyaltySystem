@@ -7,6 +7,9 @@ namespace LoyaltySystem.Application.Validation;
 
 public class LoginRequestDtoValidator : AbstractValidator<LoginRequestDto>
 {
+    /// <summary>
+    /// Initializes validation rules for <see cref="LoginRequestDto"/>, enforcing required password, conditional email and username validation, and mutual exclusivity between email and username.
+    /// </summary>
     public LoginRequestDtoValidator()
     {
         RuleFor(x => x.Password)

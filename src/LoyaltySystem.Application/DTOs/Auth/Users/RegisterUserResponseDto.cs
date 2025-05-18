@@ -17,7 +17,12 @@ public class RegisterUserResponseDto
     public List<RoleType> Roles { get; set; } = new () { RoleType.User };
     public bool IsEmailConfirmed { get; set; }
     
-    public static RegisterUserResponseDto From(User user) =>
+    /// <summary>
+        /// Creates a <see cref="RegisterUserResponseDto"/> instance by mapping properties from the specified <see cref="User"/> entity.
+        /// </summary>
+        /// <param name="user">The user entity to map from.</param>
+        /// <returns>A <see cref="RegisterUserResponseDto"/> populated with data from the given user.</returns>
+        public static RegisterUserResponseDto From(User user) =>
         new ()
         {
             Id = user.Id,

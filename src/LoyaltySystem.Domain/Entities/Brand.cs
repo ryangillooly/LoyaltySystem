@@ -9,6 +9,17 @@ namespace LoyaltySystem.Domain.Entities;
 /// </summary>
 public class Brand : Entity<BrandId>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Brand"/> class with the specified details for a business offering a loyalty program.
+    /// </summary>
+    /// <param name="name">The brand's name.</param>
+    /// <param name="category">The business category of the brand.</param>
+    /// <param name="logo">The logo image or path for the brand.</param>
+    /// <param name="description">A description of the brand.</param>
+    /// <param name="contact">Contact information for the brand.</param>
+    /// <param name="address">The physical address of the brand.</param>
+    /// <param name="businessId">The unique identifier for the associated business.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public Brand
     (
         string name,
@@ -38,6 +49,16 @@ public class Brand : Entity<BrandId>
     public ContactInfo Contact { get; private set; }
     public Address Address { get; private set; }
 
+    /// <summary>
+    /// Updates the brand's details and sets the updated timestamp.
+    /// </summary>
+    /// <param name="name">The new name of the brand.</param>
+    /// <param name="category">The new category of the brand.</param>
+    /// <param name="logo">The new logo URL or identifier.</param>
+    /// <param name="description">The new description of the brand.</param>
+    /// <param name="contact">The new contact information.</param>
+    /// <param name="address">The new address.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any parameter is null.</exception>
     public void Update
     (
         string name,

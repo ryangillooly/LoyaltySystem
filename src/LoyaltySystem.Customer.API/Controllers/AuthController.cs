@@ -22,6 +22,15 @@ public class AuthController : BaseAuthController
     private readonly ICustomerService _customerService;
     private readonly IAccountService _accountService;
     
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AuthController"/> class for handling customer authentication requests.
+    /// </summary>
+    /// <param name="authService">Authentication service for user authentication operations.</param>
+    /// <param name="customerService">Service for customer-specific operations.</param>
+    /// <param name="socialAuthService">Service for handling social authentication.</param>
+    /// <param name="accountService">Service for account management and registration.</param>
+    /// <param name="logger">Logger for recording controller activity.</param>
+    /// <exception cref="ArgumentNullException">Thrown if any required service dependency is null.</exception>
     public AuthController(
         IAuthenticationService authService, 
         ICustomerService customerService,
@@ -40,7 +49,12 @@ public class AuthController : BaseAuthController
     }
 
     protected override string UserType => "Customer";
-    protected override async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto request) => 
+    /// <summary>
+        /// Registers a new customer account with the specified registration details.
+        /// </summary>
+        /// <param name="request">The registration information for the new customer.</param>
+        /// <returns>The result of the registration operation, including user details if successful.</returns>
+        protected override async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto request) => 
         await _accountService.RegisterAsync
         (
             request, 
@@ -49,7 +63,12 @@ public class AuthController : BaseAuthController
             new CustomerExtraData() // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
         );
 
-    protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
+    /// <summary>
+        /// Handles social login for customers by authenticating with the provided social credentials and registering a new customer account if necessary.
+        /// </summary>
+        /// <param name="request">The social authentication request containing provider and credential information.</param>
+        /// <returns>The result of the social authentication attempt, including user details if successful.</returns>
+        protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Customer },

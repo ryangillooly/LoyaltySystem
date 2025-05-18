@@ -19,6 +19,9 @@ public class SocialAuthService : ISocialAuthService
        private const string Google = "google";
        private const string Apple = "apple";
        
+       /// <summary>
+       /// Initializes a new instance of the <see cref="SocialAuthService"/> class with the specified user repository, JWT service, and logger.
+       /// </summary>
        public SocialAuthService(
            IUserRepository userRepository,
            IJwtService jwtService,
@@ -29,6 +32,13 @@ public class SocialAuthService : ISocialAuthService
            _logger = logger;
        }
    
+       /// <summary>
+       /// Authenticates a user via a social provider (Google or Apple), registering a new user if necessary, and returns a JWT token along with user details.
+       /// </summary>
+       /// <param name="request">The social authentication request containing provider and credentials.</param>
+       /// <param name="allowedRoles">The set of roles that are permitted to authenticate using this method.</param>
+       /// <param name="registerUserAsync">A delegate function to register a new user if one does not exist.</param>
+       /// <returns>An operation result containing the JWT token, internal user information, and a flag indicating if the user is newly registered.</returns>
        public async Task<OperationResult<SocialAuthResponseDto>> AuthenticateAsync(
            SocialAuthRequestDto request,
            IEnumerable<RoleType> allowedRoles,
@@ -105,6 +115,13 @@ public class SocialAuthService : ISocialAuthService
        }
        
    
+       /// <summary>
+       /// Validates a Google authentication code and extracts user information.
+       /// </summary>
+       /// <param name="authCode">The authorization code received from Google during social login.</param>
+       /// <returns>
+       /// A <see cref="SocialUserInfo"/> object containing the user's Google account details if validation succeeds; otherwise, <c>null</c>.
+       /// </returns>
        private async Task<SocialUserInfo?> ValidateGoogleTokenAsync(string authCode)
        {
            // Use Google API to validate the token and extract user info
@@ -113,6 +130,14 @@ public class SocialAuthService : ISocialAuthService
            throw new NotImplementedException();
        }
    
+       /// <summary>
+       /// Validates an Apple authentication code and extracts user information from the Apple API.
+       /// </summary>
+       /// <param name="authCode">The authorization code received from Apple's authentication flow.</param>
+       /// <param name="nonce">An optional nonce value used for additional security validation.</param>
+       /// <returns>
+       /// A <see cref="SocialUserInfo"/> object containing the user's Apple ID, email, first name, and last name if validation succeeds; otherwise, <c>null</c>.
+       /// </returns>
        private async Task<SocialUserInfo?> ValidateAppleTokenAsync(string authCode, string? nonce)
        {
            // Use Apple API to validate the token and extract user info

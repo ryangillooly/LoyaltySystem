@@ -79,6 +79,11 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Creates a new store associated with a specified brand.
+        /// </summary>
+        /// <param name="dto">The data required to create the store, including brand ID, name, address, contact information, location, and operating hours.</param>
+        /// <returns>An operation result containing the created store's data if successful; otherwise, a failure result with an error message.</returns>
         public async Task<OperationResult<StoreDto>> CreateStoreAsync(CreateStoreDto dto)
         {
             try
@@ -195,6 +200,15 @@ namespace LoyaltySystem.Application.Services
             }
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of transactions for a specified store within a given date range.
+        /// </summary>
+        /// <param name="storeId">The unique identifier of the store.</param>
+        /// <param name="start">The start date of the transaction range (inclusive).</param>
+        /// <param name="end">The end date of the transaction range (inclusive).</param>
+        /// <param name="page">The page number for pagination (1-based).</param>
+        /// <param name="pageSize">The number of transactions per page.</param>
+        /// <returns>An <see cref="OperationResult{T}"/> containing a paged result of <see cref="TransactionDto"/> objects, or a failure result if retrieval fails.</returns>
         public async Task<OperationResult<PagedResult<TransactionDto>>> GetStoreTransactionsAsync(
             string storeId, DateTime start, DateTime end, int page, int pageSize)
         {

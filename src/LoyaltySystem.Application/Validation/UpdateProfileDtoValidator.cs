@@ -9,6 +9,12 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateUserRequestDto>
 {
     private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
    
+    /// <summary>
+    /// Initializes validation rules for updating user profile data, including email, username, phone number, and password fields.
+    /// </summary>
+    /// <remarks>
+    /// Applies conditional validation for email, username, and phone fields only if they are provided. Enforces required and format constraints for new password and confirmation fields.
+    /// </remarks>
     public UpdateProfileDtoValidator()
     {
         RuleFor(x => x.Email)

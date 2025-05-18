@@ -9,6 +9,9 @@ namespace LoyaltySystem.Admin.API.Controllers;
 [Route("api/account")]
 public class AccountController : BaseAccountController 
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AccountController"/> class with the specified account service and logger.
+    /// </summary>
     public AccountController(IAccountService accountService, ILogger logger) 
     : base(accountService, logger) 
     { }

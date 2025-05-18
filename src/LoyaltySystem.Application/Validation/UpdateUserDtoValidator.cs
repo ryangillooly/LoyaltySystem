@@ -7,6 +7,9 @@ namespace LoyaltySystem.Application.Validation;
 
 public class UpdateUserDtoValidator : AbstractValidator<UpdateUserRequestDto>
 {
+    /// <summary>
+    /// Initializes validation rules for updating a user, ensuring that either a valid email or a valid username is provided.
+    /// </summary>
     public UpdateUserDtoValidator()
     {
         RuleFor(x => x.Email)

@@ -138,6 +138,12 @@ public class RewardsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Updates an existing loyalty program reward with the specified ID.
+    /// </summary>
+    /// <param name="id">The unique identifier of the reward to update.</param>
+    /// <param name="request">The updated reward details.</param>
+    /// <returns>An <see cref="IActionResult"/> containing the updated reward data if successful, or a BadRequest with error details if the update fails.</returns>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAsync(string id, [FromBody] UpdateRewardDto request)
     {
@@ -165,6 +171,12 @@ public class RewardsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Deletes a reward from a specified loyalty program.
+    /// </summary>
+    /// <param name="programId">The ID of the loyalty program containing the reward.</param>
+    /// <param name="rewardId">The ID of the reward to delete.</param>
+    /// <returns>No content if deletion is successful; otherwise, a bad request with error details.</returns>
     [HttpDelete("{rewardId}")]
     public async Task<IActionResult> DeleteAsync(string programId, string rewardId)
     {

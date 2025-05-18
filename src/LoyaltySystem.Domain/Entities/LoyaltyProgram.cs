@@ -40,6 +40,27 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     public IReadOnlyCollection<LoyaltyTier> Tiers => _tiers.AsReadOnly();
     
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoyaltyProgram"/> class with the specified configuration, including program type, thresholds, conversion rates, and optional settings.
+    /// </summary>
+    /// <param name="brandId">The unique identifier of the brand offering the loyalty program.</param>
+    /// <param name="name">The name of the loyalty program.</param>
+    /// <param name="type">The type of the loyalty program (e.g., stamp-based or points-based).</param>
+    /// <param name="stampThreshold">The number of stamps required for a reward, applicable to stamp-based programs.</param>
+    /// <param name="pointsConversionRate">The conversion rate from transaction amount to points, applicable to points-based programs.</param>
+    /// <param name="pointsConfig">Optional configuration for points calculation and rules, applicable to points-based programs.</param>
+    /// <param name="hasTiers">Indicates whether the program supports loyalty tiers.</param>
+    /// <param name="dailyStampLimit">Optional daily limit for stamp issuance.</param>
+    /// <param name="minimumTransactionAmount">Optional minimum transaction amount required to earn points.</param>
+    /// <param name="expirationPolicy">Optional expiration policy for earned rewards or points.</param>
+    /// <param name="description">Optional description of the loyalty program.</param>
+    /// <param name="termsAndConditions">Optional terms and conditions for the program.</param>
+    /// <param name="enrollmentBonusPoints">Optional bonus points awarded upon enrollment.</param>
+    /// <param name="id">Optional unique identifier for the loyalty program.</param>
+    /// <param name="startDate">Optional start date for the program; defaults to current UTC time if not provided.</param>
+    /// <param name="endDate">Optional end date for the program.</param>
+    /// <param name="isActive">Optional flag indicating whether the program is active; defaults to true.</param>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="brandId"/> is empty or <paramref name="name"/> is null or whitespace, or if required parameters are invalid for the specified program type.</exception>
     public LoyaltyProgram
     (
         BrandId brandId,
@@ -106,7 +127,16 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Creates a new reward for this loyalty program.
+    /// <summary>
+    /// Creates a new reward for the loyalty program and adds it to the program's rewards.
     /// </summary>
+    /// <param name="title">The title of the reward. Must not be empty.</param>
+    /// <param name="description">A description of the reward.</param>
+    /// <param name="requiredValue">The value required to redeem the reward. Must be greater than zero.</param>
+    /// <param name="validFrom">Optional start date for reward validity.</param>
+    /// <param name="validTo">Optional end date for reward validity.</param>
+    /// <returns>The created <see cref="Reward"/> instance.</returns>
+    /// <exception cref="ArgumentException">Thrown if the title is empty or requiredValue is not greater than zero.</exception>
     public Reward CreateReward(
         string title,
         string description,
@@ -134,7 +164,21 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Creates a new tier for this loyalty program.
+    /// <summary>
+    /// Creates and adds a new loyalty tier to the program with the specified parameters.
     /// </summary>
+    /// <param name="name">The name of the tier.</param>
+    /// <param name="pointThreshold">The minimum points required to qualify for this tier.</param>
+    /// <param name="pointMultiplier">The multiplier applied to points earned in this tier.</param>
+    /// <param name="tierOrder">The order of the tier within the program.</param>
+    /// <param name="benefits">Optional list of benefits associated with the tier.</param>
+    /// <returns>The created <see cref="LoyaltyTier"/> instance.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the program does not support tiers, is not points-based, or if a tier with the same order already exists.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown if the tier name is empty, the point threshold is negative, or the point multiplier is not greater than zero.
+    /// </exception>
     public LoyaltyTier CreateTier(
         string name,
         int pointThreshold,
@@ -183,7 +227,12 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Updates the properties of the loyalty program.
+    /// <summary>
+    /// Updates the properties of the loyalty program with the provided values, validating parameters according to the program type.
     /// </summary>
+    /// <param name="name">The new name of the loyalty program. Cannot be null or whitespace.</param>
+    /// <exception cref="ArgumentException">Thrown if the name is null or whitespace.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if tiers are enabled for a non-points-based program.</exception>
     public void Update(
         string name,
         int? stampThreshold = null,
@@ -255,7 +304,12 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Updates the points configuration for a points-based program.
+    /// <summary>
+    /// Updates the points configuration for a points-based loyalty program.
     /// </summary>
+    /// <param name="pointsConfig">The new points configuration to apply.</param>
+    /// <exception cref="InvalidOperationException">Thrown if the program is not points-based.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="pointsConfig"/> is null.</exception>
     public void UpdatePointsConfig(PointsConfig pointsConfig)
     {
         if (Type != LoyaltyProgramType.Points)
@@ -270,7 +324,11 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Returns the tier for a given point balance, or null if not found.
+    /// <summary>
+    /// Returns the highest loyalty tier that a customer qualifies for based on their point balance, or null if the program does not support tiers or is not points-based.
     /// </summary>
+    /// <param name="pointBalance">The customer's current point balance.</param>
+    /// <returns>The qualifying <see cref="LoyaltyTier"/> with the highest threshold, or null if none qualify.</returns>
     public LoyaltyTier GetTierForPoints(int pointBalance)
     {
         if (!HasTiers || Type != LoyaltyProgramType.Points)
@@ -287,6 +345,8 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Activates the loyalty program.
+    /// <summary>
+    /// Marks the loyalty program as active and updates the last modified timestamp.
     /// </summary>
     public void Activate()
     {
@@ -296,6 +356,8 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Deactivates the loyalty program.
+    /// <summary>
+    /// Deactivates the loyalty program and updates the last modified timestamp.
     /// </summary>
     public void Deactivate()
     {
@@ -305,7 +367,10 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Checks if the program is valid for stamp issuance.
+    /// <summary>
+    /// Determines whether the loyalty program is active and of the stamp type, allowing stamp issuance.
     /// </summary>
+    /// <returns>True if the program is active and stamp-based; otherwise, false.</returns>
     public bool IsValidForStampIssuance()
     {
         return IsActive && Type == LoyaltyProgramType.Stamp;
@@ -313,7 +378,11 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Checks if the program is valid for points issuance.
+    /// <summary>
+    /// Determines whether points can be issued for a transaction based on program status, type, and minimum transaction amount.
     /// </summary>
+    /// <param name="transactionAmount">The amount of the transaction to evaluate.</param>
+    /// <returns>True if the program is active, points-based, and the transaction meets the minimum amount (if set); otherwise, false.</returns>
     public bool IsValidForPointsIssuance(decimal transactionAmount)
     {
         if (!IsActive || Type != LoyaltyProgramType.Points)
@@ -328,7 +397,15 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
 
     /// <summary>
     /// Calculates points based on transaction amount and conversion rate.
+    /// <summary>
+    /// Calculates the number of points earned for a transaction amount, applying tier multipliers and points configuration if applicable.
     /// </summary>
+    /// <param name="transactionAmount">The amount of the transaction for which points are to be calculated.</param>
+    /// <param name="customerTier">The customer's loyalty tier, used to apply a point multiplier if tiers are enabled.</param>
+    /// <returns>The number of points earned for the transaction.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if called on a non-points program or if both points configuration and conversion rate are missing.
+    /// </exception>
     public decimal CalculatePoints(decimal transactionAmount, LoyaltyTier customerTier = null)
     {
         if (Type != LoyaltyProgramType.Points)
@@ -367,6 +444,8 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     /// <summary>
     /// Sets the expiration policy.
     /// Used by the repository for loading from database.
+    /// <summary>
+    /// Sets the expiration policy for the loyalty program. Intended for internal or repository use.
     /// </summary>
     internal void SetExpirationPolicy(ExpirationPolicy expirationPolicy)
     {
@@ -376,6 +455,8 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     /// <summary>
     /// Adds an existing reward to the program.
     /// Used by the repository for loading from database.
+    /// <summary>
+    /// Adds an existing reward to the loyalty program.
     /// </summary>
     public void AddReward(Reward reward)
     {
@@ -385,7 +466,11 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     /// <summary>
     /// Adds an existing tier to the program.
     /// Used by the repository for loading from database.
+    /// <summary>
+    /// Adds an existing loyalty tier to the program if it is points-based.
     /// </summary>
+    /// <param name="tier">The loyalty tier to add.</param>
+    /// <exception cref="InvalidOperationException">Thrown if the program is not points-based.</exception>
     public void AddTier(LoyaltyTier tier)
     {
         if (Type != LoyaltyProgramType.Points)
@@ -397,7 +482,11 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     /// <summary>
     /// Sets the points configuration.
     /// Used by the repository for loading from database.
+    /// <summary>
+    /// Sets the points configuration for a points-based loyalty program.
     /// </summary>
+    /// <param name="pointsConfig">The points configuration to assign.</param>
+    /// <exception cref="InvalidOperationException">Thrown if the program type is not points-based.</exception>
     internal void SetPointsConfig(PointsConfig pointsConfig)
     {
         if (Type != LoyaltyProgramType.Points)
@@ -406,6 +495,17 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
         PointsConfig = pointsConfig;
     }
         
+    /// <summary>
+    /// Validates that the provided parameters are appropriate for the specified loyalty program type.
+    /// </summary>
+    /// <param name="type">The type of loyalty program (stamp or points).</param>
+    /// <param name="stampThreshold">The stamp threshold for stamp-based programs.</param>
+    /// <param name="pointsConversionRate">The points conversion rate for points-based programs.</param>
+    /// <param name="pointsConfig">Optional points configuration for points-based programs.</param>
+    /// <exception cref="ArgumentException">
+    /// Thrown if the stamp threshold is not greater than zero for stamp programs,
+    /// or if the points conversion rate is not greater than zero for points programs.
+    /// </exception>
     private void ValidateProgramTypeParameters(
         LoyaltyProgramType type, 
         int? stampThreshold, 

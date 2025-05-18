@@ -126,6 +126,11 @@ public class LoyaltyProgramService : ILoyaltyProgramService
         }
     }
 
+    /// <summary>
+    /// Creates a new loyalty program with the specified configuration and optional tiers.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the details for the new loyalty program.</param>
+    /// <returns>An operation result containing the created loyalty program DTO on success, or an error message on failure.</returns>
     public async Task<OperationResult<LoyaltyProgramDto>> CreateProgramAsync(CreateLoyaltyProgramDto dto)
     {
         try
@@ -294,6 +299,11 @@ public class LoyaltyProgramService : ILoyaltyProgramService
         }
     }
     
+    /// <summary>
+    /// Maps a <see cref="LoyaltyProgram"/> domain entity to a <see cref="LoyaltyProgramDto"/>, including nested rewards, tiers, expiration policy, and points configuration.
+    /// </summary>
+    /// <param name="program">The loyalty program entity to map.</param>
+    /// <returns>The corresponding <see cref="LoyaltyProgramDto"/>, or null if <paramref name="program"/> is null.</returns>
     private LoyaltyProgramDto MapToDto(LoyaltyProgram program)
     {
         if (program == null) return null;
@@ -342,6 +352,15 @@ public class LoyaltyProgramService : ILoyaltyProgramService
         };
     }
 
+    /// <summary>
+    /// Retrieves a paginated list of active loyalty programs, intended to represent those near a specified geographic location.
+    /// </summary>
+    /// <param name="latitude">Latitude of the user's location.</param>
+    /// <param name="longitude">Longitude of the user's location.</param>
+    /// <param name="radiusKm">Search radius in kilometers (currently not used for filtering).</param>
+    /// <param name="page">Page number for pagination (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
+    /// <returns>A result containing a paged list of loyalty program DTOs, or a failure result if an error occurs.</returns>
     public async Task<OperationResult<PagedResult<LoyaltyProgramDto>>> GetNearbyProgramsAsync(double latitude, double longitude, double radiusKm, int page, int pageSize)
     {
         try

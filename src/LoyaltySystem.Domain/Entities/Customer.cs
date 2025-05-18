@@ -7,6 +7,18 @@ namespace LoyaltySystem.Domain.Entities
     {
         private readonly List<LoyaltyCard> _loyaltyCards;
 
+        /// <summary>
+        /// Initializes a new Customer with the specified personal details, contact information, and optional address and marketing consent.
+        /// </summary>
+        /// <param name="firstName">The customer's first name. Cannot be null.</param>
+        /// <param name="lastName">The customer's last name. Cannot be null.</param>
+        /// <param name="username">The customer's username. Cannot be null.</param>
+        /// <param name="email">The customer's email address. Must be a valid email format and cannot be null.</param>
+        /// <param name="phone">The customer's phone number. Cannot be null.</param>
+        /// <param name="address">The customer's address, or null if not provided.</param>
+        /// <param name="marketingConsent">Indicates whether the customer has given marketing consent. Defaults to false.</param>
+        /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the email format is invalid.</exception>
         public Customer
         (
             string firstName,
@@ -48,6 +60,18 @@ namespace LoyaltySystem.Domain.Entities
         
         public virtual IReadOnlyCollection<LoyaltyCard> LoyaltyCards => _loyaltyCards.AsReadOnly();
         
+        /// <summary>
+        /// Updates the customer's personal and contact information, address, and marketing consent status.
+        /// </summary>
+        /// <param name="firstName">The customer's first name. Must not be null.</param>
+        /// <param name="lastName">The customer's last name. Must not be null.</param>
+        /// <param name="username">The customer's username. Must not be null.</param>
+        /// <param name="email">The customer's email address. Must be a valid email format and not null.</param>
+        /// <param name="phone">The customer's phone number. Must not be null.</param>
+        /// <param name="address">The customer's address, or null if not provided.</param>
+        /// <param name="marketingConsent">Indicates whether the customer has given marketing consent.</param>
+        /// <exception cref="ArgumentNullException">Thrown if any required parameter is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the email format is invalid.</exception>
         public void Update
         (
             string firstName,
@@ -73,6 +97,10 @@ namespace LoyaltySystem.Domain.Entities
             UpdatedAt = DateTime.UtcNow;
         }
         
+        /// <summary>
+        /// Associates a loyalty card with the customer.
+        /// </summary>
+        /// <param name="card">The loyalty card to add. Must not be null.</param>
         public void AddLoyaltyCard(LoyaltyCard card)
         {
             ArgumentNullException.ThrowIfNull(card);

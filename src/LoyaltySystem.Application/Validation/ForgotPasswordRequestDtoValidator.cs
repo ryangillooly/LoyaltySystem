@@ -6,6 +6,9 @@ namespace LoyaltySystem.Application.Validation;
 
 public class ForgotPasswordRequestDtoValidator : AbstractValidator<ForgotPasswordRequestDto>
 {
+    /// <summary>
+    /// Initializes validation rules for the <c>ForgotPasswordRequestDto</c>, ensuring that either a valid email address or a valid username is provided, but not both.
+    /// </summary>
     public ForgotPasswordRequestDtoValidator()
     {
         RuleFor(x => x.Email)

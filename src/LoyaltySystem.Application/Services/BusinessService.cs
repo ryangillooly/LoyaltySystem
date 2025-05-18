@@ -204,7 +204,11 @@ namespace LoyaltySystem.Application.Services
 
         /// <summary>
         /// Deletes a business.
+        /// <summary>
+        /// Deletes a business by its ID if it has no associated brands.
         /// </summary>
+        /// <param name="id">The unique identifier of the business to delete.</param>
+        /// <returns>An <see cref="OperationResult{T}"/> indicating success if the business was deleted, or failure with an error message if not.</returns>
         public async Task<OperationResult<bool>> DeleteBusinessAsync(string id)
         {
             try
