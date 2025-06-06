@@ -45,14 +45,12 @@ public class AuthController : BaseAuthController
         (
             request, 
             roles: new [] { RoleType.Customer },
-            createCustomer: true,
-            new CustomerExtraData() // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
+            createCustomer: true
         );
 
     protected override async Task<OperationResult<SocialAuthResponseDto>> SocialLoginInternalAsync(SocialAuthRequestDto request) =>
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Customer },
-            dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: true, customerData: new CustomerExtraData()) // TODO: Change this to use RegisterCustomerDto (which inherits RegisterUSerDto). Can we transform it?
-        );
-}
+            dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: true));
+        }

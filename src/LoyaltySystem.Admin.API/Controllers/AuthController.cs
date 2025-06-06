@@ -81,7 +81,7 @@ public class AuthController : BaseAuthController
         await _socialAuthService.AuthenticateAsync(
             request,
             new[] { RoleType.Admin, RoleType.Manager, RoleType.User },
-            dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: false, customerData: null)
+            dto => _accountService.RegisterAsync(dto, dto.Roles, createCustomer: false)
         );
     
     [Authorize(Roles = "SuperAdmin,Admin")]

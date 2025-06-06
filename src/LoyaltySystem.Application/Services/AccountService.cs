@@ -78,40 +78,26 @@ public class AccountService : IAccountService
     public async Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        
-        var validator = new ForgotPasswordRequestDtoValidator();
-        var result = await validator.ValidateAsync(request);
-        if (!result.IsValid)
-        {
-            var errors = result.Errors.Select(e => e.ErrorMessage).ToList();
-            return OperationResult.FailureResult(errors);
-        }
-        
+
         var user = await GetUserByEmailOrUsernameAsync(request);
         if (!user.Success)
         {
-            _logger.Information("User not found. {Type} == {Identifier}", request.IdentifierType, request.Identifier);
-            return OperationResult.FailureResult($"User not found with {request.IdentifierType} == {request.Identifier}");
+            _logger.Information("User not found. {Type} {Identifier}", request.IdentifierType, request.Identifier);
         }
+        else
+        {
+            var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.PasswordReset);
+            await _emailService.SendPasswordResetEmailAsync(user.Data.Email, token);
 
-        var token = await _tokenService.GenerateAndStoreTokenAsync(user.Data.Id, VerificationTokenType.PasswordReset);
-        await _emailService.SendPasswordResetEmailAsync(user.Data.Email, token);
-
-        _logger.Information("Password successfully reset for {Type} == {Identifier}", request.IdentifierType, request.Identifier);
+            _logger.Information("Password reset token successfully sent for {Type} {Identifier}", request.IdentifierType, request.Identifier);
+        }
+        
         return OperationResult.SuccessResult();
     }
     
     public async Task<OperationResult> ResetPasswordAsync(ResetPasswordRequestDto request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        
-        var validator = new ResetPasswordRequestDtoValidator();
-        var result = await validator.ValidateAsync(request);
-        if (!result.IsValid)
-        {
-            var errors = result.Errors.Select(e => e.ErrorMessage).ToList();
-            return OperationResult.FailureResult(errors);
-        }
         
         var userResult = await GetUserByEmailOrUsernameAsync(request);
         if (!userResult.Success || userResult.Data is null)
@@ -139,15 +125,10 @@ public class AccountService : IAccountService
         return OperationResult.SuccessResult();
     }
     
-    public async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null)
+    public async Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false)
     {
-        var validator = new RegisterUserDtoValidator();
-        var validationResult = await validator.ValidateAsync(registerRequestDto);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return OperationResult<RegisterUserResponseDto>.FailureResult(errors);
-        }
+        ArgumentNullException.ThrowIfNull(registerRequestDto);
+        ArgumentNullException.ThrowIfNull(registerRequestDto.Roles);
         
         var getByEmailResult = await _userService.GetByEmailAsync(registerRequestDto.Email);
         if (getByEmailResult.Success)
@@ -162,7 +143,7 @@ public class AccountService : IAccountService
             return OperationResult<RegisterUserResponseDto>.FailureResult($"Phone Number '{registerRequestDto.Phone}' already exists.");
 
         var user = BuildUserObject(registerRequestDto, roles);
-        var customer = BuildCreateCustomerDto(registerRequestDto, createCustomer, customerData);
+        var customer = BuildCreateCustomerDto(registerRequestDto, createCustomer);
 
         try
         {
@@ -194,22 +175,31 @@ public class AccountService : IAccountService
     
     
     # region Helpers
-    private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserRequestDto requestDto, bool createCustomer, CustomerExtraData? customerData) =>
-        createCustomer
+
+    private static CreateCustomerDto? BuildCreateCustomerDto(RegisterUserRequestDto requestDto, bool createCustomer)
+    {
+        ArgumentNullException.ThrowIfNull(requestDto);
+        
+        return createCustomer
             ? new CreateCustomerDto
-              {
+            {
                 FirstName = requestDto.FirstName,
                 LastName = requestDto.LastName,
                 Username = requestDto.Username,
                 Email = requestDto.Email,
                 Phone = requestDto.Phone,
-                Address = customerData?.Address,
-                MarketingConsent = customerData?.MarketingConsent ?? false
-              }
+                DateOfBirth = requestDto.DateOfBirth,
+                Address = requestDto.Address,
+                MarketingConsent = requestDto.MarketingConsent
+            }
             : null;
-    
+    }
+
     private User BuildUserObject(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles)
     {
+        ArgumentNullException.ThrowIfNull(registerRequestDto);
+        ArgumentNullException.ThrowIfNull(registerRequestDto.Roles);
+        
         User user =  new User 
         (
             registerRequestDto.FirstName,

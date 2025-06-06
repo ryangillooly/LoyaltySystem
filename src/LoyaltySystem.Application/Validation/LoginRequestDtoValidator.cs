@@ -17,7 +17,7 @@ public class LoginRequestDtoValidator : AbstractValidator<LoginRequestDto>
             .When(x => !string.IsNullOrEmpty(x.Email));
         
         RuleFor(x => x.Username)
-            .Length(2, 100).WithMessage("Username must be between 2 and 100 characters.")
+            .Length(5, 100).WithMessage("Username must be between 5 and 100 characters.")
             .When(x => !string.IsNullOrEmpty(x.Username));
         
         RuleFor(x => x)

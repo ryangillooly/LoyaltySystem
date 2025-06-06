@@ -5,11 +5,11 @@ using LoyaltySystem.Application.DTOs.AuthDtos;
 
 namespace LoyaltySystem.Application.Validation;
 
-public class RegisterUserDtoValidator : AbstractValidator<RegisterUserRequestDto>
+public class RegisterUserRequestDtoValidator : AbstractValidator<RegisterUserRequestDto>
 {
     private const string PhoneRegex = @"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,9}$";
    
-    public RegisterUserDtoValidator()
+    public RegisterUserRequestDtoValidator()
     {
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("FirstName is required.")

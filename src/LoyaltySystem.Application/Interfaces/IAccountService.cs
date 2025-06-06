@@ -9,7 +9,7 @@ namespace LoyaltySystem.Application.Interfaces;
 
 public interface IAccountService 
 {
-    Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false, CustomerExtraData? customerData = null);
+    Task<OperationResult<RegisterUserResponseDto>> RegisterAsync(RegisterUserRequestDto registerRequestDto, IEnumerable<RoleType> roles, bool createCustomer = false);
     Task<OperationResult> VerifyEmailAsync(string token);
     Task<OperationResult> ResendVerificationEmailAsync(string email);
     Task<OperationResult> ForgotPasswordAsync(ForgotPasswordRequestDto request);

@@ -49,24 +49,6 @@ public abstract class BaseAuthController : ControllerBase
         return Ok(result.Data);
     }
     
-    protected virtual async Task<OperationResult<LoginResponseDto>> AuthenticateAsync(LoginRequestDto request)
-    {
-        switch (request.IdentifierType)
-        {
-            case AuthIdentifierType.Email:
-            case AuthIdentifierType.Username:
-                _logger.Information("{UserType} login attempt using {IdentifierType}: {IdentifierValue}", UserType, request.IdentifierType, request.Identifier);
-                break;
-
-            default:
-                _logger.Warning("{UserType} login attempt with no identifier provided", UserType);
-                return OperationResult<LoginResponseDto>.FailureResult(new [] { "Email or username must be provided" });
-        }
-        
-        return await _authService.AuthenticateAsync(request);
-    }
-    
-    
     [HttpPost("register")]
     public virtual async Task<IActionResult> Register(RegisterUserRequestDto request)
     {

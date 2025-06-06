@@ -1,4 +1,5 @@
 using LoyaltySystem.Domain.Enums;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.DTOs.Auth;
 
@@ -13,4 +14,7 @@ public class RegisterUserRequestDto
     public string ConfirmPassword { get; set; } = string.Empty;
     public List<RoleType> Roles { get; set; } = new () { RoleType.User };
     public bool IsEmailConfirmed { get; set; }
+    public bool MarketingConsent { get; set; } = false;
+    public DateTime? DateOfBirth { get; set; } = null;
+    public Address? Address { get; set; } = null;
 }

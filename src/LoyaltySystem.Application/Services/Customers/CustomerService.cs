@@ -73,13 +73,7 @@ public class CustomerService : ICustomerService
         {
             var customers = await _customerRepository.SearchAsync(query, page, pageSize);
             var totalCount = await _customerRepository.GetTotalCountAsync();
-
-            var CustomerProfileDtos = new List<CustomerDto>();
-            foreach (var customer in customers)
-            {
-                CustomerProfileDtos.Add(MapToDto(customer));
-            }
-
+            var CustomerProfileDtos = customers.Select(MapToDto).ToList();
             var result = new PagedResult<CustomerDto>(CustomerProfileDtos, totalCount, page, pageSize);
 
             return OperationResult<PagedResult<CustomerDto>>.SuccessResult(result);

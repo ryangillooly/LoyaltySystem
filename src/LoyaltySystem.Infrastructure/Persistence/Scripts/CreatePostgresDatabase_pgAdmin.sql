@@ -165,25 +165,29 @@ CREATE TABLE IF NOT EXISTS businesses
     website VARCHAR(255) NULL,
     founded_date DATE NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL
 );
 
 -- Create BusinessContacts table
-CREATE TABLE IF NOT EXISTS business_contacts (
-                                                 business_id UUID PRIMARY KEY,
-                                                 email VARCHAR(100) NULL,
+CREATE TABLE IF NOT EXISTS business_contacts 
+(
+    business_id UUID PRIMARY KEY,
+    email VARCHAR(100) NULL,
     phone VARCHAR(50) NULL,
     website VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_business_contacts_businesses FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
-    );
+);
 
 -- Create BusinessAddresses table
-CREATE TABLE IF NOT EXISTS business_addresses (
-                                                  business_id UUID PRIMARY KEY,
-                                                  line1 VARCHAR(100) NOT NULL,
+CREATE TABLE IF NOT EXISTS business_addresses 
+(
+    business_id UUID PRIMARY KEY,
+    line1 VARCHAR(100) NOT NULL,
     line2 VARCHAR(100) NULL,
     city VARCHAR(100) NOT NULL,
     state VARCHAR(50) NULL,
@@ -192,7 +196,7 @@ CREATE TABLE IF NOT EXISTS business_addresses (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_business_addresses_businesses FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
-    );
+);
 
 -- Create Brands table with business_id foreign key
 CREATE TABLE IF NOT EXISTS brands 
@@ -204,26 +208,30 @@ CREATE TABLE IF NOT EXISTS brands
     category VARCHAR(50) NULL,
     logo VARCHAR(255) NULL,
     description VARCHAR(500) NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL
     CONSTRAINT fk_brands_businesses FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
-    );
+);
 
 -- Create BrandContacts table
-CREATE TABLE IF NOT EXISTS brand_contacts (
-                                              brand_id UUID PRIMARY KEY,
-                                              email VARCHAR(100) NULL,
+CREATE TABLE IF NOT EXISTS brand_contacts 
+(
+    brand_id UUID PRIMARY KEY,
+    email VARCHAR(100) NULL,
     phone VARCHAR(50) NULL,
     website VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_brand_contacts_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
-    );
+);
 
 -- Create BrandAddresses table
-CREATE TABLE IF NOT EXISTS brand_addresses (
-                                               brand_id UUID PRIMARY KEY,
-                                               line1 VARCHAR(100) NOT NULL,
+CREATE TABLE IF NOT EXISTS brand_addresses 
+(
+    brand_id UUID PRIMARY KEY,
+    line1 VARCHAR(100) NOT NULL,
     line2 VARCHAR(100) NULL,
     city VARCHAR(100) NOT NULL,
     state VARCHAR(50) NULL,
@@ -232,7 +240,7 @@ CREATE TABLE IF NOT EXISTS brand_addresses (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_brand_addresses_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
-    );
+);
 
 -- Create Stores table
 CREATE TABLE IF NOT EXISTS stores 
@@ -242,28 +250,32 @@ CREATE TABLE IF NOT EXISTS stores
     brand_id UUID NOT NULL,
     name VARCHAR(100) NOT NULL,
     opening_hours JSONB NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL
     CONSTRAINT fk_stores_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_stores_brand_id ON stores (brand_id);
 
 -- Create StoreContacts table
-CREATE TABLE IF NOT EXISTS store_contacts (
-                                              store_id UUID PRIMARY KEY,
-                                              email VARCHAR(100) NULL,
+CREATE TABLE IF NOT EXISTS store_contacts 
+(
+    store_id UUID PRIMARY KEY,
+    email VARCHAR(100) NULL,
     phone VARCHAR(50) NULL,
     website VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_store_contacts_stores FOREIGN KEY (store_id) REFERENCES stores (id) ON DELETE CASCADE
-    );
+);
 
 -- Create StoreAddresses table
-CREATE TABLE IF NOT EXISTS store_addresses (
-                                               store_id UUID PRIMARY KEY,
-                                               location GEOGRAPHY(POINT) NOT NULL,
+CREATE TABLE IF NOT EXISTS store_addresses 
+(
+    store_id UUID PRIMARY KEY,
+    location GEOGRAPHY(POINT) NOT NULL,
     line1 VARCHAR(100) NOT NULL,
     line2 VARCHAR(100) NULL,
     city VARCHAR(100) NOT NULL,
@@ -273,7 +285,7 @@ CREATE TABLE IF NOT EXISTS store_addresses (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_store_addresses_stores FOREIGN KEY (store_id) REFERENCES stores (id) ON DELETE CASCADE
-    );
+);
 
 -- Create spatial index
 CREATE INDEX IF NOT EXISTS idx_store_addresses_location ON store_addresses USING GIST (location);
@@ -305,7 +317,7 @@ CREATE TABLE IF NOT EXISTS loyalty_programs
     CONSTRAINT fk_loyalty_programs_brands FOREIGN KEY (brand_id) REFERENCES brands (id) ON DELETE CASCADE,
     CONSTRAINT chk_stamp_threshold CHECK (type != 'Stamp' OR stamp_threshold IS NOT NULL),
     CONSTRAINT chk_points_conversion CHECK (type != 'Points' OR points_conversion_rate IS NOT NULL)
-    );
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uix_loyalty_programs_prefixedid ON loyalty_programs(prefixed_id);
 
@@ -373,7 +385,7 @@ CREATE TABLE IF NOT EXISTS rewards
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_rewards_loyalty_programs FOREIGN KEY (program_id) REFERENCES loyalty_programs (id) ON DELETE CASCADE,
     CONSTRAINT chk_valid_period CHECK (valid_from IS NULL OR valid_to IS NULL OR valid_from < valid_to)
-    );
+);
 
 CREATE INDEX IF NOT EXISTS idx_rewards_program_id ON rewards (program_id);
 CREATE INDEX IF NOT EXISTS idx_rewards_valid_period ON rewards (valid_from, valid_to) WHERE valid_from IS NOT NULL AND valid_to IS NOT NULL;
@@ -393,8 +405,10 @@ CREATE TABLE IF NOT EXISTS users
     email_confirmed BOOLEAN NOT NULL DEFAULT FALSE;
     password_hash VARCHAR(255) NOT NULL,
     status INT NOT NULL DEFAULT 1, -- 1=Active, 2=Inactive, 3=Locked, etc. (from UserStatus enum)
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
     last_login_at TIMESTAMP NULL
 );
 
@@ -416,8 +430,10 @@ CREATE TABLE IF NOT EXISTS customers
     marketing_consent BOOLEAN NOT NULL DEFAULT FALSE,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
 
     CONSTRAINT fk_customers_users FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 );
@@ -440,9 +456,10 @@ CREATE TABLE IF NOT EXISTS loyalty_cards
     points_balance NUMERIC(18, 2) NOT NULL DEFAULT 0,
     status card_status NOT NULL DEFAULT 'Active',
     qr_code VARCHAR(100) NOT NULL,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NULL,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL
     CONSTRAINT fk_loyalty_cards_loyalty_programs FOREIGN KEY (program_id) REFERENCES loyalty_programs (id),
     CONSTRAINT fk_loyalty_cards_customers FOREIGN KEY (customer_id) REFERENCES customers (id),
     CONSTRAINT chk_stamps CHECK (type != 'Stamp' OR stamps_collected >= 0),
@@ -471,7 +488,7 @@ CREATE TABLE IF NOT EXISTS card_links
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_card_links_loyalty_cards FOREIGN KEY (card_id) REFERENCES loyalty_cards (id)
-    );
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_card_links_card_hash ON card_links (card_hash);
 CREATE INDEX IF NOT EXISTS idx_card_links_card_id ON card_links (card_id);
@@ -500,7 +517,7 @@ CREATE TABLE IF NOT EXISTS transactions
     CONSTRAINT chk_reward_redemption CHECK (type != 'RewardRedemption' OR reward_id IS NOT NULL),
     CONSTRAINT chk_quantity CHECK (type != 'StampIssuance' OR quantity IS NOT NULL),
     CONSTRAINT chk_points CHECK (type != 'PointsIssuance' OR points_amount IS NOT NULL)
-    ) PARTITION BY RANGE (timestamp);
+) PARTITION BY RANGE (timestamp);
 
 -- Modified UNIQUE index to include the partitioning key 'timestamp'
 CREATE UNIQUE INDEX IF NOT EXISTS uix_transactions_prefixedid ON transactions(prefixed_id, timestamp);
