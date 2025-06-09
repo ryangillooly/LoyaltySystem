@@ -67,6 +67,7 @@ public static class ApiConfiguration
             .AddServices(builder.Configuration)
             .AddScoped<IUnitOfWork, UnitOfWork>()
             .AddScoped<IEventPublisher, ConsoleEventPublisher>()
+            .AddScoped<IDomainEventPublisher, DomainEventPublisher>()
             .AddSwagger(apiTitle);
 
         return builder.Services;

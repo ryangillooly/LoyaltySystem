@@ -6,6 +6,7 @@ using LoyaltySystem.Domain.Common;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Repositories;
+using LoyaltySystem.Domain.ValueObjects;
 
 namespace LoyaltySystem.Application.Services;
 
@@ -14,20 +15,26 @@ public class LoyaltyCardService : ILoyaltyCardService
     private readonly ILoyaltyCardRepository _cardRepository;
     private readonly ILoyaltyProgramRepository _programRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly IStoreRepository _storeRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDomainEventPublisher _domainEventPublisher;
     private readonly ILogger<LoyaltyCardService> _logger;
         
     public LoyaltyCardService(
         ILoyaltyCardRepository cardRepository,
         ILoyaltyProgramRepository programRepository,
         ICustomerRepository customerRepository,
+        IStoreRepository storeRepository,
         IUnitOfWork unitOfWork,
+        IDomainEventPublisher domainEventPublisher,
         ILogger<LoyaltyCardService> logger)
     {
         _cardRepository = cardRepository ?? throw new ArgumentNullException(nameof(cardRepository));
         _programRepository = programRepository ?? throw new ArgumentNullException(nameof(programRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
+        _storeRepository = storeRepository ?? throw new ArgumentNullException(nameof(storeRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _domainEventPublisher = domainEventPublisher ?? throw new ArgumentNullException(nameof(domainEventPublisher));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
@@ -183,110 +190,105 @@ public class LoyaltyCardService : ILoyaltyCardService
         }
     }
 
-    public async Task<OperationResult<TransactionDto>> IssueStampsAsync(
-        LoyaltyCardId cardId, 
-        int stampCount, 
-        StoreId storeId, 
-        decimal purchaseAmount, 
-        string transactionReference)
+    public async Task<OperationResult<TransactionDto>> IssueStampsAsync(LoyaltyCardId cardId, int stampCount, StoreId storeId, decimal purchaseAmount, string transactionReference)
     {
         try
         {
             var card = await _cardRepository.GetByIdAsync(cardId);
-                
             if (card == null)
-                return OperationResult<TransactionDto>.FailureResult($"Card with ID {cardId} not found");
-                
-            if (card.Status != CardStatus.Active)
-                return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
-                
-            if (card.Type != LoyaltyProgramType.Stamp)
-                return OperationResult<TransactionDto>.FailureResult("Cannot issue stamps to a points-based card");
-                
-            if (stampCount <= 0)
-                return OperationResult<TransactionDto>.FailureResult("Stamp count must be greater than zero");
-                
-            _logger.LogInformation($"Issuing {stampCount} stamps to card {cardId}");
+                return OperationResult<TransactionDto>.FailureResult("Loyalty card not found");
 
-            await _unitOfWork.BeginTransactionAsync();
-                
-            // Create transaction
-            var transaction = new Transaction
-            (
-                new LoyaltyCardId(cardId.Value),
-                TransactionType.StampIssuance,
+            var program = await _programRepository.GetByIdAsync(card.ProgramId);
+            if (program == null)
+                return OperationResult<TransactionDto>.FailureResult("Loyalty program not found");
+
+            var store = await _storeRepository.GetByIdAsync(storeId);
+            if (store == null)
+                return OperationResult<TransactionDto>.FailureResult("Store not found");
+
+            // Use rich domain method that encapsulates business rules and raises events
+            var transaction = card.IssueStamps(
                 quantity: stampCount,
-                transactionAmount: purchaseAmount,
-                storeId: new StoreId(storeId.Value),
-                posTransactionId: transactionReference
-            );
-                
-            // Update card
-            card.StampsCollected += stampCount;
-            card.UpdatedAt = DateTime.UtcNow;
-                
-            await _unitOfWork.TransactionRepository.AddAsync(transaction);
+                storeId: storeId,
+                programName: program.Name,
+                storeName: store.Name,
+                fraudPolicy: program.FraudPolicyOverride,
+                dailyLimits: program.DailyLimitsOverride);
+
             await _cardRepository.UpdateAsync(card);
+            
+            // Publish domain events before committing transaction
+            await _domainEventPublisher.PublishEventsAsync(card);
+            
             await _unitOfWork.CommitTransactionAsync();
-                
-            _logger.LogInformation($"Successfully issued {stampCount} stamps to card {cardId}");
-                
+
             return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
+        }
+        catch (DomainException ex)
+        {
+            _logger.LogWarning(ex, "Domain validation failed for stamp issuance on card {CardId}", cardId);
+            await _unitOfWork.RollbackTransactionAsync();
+            return OperationResult<TransactionDto>.FailureResult(ex.Message);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error issuing stamps for card {CardId}", cardId);
             await _unitOfWork.RollbackTransactionAsync();
-            _logger.LogError(ex, "Error issuing stamps to card {0}: {1}", cardId, ex.Message);
-            return OperationResult<TransactionDto>.FailureResult("Error issuing stamps: " + ex.Message);
+            return OperationResult<TransactionDto>.FailureResult("An error occurred while issuing stamps");
         }
     }
 
-    public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal purchaseAmount, StoreId storeId, StaffId? staffId, string posTransactionId)
+    public async Task<OperationResult<TransactionDto>> AddPointsAsync(LoyaltyCardId cardId, decimal points, decimal transactionAmount, StoreId storeId, StaffId? staffId, string posTransactionId)
     {
         try
         {
             var card = await _cardRepository.GetByIdAsync(cardId);
             if (card == null)
-                return OperationResult<TransactionDto>.FailureResult("Card not found");
+                return OperationResult<TransactionDto>.FailureResult("Loyalty card not found");
 
-            if (card.Status != CardStatus.Active)
-                return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
+            var program = await _programRepository.GetByIdAsync(card.ProgramId);
+            if (program == null)
+                return OperationResult<TransactionDto>.FailureResult("Loyalty program not found");
 
-            if (card.Type != LoyaltyProgramType.Points)
-                return OperationResult<TransactionDto>.FailureResult("Cannot add points to a stamp-based card");
+            var store = await _storeRepository.GetByIdAsync(storeId);
+            if (store == null)
+                return OperationResult<TransactionDto>.FailureResult("Store not found");
 
-            if (points <= 0)
-                return OperationResult<TransactionDto>.FailureResult("Points amount must be greater than zero");
-
-            _logger.LogInformation($"Adding {points} points to card {cardId}");
-
-            // Create transaction
-            var transaction = new Transaction
-            (
-                cardId,
-                TransactionType.PointsIssuance,
+            // Use rich domain method that encapsulates business rules and raises events
+            var transaction = card.AddPoints(
                 pointsAmount: points,
-                transactionAmount: purchaseAmount,
+                transactionAmount: transactionAmount,
                 storeId: storeId,
-                posTransactionId: posTransactionId
-            );
+                programName: program.Name,
+                storeName: store.Name,
+                conversionRate: program.ConversionRateOverride?.PointsToCurrency ?? program.PointsConversionRate ?? 1.0m,
+                fraudPolicy: program.FraudPolicyOverride,
+                dailyLimits: program.DailyLimitsOverride,
+                staffId: staffId,
+                posTransactionId: posTransactionId,
+                currencyValue: program.ConversionRateOverride?.PointsToCurrency ?? 0.01m,
+                minimumRedemptionPoints: program.MinimumPointsForRedemption);
 
-            // Update card with points
-            card.PointsBalance += points;
-            card.UpdatedAt = DateTime.UtcNow;
-
-            await _unitOfWork.TransactionRepository.AddAsync(transaction);
             await _cardRepository.UpdateAsync(card);
-            await _unitOfWork.SaveChangesAsync();
-
-            _logger.LogInformation($"Successfully added {points} points to card {cardId}");
+            
+            // Publish domain events before committing transaction
+            await _domainEventPublisher.PublishEventsAsync(card);
+            
+            await _unitOfWork.CommitTransactionAsync();
 
             return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
         }
+        catch (DomainException ex)
+        {
+            _logger.LogWarning(ex, "Domain validation failed for points addition on card {CardId}", cardId);
+            await _unitOfWork.RollbackTransactionAsync();
+            return OperationResult<TransactionDto>.FailureResult(ex.Message);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding points to card {CardId}", cardId);
-            return OperationResult<TransactionDto>.FailureResult("Error adding points: " + ex.Message);
+            _logger.LogError(ex, "Error adding points for card {CardId}", cardId);
+            await _unitOfWork.RollbackTransactionAsync();
+            return OperationResult<TransactionDto>.FailureResult("An error occurred while adding points");
         }
     }
 
@@ -296,73 +298,56 @@ public class LoyaltyCardService : ILoyaltyCardService
         {
             var card = await _cardRepository.GetByIdAsync(cardId);
             if (card == null)
-                return OperationResult<TransactionDto>.FailureResult("Card not found");
+                return OperationResult<TransactionDto>.FailureResult("Loyalty card not found");
 
-            if (card.Status != CardStatus.Active)
-                return OperationResult<TransactionDto>.FailureResult($"Card is not active. Current status: {card.Status}");
+            var program = await _programRepository.GetByIdAsync(card.ProgramId);
+            if (program == null)
+                return OperationResult<TransactionDto>.FailureResult("Loyalty program not found");
 
-            var reward = await _programRepository.GetRewardByIdAsync(rewardId);
+            var store = await _storeRepository.GetByIdAsync(storeId);
+            if (store == null)
+                return OperationResult<TransactionDto>.FailureResult("Store not found");
+
+            // Find the reward in the program
+            var reward = program.Rewards.FirstOrDefault(r => r.Id == rewardId);
             if (reward == null)
-                return OperationResult<TransactionDto>.FailureResult("Reward not found");
+                return OperationResult<TransactionDto>.FailureResult("Reward not found in program");
 
-            if (reward.ProgramId != card.ProgramId)
-                return OperationResult<TransactionDto>.FailureResult("Reward does not belong to the card's program");
+            // Calculate currency value for the reward
+            var currencyValue = program.ConversionRateOverride?.ConvertPointsToCurrency(reward.RequiredValue) ?? 
+                               (reward.RequiredValue * (program.PointsConversionRate ?? 0.01m));
 
-            // Check if reward is active
-            if (!reward.IsActive)
-                return OperationResult<TransactionDto>.FailureResult("Reward is not active");
+            // Use rich domain method that encapsulates business rules and raises events
+            var transaction = card.RedeemReward(
+                reward: reward,
+                storeId: storeId,
+                programName: program.Name,
+                storeName: store.Name,
+                fraudPolicy: program.FraudPolicyOverride,
+                dailyLimits: program.DailyLimitsOverride,
+                staffId: staffId,
+                currencyValue: currencyValue);
 
-            // Check if reward is within valid date range
-            var now = DateTime.UtcNow;
-            if (reward.ValidFrom.HasValue && reward.ValidFrom.Value > now)
-                return OperationResult<TransactionDto>.FailureResult("Reward is not yet available");
-
-            if (reward.ValidTo.HasValue && reward.ValidTo.Value < now)
-                return OperationResult<TransactionDto>.FailureResult("Reward has expired");
-
-            // Check if card has enough points/stamps based on card type
-            if (card.Type == LoyaltyProgramType.Points && card.PointsBalance < reward.RequiredValue)
-                return OperationResult<TransactionDto>.FailureResult($"Insufficient points. Required: {reward.RequiredValue}, Available: {card.PointsBalance}");
-                
-            if (card.Type == LoyaltyProgramType.Stamp && card.StampsCollected < reward.RequiredValue)
-                return OperationResult<TransactionDto>.FailureResult($"Insufficient stamps. Required: {reward.RequiredValue}, Available: {card.StampsCollected}");
-
-            // Create transaction with the appropriate deduction values based on card type
-            var transaction = new Transaction
-            (
-                new LoyaltyCardId(cardId.Value),
-                TransactionType.RewardRedemption,
-                rewardId: new RewardId(rewardId.Value),
-                quantity: card.Type == LoyaltyProgramType.Stamp ? -reward.RequiredValue : null,
-                pointsAmount: card.Type == LoyaltyProgramType.Points ? -reward.RequiredValue : null,
-                storeId: new StoreId(storeId.Value),
-                staffId: new StaffId(staffId.Value)
-            );
-
-            switch (card.Type)
-            {
-                case LoyaltyProgramType.Points:
-                    card.PointsBalance -= reward.RequiredValue;
-                    break;
-                case LoyaltyProgramType.Stamp:
-                    card.StampsCollected -= reward.RequiredValue;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(card.Type), card.Type, null);
-            }
-
-            card.UpdatedAt = DateTime.UtcNow;
-
-            await _unitOfWork.TransactionRepository.AddAsync(transaction);
             await _cardRepository.UpdateAsync(card);
-            await _unitOfWork.SaveChangesAsync();
+            
+            // Publish domain events before committing transaction
+            await _domainEventPublisher.PublishEventsAsync(card);
+            
+            await _unitOfWork.CommitTransactionAsync();
 
             return OperationResult<TransactionDto>.SuccessResult(MapToTransactionDto(transaction));
         }
+        catch (DomainException ex)
+        {
+            _logger.LogWarning(ex, "Domain validation failed for reward redemption on card {CardId}", cardId);
+            await _unitOfWork.RollbackTransactionAsync();
+            return OperationResult<TransactionDto>.FailureResult(ex.Message);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error redeeming reward {RewardId} for card {CardId}", rewardId, cardId);
-            return OperationResult<TransactionDto>.FailureResult($"Error redeeming reward: {ex.Message}");
+            _logger.LogError(ex, "Error redeeming reward for card {CardId}", cardId);
+            await _unitOfWork.RollbackTransactionAsync();
+            return OperationResult<TransactionDto>.FailureResult("An error occurred while redeeming reward");
         }
     }
 

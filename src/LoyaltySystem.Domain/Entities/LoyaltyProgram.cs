@@ -35,6 +35,11 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     
+    // Enhanced DDD Value Objects
+    public FraudPolicy? FraudPolicyOverride { get; private set; }
+    public ConversionRate? ConversionRateOverride { get; private set; }
+    public DailyLimits? DailyLimitsOverride { get; private set; }
+    
     // Collection navigation properties
     public IReadOnlyCollection<Reward> Rewards => _rewards.AsReadOnly();
     public IReadOnlyCollection<LoyaltyTier> Tiers => _tiers.AsReadOnly();
@@ -62,16 +67,18 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
     )
     : base(new LoyaltyProgramId())
     {
+        // Enhanced validation with DomainException
         if (brandId == Guid.Empty)
-            throw new ArgumentException("BrandId cannot be empty", nameof(brandId));
+            throw new DomainException("BrandId cannot be empty");
 
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Program name cannot be empty", nameof(name));
+            throw new DomainException("Program name cannot be empty");
 
         ValidateProgramTypeParameters(type, stampThreshold, pointsConversionRate, pointsConfig);
+        ValidateBusinessRules(enrollmentBonusPoints, startDate, endDate);
         
         Type = type ;
-        IsActive = isActive.Value;
+        IsActive = isActive ?? true;
         Name = name ?? throw new ArgumentNullException(nameof(name));
         BrandId = brandId ?? throw new ArgumentNullException(nameof(brandId));
         Description = description;
@@ -102,6 +109,157 @@ public sealed class LoyaltyProgram : Entity<LoyaltyProgramId>
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Updates the fraud policy for this loyalty program
+    /// </summary>
+    public void UpdateFraudPolicy(FraudPolicy policy)
+    {
+        if (!IsActive)
+            throw new DomainException("Cannot update fraud policy for inactive program");
+        
+        FraudPolicyOverride = policy;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Updates the conversion rate for this loyalty program
+    /// </summary>
+    public void UpdateConversionRate(ConversionRate conversionRate)
+    {
+        if (!IsActive)
+            throw new DomainException("Cannot update conversion rate for inactive program");
+        
+        if (Type != LoyaltyProgramType.Points)
+            throw new DomainException("Conversion rate can only be set for points-based programs");
+        
+        ConversionRateOverride = conversionRate;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Updates the daily limits for this loyalty program
+    /// </summary>
+    public void UpdateDailyLimits(DailyLimits dailyLimits)
+    {
+        if (!IsActive)
+            throw new DomainException("Cannot update daily limits for inactive program");
+        
+        DailyLimitsOverride = dailyLimits;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Validates if a transaction is allowed based on fraud policy
+    /// </summary>
+    public bool ValidateTransactionAgainstFraudPolicy(
+        DateTime lastTransactionTime, 
+        int dailyRedemptions, 
+        int dailyPoints,
+        int distanceFromLastTransaction)
+    {
+        if (FraudPolicyOverride == null) return true;
+
+        var policy = FraudPolicyOverride;
+        
+        // Check cooldown period
+        if (policy.CooldownBetweenScans.HasValue)
+        {
+            var timeSinceLastTransaction = DateTime.UtcNow - lastTransactionTime;
+            if (timeSinceLastTransaction < policy.CooldownBetweenScans.Value)
+                return false;
+        }
+
+        // Check daily redemption limits
+        if (policy.MaxRedemptionsPerDay.HasValue && 
+            dailyRedemptions >= policy.MaxRedemptionsPerDay.Value)
+            return false;
+
+        // Check velocity window points
+        if (policy.MaxPointsPerVelocityWindow.HasValue && 
+            dailyPoints >= policy.MaxPointsPerVelocityWindow.Value)
+            return false;
+
+        // Check distance limits
+        if (policy.MaxDistanceMeters.HasValue && 
+            distanceFromLastTransaction > policy.MaxDistanceMeters.Value)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Validates if a transaction is within daily limits
+    /// </summary>
+    public bool ValidateTransactionAgainstDailyLimits(
+        int currentDailyStamps, 
+        int currentDailyPoints, 
+        int currentDailyRedemptions,
+        decimal currentDailyCurrency,
+        int newStamps = 0, 
+        int newPoints = 0, 
+        decimal newCurrencyValue = 0)
+    {
+        if (DailyLimitsOverride == null) return true;
+
+        var limits = DailyLimitsOverride;
+
+        if (newStamps > 0 && !limits.IsStampTransactionAllowed(currentDailyStamps, newStamps))
+            return false;
+
+        if (newPoints > 0 && !limits.IsPointsTransactionAllowed(currentDailyPoints, newPoints))
+            return false;
+
+        if (newCurrencyValue > 0 && !limits.IsCurrencyRedemptionAllowed(currentDailyCurrency, newCurrencyValue))
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Enforces all business rules and invariants
+    /// </summary>
+    public void EnforceBusinessRules()
+    {
+        // Program must be active to process transactions
+        if (!IsActive)
+            throw new DomainException("Loyalty program is not active");
+
+        // Program must be within valid date range
+        var now = DateTime.UtcNow;
+        if (now < StartDate)
+            throw new DomainException("Loyalty program has not started yet");
+        
+        if (EndDate.HasValue && now > EndDate.Value)
+            throw new DomainException("Loyalty program has expired");
+
+        // Stamp programs must have stamp threshold
+        if (Type == LoyaltyProgramType.Stamp && !StampThreshold.HasValue)
+            throw new DomainException("Stamp-based programs must have a stamp threshold");
+
+        // Points programs must have conversion mechanism
+        if (Type == LoyaltyProgramType.Points && 
+            !PointsConversionRate.HasValue && 
+            PointsConfig == null && 
+            ConversionRateOverride == null)
+            throw new DomainException("Points-based programs must have a conversion mechanism");
+
+        // Tiered programs must be points-based
+        if (HasTiers && Type != LoyaltyProgramType.Points)
+            throw new DomainException("Tiered programs must be points-based");
+    }
+
+    /// <summary>
+    /// Validates business rules during construction
+    /// </summary>
+    private void ValidateBusinessRules(int enrollmentBonusPoints, DateTime? startDate, DateTime? endDate)
+    {
+        if (enrollmentBonusPoints < 0)
+            throw new DomainException("Enrollment bonus points cannot be negative");
+
+        if (startDate.HasValue && endDate.HasValue && startDate >= endDate)
+            throw new DomainException("Start date must be before end date");
     }
 
     /// <summary>
