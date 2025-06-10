@@ -4,23 +4,17 @@ using System.Threading.Tasks;
 using LoyaltySystem.Domain.Entities;
 using LoyaltySystem.Domain.Enums;
 using LoyaltySystem.Domain.Common;
+using LoyaltySystem.Domain.ValueObjects;
 using System.Data;
 
 namespace LoyaltySystem.Domain.Repositories
 {
     /// <summary>
     /// Repository interface for the LoyaltyCard aggregate.
+    /// Inherits common CRUD operations from generic repository and adds domain-specific methods.
     /// </summary>
-    public interface ILoyaltyCardRepository {
-        Task<IEnumerable<LoyaltyCard>> GetAllAsync(int skip = 0, int limit = 50);
-
-        Task<int> GetTotalCountAsync();
-        
-        /// <summary>
-        /// Gets a loyalty card by its ID.
-        /// </summary>
-        Task<LoyaltyCard> GetByIdAsync(LoyaltyCardId id);
-        
+    public interface ILoyaltyCardRepository : IRepository<LoyaltyCard, LoyaltyCardId>
+    {
         /// <summary>
         /// Gets loyalty cards for a specific customer.
         /// </summary>
@@ -39,17 +33,7 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets a loyalty card by its QR code.
         /// </summary>
-        Task<LoyaltyCard> GetByQrCodeAsync(string qrCode);
-
-        /// <summary>
-        /// Adds a new loyalty card.
-        /// </summary>
-        Task AddAsync(LoyaltyCard card, IDbTransaction transaction = null);
-        
-        /// <summary>
-        /// Updates an existing loyalty card.
-        /// </summary>
-        Task UpdateAsync(LoyaltyCard card);
+        Task<LoyaltyCard?> GetByQrCodeAsync(string qrCode);
         
         /// <summary>
         /// Finds cards that are near expiration.
@@ -69,6 +53,31 @@ namespace LoyaltySystem.Domain.Repositories
         /// <summary>
         /// Gets a loyalty card by its ID including all transactions.
         /// </summary>
-        Task<LoyaltyCard> GetByIdWithTransactionsAsync(LoyaltyCardId id);
+        Task<LoyaltyCard?> GetByIdWithTransactionsAsync(LoyaltyCardId id);
+
+        /// <summary>
+        /// Gets loyalty cards with points balance above a threshold.
+        /// </summary>
+        Task<IEnumerable<LoyaltyCard>> GetCardsWithMinimumPointsAsync(int minimumPoints, int skip = 0, int limit = 50);
+
+        /// <summary>
+        /// Gets loyalty cards with stamps above a threshold.
+        /// </summary>
+        Task<IEnumerable<LoyaltyCard>> GetCardsWithMinimumStampsAsync(int minimumStamps, int skip = 0, int limit = 50);
+
+        /// <summary>
+        /// Gets loyalty cards that haven't been used since a specific date.
+        /// </summary>
+        Task<IEnumerable<LoyaltyCard>> GetInactiveCardsSinceAsync(DateTime sinceDate, int skip = 0, int limit = 50);
+
+        /// <summary>
+        /// Gets loyalty cards created within a date range.
+        /// </summary>
+        Task<IEnumerable<LoyaltyCard>> GetCardsCreatedInRangeAsync(DateTime startDate, DateTime endDate, int skip = 0, int limit = 50);
+
+        /// <summary>
+        /// Gets loyalty cards eligible for tier upgrade based on points or stamps thresholds.
+        /// </summary>
+        Task<IEnumerable<LoyaltyCard>> GetCardsEligibleForTierUpgradeAsync(int pointsThreshold, int stampsThreshold, int skip = 0, int limit = 50);
     }
 } 
